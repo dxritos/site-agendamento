@@ -534,3 +534,117 @@ input,select,textarea{font-family:inherit}
 .barber .pic{padding:18px;text-transform:none;letter-spacing:0;font-size:13px;line-height:1.5;color:var(--muted)}
 .lb-img span{max-width:420px;padding:20px;text-align:center;text-transform:none;letter-spacing:0;font-size:15px;line-height:1.5;color:var(--muted)}
 @media(max-width:560px){.gi .ph{-webkit-line-clamp:3;font-size:11.5px}}
+
+/* ===== celular: visual compacto (cabeçalho discreto, ícones e títulos menores) ===== */
+@media(max-width:720px){
+  body{font-size:14.5px}
+  .wrap{padding:0 16px}
+  /* cabeçalho */
+  header .nav{height:54px}
+  .logo{gap:8px}
+  .mono{width:32px;height:32px;font-size:15px;border-width:1.2px}
+  .logo b{font-size:16px;letter-spacing:.06em}
+  .burger{width:36px;height:36px;border-radius:9px}
+  .burger i{width:16px}
+  .mnav a{padding:11px 0;font-size:12px}
+  /* topo */
+  .hero{padding:28px 0 44px}
+  .hero-grid{gap:0}
+  .hero .brand-card{display:none}
+  .hero-grid>div:first-child::before{content:"FB";display:grid;place-items:center;width:58px;height:58px;margin:0 0 14px;border-radius:50%;border:1.5px solid #cfd6d3;font-family:"Bebas Neue";font-size:26px;color:#e8eaf6;background:radial-gradient(circle at 32% 28%,#252866,#030308 75%)}
+  .pill{font-size:10px;padding:4px 10px;margin-bottom:14px;letter-spacing:.12em}
+  .pill svg{width:11px;height:11px}
+  .hero h1{font-size:44px}
+  .lead{font-size:14.5px;margin:14px 0 20px;max-width:none}
+  .actions{flex-direction:column;gap:10px}
+  .actions .btn{width:100%;padding:12px 18px;font-size:14px}
+  .stats{gap:22px;margin-top:26px}
+  .stats b{font-size:26px}
+  .stats span{font-size:9.5px;letter-spacing:.14em;margin-top:4px}
+  /* seções */
+  section{padding:52px 0}
+  .head{margin-bottom:26px}
+  .head h2{font-size:32px;margin:6px 0 8px}
+  .head p{font-size:14px}
+  .eyebrow{font-size:10px}
+  .page-top{padding:30px 0 18px}
+  .page-top h1{font-size:42px;margin:6px 0 8px}
+  .page-top p{font-size:14px}
+  .crumb{margin-bottom:12px;font-size:12px}
+  /* como funciona */
+  .steps{gap:12px}
+  .step{padding:18px}
+  .ic{width:34px;height:34px;border-radius:9px;margin-bottom:14px}
+  .ic svg{width:16px;height:16px}
+  .step h3{font-size:18px}
+  .step p{font-size:13px}
+  .step .n{font-size:40px;right:14px;top:10px}
+  /* barbeiro */
+  .barber{padding:20px;gap:14px;border-radius:18px}
+  .barber .pic{width:72px;height:72px;aspect-ratio:auto;border-radius:50%;margin:0 auto;padding:0;max-width:none}
+  .barber .pic span{font-size:0}.barber .pic em{font-size:9px;margin:0}
+  .barber h3{font-size:26px}
+  .barber .role{font-size:10px;margin:4px 0 10px}
+  .barber p{font-size:13px;margin-bottom:14px}
+  .chips span{font-size:11px;padding:3px 9px}
+  /* planos */
+  .switch{margin-bottom:22px}.switch button{font-size:13px;padding:8px 14px}
+  .plans{gap:16px}
+  .plan{padding:20px;border-radius:18px}
+  .plan h3{font-size:24px}.plan .sub{font-size:12.5px;margin:4px 0 14px}
+  .price b{font-size:44px}
+  .save{font-size:11.5px;margin:10px 0 14px}
+  .feat{gap:8px;margin-bottom:18px}.feat li{font-size:13px}.feat li svg{width:15px;height:15px;flex-basis:15px}
+  .plan .btn{padding:11px 16px;font-size:14px}
+  .notes{gap:10px}.note{padding:13px;font-size:12.5px}.note svg{width:16px;height:16px;flex-basis:16px}
+  /* avaliações e FAQ */
+  .rev{padding:18px;gap:10px}.rev p{font-size:13.5px}
+  .faq-q{font-size:14px;padding:14px 16px}.faq-a p{font-size:13.5px;padding:0 16px 14px}
+  /* chamada final */
+  .cta{padding:34px 18px;border-radius:20px}
+  .cta h2{font-size:34px;margin:8px 0 10px}
+  .cta p{font-size:14px;margin-bottom:20px}
+  .cta .actions .btn{width:100%}
+  /* horários */
+  .page-first{padding-top:18px}
+  .hrs{gap:22px}
+  .hrs h1{font-size:42px}
+  .hrs .lead{margin:12px 0 16px}
+  .feats{gap:8px;grid-template-columns:1fr}
+  .feat-c{padding:13px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+  .feat-c svg{width:16px;height:16px;margin:0;grid-row:span 2}
+  .feat-c b{font-size:13.5px}.feat-c small{font-size:11.5px}
+  .week{border-radius:16px}
+  .week-h{padding:14px 16px}.week-h h3{font-size:20px}
+  .wrow{grid-template-columns:48px 1fr;gap:12px;padding:14px 16px}
+  .dbox{border-radius:10px;padding:6px 0}.dbox b{font-size:20px}.dbox small{font-size:9px}
+  .wslots{gap:6px}.wslots .slot{padding:6px 10px;font-size:12.5px;border-radius:8px}
+  .wtag{font-size:10.5px}
+  .hours-card{padding:20px;gap:16px}.hours-card h3{font-size:26px}
+  /* agendamento */
+  .book{border-radius:18px}
+  .book-body{padding:16px}
+  .svc{padding:12px 14px}.svc strong{font-size:14px}.svc small{font-size:11.5px}
+  .svc-tabs button{font-size:12.5px;padding:6px 12px}
+  .day{flex-basis:62px}.day b{font-size:22px}
+  .slot{font-size:13px;padding:8px 0}
+  /* galeria e contato */
+  .gfilters{margin-bottom:18px}.gfilters button{font-size:12.5px;padding:6px 13px}
+  .ccards{gap:10px}
+  .ccard{padding:16px;flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:12px}
+  .ccard .ic{width:34px;height:34px;margin:0}.ccard .ic svg{width:16px;height:16px}
+  .ccard b{font-size:14.5px}.ccard small{font-size:12.5px;width:100%;padding-left:46px;margin-top:-4px}
+  .ccard em{margin:6px 0 0 46px;font-size:12.5px}
+  .cform{padding:20px}.cform h3{font-size:26px}
+  .map{height:220px}
+  /* rodapé */
+  footer{padding-top:40px}
+  .foot{gap:28px}
+  .foot p{font-size:13px;margin:12px 0 14px}
+  .foot h5{font-size:10.5px;margin-bottom:12px}
+  .foot ul{gap:8px}.foot ul a,.hours li,.contact div{font-size:13px}
+  .soc a{width:36px;height:36px;border-radius:10px}
+  .bar{margin-top:32px;font-size:11.5px}
+  /* botão do WhatsApp */
+  .wa{width:46px;height:46px;right:14px;bottom:14px}.wa svg{width:23px;height:23px}
+}
