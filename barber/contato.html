@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Contato | Athos Barber</title>
 <meta name="description" content="Fale com a Athos Barber pelo WhatsApp, Instagram ou visite a barbearia em Parauapebas.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="theme-color" content="#070908">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
@@ -51,7 +51,7 @@
         <button class="btn btn-primary" type="submit"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Enviar pelo WhatsApp</button>
       </form>
       <div class="cside">
-        <div class="map"><iframe title="Mapa" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=Av.%20Bom%20Jardim%2C%20Parauapebas%20-%20PA&z=15&output=embed"></iframe></div>
+        <div class="map" id="map"><button class="map-load" id="map-load" type="button"><span class="pin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><b>Av. Bom Jardim, Parauapebas – PA</b>Toque para ver o mapa</button></div>
         <div class="hours-card small">
           <div><div class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Funcionamento</div></div>
           <ul class="hours"><li>Segunda a Quinta<b>09:00 – 19:00</b></li><li>Sexta<b>09:00 – 20:00</b></li><li>Sábado<b>08:00 – 12:00</b></li><li>Domingo<b>Fechado</b></li></ul>

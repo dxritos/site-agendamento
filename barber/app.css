@@ -1,4 +1,6 @@
 /* Base compartilhada: entrar / assinante / painel */
+@font-face{font-family:"Bebas Neue";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/bebas-neue.woff2) format("woff2")}
+@font-face{font-family:Inter;font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/inter.woff2) format("woff2")}
 :root{
   --bg:#070908; --bg-2:#0b0e0d; --card:#0f1312; --card-2:#131917; --line:#1d2624; --line-2:#28342f;
   --txt:#eef2f0; --muted:#9aa6a2; --dim:#64716d;
@@ -11,7 +13,6 @@ a{color:inherit;text-decoration:none}
 button,input,select{font-family:inherit}
 .bebas{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;letter-spacing:.01em;line-height:1}
 .eyebrow{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-.proto{background:var(--teal);color:#03140a;text-align:center;font-size:12px;font-weight:700;padding:5px 12px}
 
 .logo{display:flex;align-items:center;gap:10px}
 .mono{width:38px;height:38px;border-radius:50%;border:1.5px solid #c8d0cd;display:grid;place-items:center;font-family:"Bebas Neue";font-size:19px;color:#dfe5e3;background:radial-gradient(circle at 30% 25%,#26302d,#0b0e0d);flex:0 0 38px}

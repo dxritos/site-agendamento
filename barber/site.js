@@ -7,14 +7,12 @@ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 $('#burger').onclick=()=>{const o=$('#mnav').classList.toggle('open');$('#burger').classList.toggle('x',o);$('#burger').setAttribute('aria-expanded',o)};
 const hd=$('header');const onS=()=>hd.classList.toggle('scrolled',scrollY>10);onS();addEventListener('scroll',onS,{passive:true});
 
-/* transição suave entre páginas */
-if(!reduce)document.addEventListener('click',e=>{
-  const a=e.target.closest('a[href]');if(!a||a.target||e.metaKey||e.ctrlKey)return;
-  const href=a.getAttribute('href');if(!/^[\w-]+\.html(\?[^#]*)?(#.*)?$/.test(href))return;
-  if(href.split('#')[0]===location.pathname.split('/').pop()&&href.includes('#'))return;
-  e.preventDefault();document.body.classList.add('leaving');setTimeout(()=>location.href=href,180);
-});
-addEventListener('pageshow',e=>{if(e.persisted)document.body.classList.remove('leaving')});
+/* pré-carrega a próxima página ao passar o mouse/tocar no link (navegação instantânea) */
+const pre=new Set();
+const prefetch=href=>{const u=href.split('#')[0];if(!u||pre.has(u))return;pre.add(u);const l=document.createElement('link');l.rel='prefetch';l.href=u;document.head.appendChild(l)};
+['mouseover','touchstart','focusin'].forEach(ev=>document.addEventListener(ev,e=>{const a=e.target.closest&&e.target.closest('a[href$=".html"],a[href*=".html?"],a[href*=".html#"]');if(a)prefetch(a.getAttribute('href'))},{passive:true}));
+/* depois que a página carrega, pré-carrega as páginas do menu em segundo plano */
+addEventListener('load',()=>(window.requestIdleCallback||setTimeout)(()=>$$('#menu a').forEach(a=>prefetch(a.getAttribute('href')))));
 
 /* ===== dados (mock) ===== */
 const SVC={
@@ -143,6 +141,9 @@ if($('#gal')){
   addEventListener('keydown',e=>{if(!lb.classList.contains('open'))return;if(e.key==='Escape')lb.classList.remove('open');if(e.key==='ArrowLeft')show(cur-1);if(e.key==='ArrowRight')show(cur+1)});
 }
 
+/* ===== contato: mapa sob demanda ===== */
+if($('#map-load'))$('#map-load').onclick=()=>{$('#map').innerHTML='<iframe title="Mapa" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=Av.%20Bom%20Jardim%2C%20Parauapebas%20-%20PA&z=15&output=embed"></iframe>'};
+
 /* ===== contato: mensagem pelo WhatsApp ===== */
 if($('#cform')){
   $('#cform').onsubmit=e=>{e.preventDefault();
@@ -158,8 +159,8 @@ if($('#cform')){
 (()=>{
   if(reduce||!('IntersectionObserver' in window))return;
   const groups=['.head','.page-top>*','.steps>.step','.barber','.switch','.plans>.plan','.notes>.note','.book','.hrs>div:first-child>*','.feats>.feat-c','.week','.wrow','.gal>.gi','.cta','.foot>div','.reviews>.rev','.faq-i','.ccard','.cgrid>*','.hours-card','.gfilters'];
-  groups.forEach(sel=>$$(sel).forEach((el,i)=>{el.classList.add('rv');el.style.setProperty('--d',(Math.min(i,6)*0.07)+'s')}));
-  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const el=e.target;el.classList.add('in');io.unobserve(el);setTimeout(()=>{el.classList.remove('rv','in');el.style.removeProperty('--d')},1200)}}),{threshold:.05});
+  groups.forEach(sel=>$$(sel).forEach((el,i)=>{el.classList.add('rv');el.style.setProperty('--d',(Math.min(i,5)*0.05)+'s')}));
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const el=e.target;el.classList.add('in');io.unobserve(el);setTimeout(()=>{el.classList.remove('rv','in');el.style.removeProperty('--d')},900)}}),{threshold:.05});
   $$('.rv').forEach(el=>io.observe(el));
   addEventListener('scroll',()=>{if(innerHeight+scrollY>=document.body.scrollHeight-4)$$('.rv:not(.in)').forEach(el=>el.classList.add('in'))},{passive:true});
   $$('.stats b').forEach(b=>{
