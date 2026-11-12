@@ -153,6 +153,7 @@ if($('#svclist')){
   const q=new URLSearchParams(location.search);
   if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0];st.day=d;st.time=q.get('t');st.step=2;renderSvc();renderDays()}}
   if(q.get('cat')==='ass'){st.cat='ass';$$('#svctabs button').forEach(x=>x.classList.toggle('on',x.dataset.c==='ass'))}
+  try{const me=DB.data.clients.find(c=>c.id===localStorage.getItem('athos_me'));if(me&&$('#btel')){$('#bname').value=me.name;$('#btel').value=me.phone.replace(/(\d{2})(\d)(\d{4})(\d{4})/,'($1) $2 $3-$4')}}catch(e){}
   renderSvc();update();
 }
 

@@ -9,11 +9,11 @@
 <meta name="theme-color" content="#070908">
 <link rel="stylesheet" href="app.css">
 <style>
-header{position:sticky;top:0;z-index:40;background:rgba(7,9,8,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+header{position:sticky;top:0;z-index:40;background:rgba(7,9,8,.96);border-bottom:1px solid var(--line)}
 .hd{max-width:1100px;margin:0 auto;padding:0 16px;height:62px;display:flex;align-items:center;justify-content:space-between}
 .me{display:flex;align-items:center;gap:10px}
 .av{width:36px;height:36px;border-radius:50%;background:var(--teal);color:#03140a;font-weight:700;font-size:13px;display:grid;place-items:center}
-.me a{font-size:13px;color:var(--muted)}
+.me button{font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer}
 .layout{max-width:1100px;margin:0 auto;padding:24px 16px 110px;display:grid;grid-template-columns:210px 1fr;gap:28px}
 .side{position:sticky;top:86px;align-self:start;display:grid;gap:4px}
 .tab{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;color:var(--muted);font-weight:500;font-size:14.5px;cursor:pointer;border:0;background:none;text-align:left;width:100%}
@@ -24,11 +24,16 @@ header{position:sticky;top:0;z-index:40;background:rgba(7,9,8,.88);backdrop-filt
 h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1}
 .sub{color:var(--muted);font-size:14.5px;margin:4px 0 22px}
 .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
-.alert{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--bad-bg);border:1px solid rgba(228,109,109,.35);border-radius:16px;padding:16px 18px;margin-bottom:16px}
+.alert{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-radius:16px;padding:16px 18px;margin-bottom:16px;background:var(--bad-bg);border:1px solid rgba(228,109,109,.35)}
 .alert b{display:block;color:var(--bad)}
 .alert span{font-size:13.5px;color:#e6c3c3}
+.alert.info{background:var(--teal-bg);border-color:var(--teal-d)}
+.alert.info b{color:var(--teal-2)}.alert.info span{color:var(--muted)}
+.alert.warn{background:var(--warn-bg);border-color:rgba(227,165,79,.35)}
+.alert.warn b{color:var(--warn)}.alert.warn span{color:#e9d3b2}
 .plan{padding:22px;background:linear-gradient(140deg,#11211d,var(--card) 70%);border-color:var(--teal-d)}
 .plan.susp{background:var(--card);border-color:rgba(228,109,109,.35)}
+.plan.none{background:var(--card);border-color:var(--line)}
 .plan .top{display:flex;justify-content:space-between;align-items:center}
 .plan h2{font-family:"Bebas Neue";font-weight:400;font-size:32px;margin:12px 0 2px}
 .plan .meta{font-size:13px;color:var(--muted);margin-bottom:18px}
@@ -44,25 +49,24 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1}
 .appt .inf{flex:1;min-width:0}
 .appt strong{display:block;font-size:14.5px}
 .appt .inf span{font-size:12.5px;color:var(--muted)}
-.appt .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.appt .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .quick a{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);font-size:14px;font-weight:600}
 .quick a svg{width:20px;height:20px;color:var(--teal)}
 .quick a:hover{border-color:var(--teal-d)}
-.quick a.dis{opacity:.4;pointer-events:none}
 .perks{list-style:none;display:grid;gap:9px}
-.perks li{display:flex;justify-content:space-between;font-size:14px;color:#cfd7d4;padding-bottom:9px;border-bottom:1px dashed var(--line)}
+.perks li{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:#cfd7d4;padding-bottom:9px;border-bottom:1px dashed var(--line)}
 .perks li:last-child{border:0;padding:0}
-.perks li b{color:var(--teal-2);font-weight:600}
+.perks li b{color:var(--teal-2);font-weight:600;text-align:right}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 10px 10px}
 td{padding:13px 10px;border-top:1px solid var(--line)}
 td.r,th.r{text-align:right}
 .kv{display:grid;gap:12px}
-.kv div{display:flex;justify-content:space-between;align-items:center;font-size:14.5px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+.kv div{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14.5px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
 .kv div:last-child{border:0;padding:0}
 .kv span{color:var(--muted)}
-.plans{display:grid;gap:10px}
+.plans{display:grid;gap:10px;margin-top:16px}
 .popt{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid var(--line-2);border-radius:13px;cursor:pointer;background:var(--bg-2)}
 .popt.on{border-color:var(--teal);background:var(--teal-bg)}
 .popt strong{display:block;font-size:14.5px}
@@ -70,226 +74,208 @@ td.r,th.r{text-align:right}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .opt{border:1px solid var(--line-2);border-radius:12px;padding:12px;text-align:center;cursor:pointer;background:var(--bg-2);font-size:14px}
 .opt.on{border-color:var(--teal);background:var(--teal-bg);color:var(--teal-2)}
+.days{display:flex;gap:8px;overflow-x:auto;padding:14px 0 6px}
+.day{flex:0 0 64px;border:1px solid var(--line-2);background:var(--bg-2);border-radius:12px;padding:8px 0;text-align:center;cursor:pointer;color:var(--txt);font-family:inherit}
+.day small{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.day b{display:block;font-family:"Bebas Neue";font-weight:400;font-size:24px;line-height:1.1}
+.day.on{border-color:var(--teal);background:var(--teal-bg)}
+.day:disabled{opacity:.35;cursor:not-allowed}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:10px;max-height:200px;overflow:auto}
+.slot{border:1px solid var(--line-2);background:none;color:var(--teal-2);border-radius:10px;padding:8px 0;font-size:14px;cursor:pointer;font-family:inherit}
+.slot.on{background:var(--teal);color:#03140a;border-color:var(--teal)}
 .offer{background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:12px;padding:14px;margin-top:16px;font-size:13.5px}
 .offer b{color:var(--teal-2)}
 .pix{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px;word-break:break-all;color:var(--muted);margin:14px 0}
-.demo{position:fixed;right:16px;bottom:16px;z-index:60;background:var(--card-2);border:1px solid var(--line-2);border-radius:14px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
-.demo small{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 6px 4px}
-.demo div{display:flex;gap:6px}
-.demo button{border:1px solid var(--line-2);background:none;color:var(--muted);border-radius:8px;padding:6px 9px;font-size:12px;cursor:pointer}
-.demo button.on{border-color:var(--teal);color:var(--teal-2);background:var(--teal-bg)}
+.empty{color:var(--muted);font-size:14px}
+.demo{position:fixed;right:16px;bottom:16px;z-index:60;background:var(--card-2);border:1px solid var(--line-2);border-radius:14px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:300px}
+.demo small{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 6px 2px}
+.demo select{width:100%;background:var(--bg-2);border:1px solid var(--line-2);color:var(--txt);border-radius:9px;padding:8px;font-family:inherit;font-size:13px}
 .bnav{display:none}
 @media(max-width:860px){
   .layout{grid-template-columns:1fr;padding-top:18px}
   .side{display:none}
   .grid2{grid-template-columns:1fr}
-  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(11,14,13,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(11,14,13,.97);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
   .bnav .tab{flex-direction:column;gap:3px;font-size:11px;padding:7px 2px;justify-content:center;text-align:center;align-items:center}
-  .demo{bottom:78px;right:10px;left:10px}
-  .demo div{flex-wrap:wrap}
+  .demo{bottom:78px;right:10px;left:10px;max-width:none}
   .appt{flex-wrap:wrap}
   .appt .acts{width:100%;justify-content:flex-start;padding-left:70px}
-  .me a{display:none}
 }
 </style>
 </head>
 <body>
 <header><div class="hd">
   <a href="index.html" class="logo"><div class="mono">AB</div><b>Athos <span>Barber</span></b></a>
-  <div class="me"><a href="entrar.html">Sair</a><div class="av">LM</div></div>
+  <div class="me"><button id="logout">Sair</button><div class="av" id="av"></div></div>
 </div></header>
 
 <div class="layout">
   <nav class="side" id="side"></nav>
   <main>
-    <!-- INICIO -->
-    <section class="view on" id="v-inicio">
-      <h1 class="bebas">Fala, Lucas!</h1>
-      <p class="sub" id="greet-sub"></p>
-      <div id="alert"></div>
-      <div class="grid2">
-        <div>
-          <div class="card plan" id="plancard"></div>
-          <div class="quick">
-            <a href="index.html#agendar" id="q-book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg>Novo agendamento</a>
-            <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com o Athos</a>
-          </div>
-        </div>
-        <div style="display:grid;gap:16px;align-content:start">
-          <div class="card box"><h3>Próximos horários <a href="#" data-go="agenda">Ver todos</a></h3><div id="next-list"></div></div>
-          <div class="card box"><h3>Seus benefícios</h3><ul class="perks" id="perks"></ul></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- AGENDA -->
-    <section class="view" id="v-agenda">
-      <h1 class="bebas">Minha agenda</h1>
-      <p class="sub">Remarque ou cancele com até 2 horas de antecedência.</p>
-      <div class="card box" style="margin-bottom:16px"><h3>Próximos <a href="index.html#agendar">+ Agendar</a></h3><div id="agenda-next"></div></div>
-      <div class="card box"><h3>Histórico</h3>
-        <div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>Serviço</th><th class="r">Valor</th></tr></thead><tbody id="hist"></tbody></table></div>
-      </div>
-    </section>
-
-    <!-- PAGAMENTOS -->
-    <section class="view" id="v-pagamentos">
-      <h1 class="bebas">Pagamentos</h1>
-      <p class="sub">Cobrança automática. Você não precisa lembrar de nada.</p>
-      <div class="grid2">
-        <div class="card box"><h3>Próxima cobrança</h3><div class="kv" id="nextbill"></div></div>
-        <div class="card box"><h3>Forma de pagamento</h3><div class="kv" id="paymethod"></div><button class="btn btn-ghost btn-sm" style="margin-top:16px" data-modal="m-pay">Alterar forma de pagamento</button></div>
-      </div>
-      <div class="card box" style="margin-top:16px"><h3>Faturas</h3>
-        <div style="overflow-x:auto"><table><thead><tr><th>Referência</th><th>Vencimento</th><th>Status</th><th class="r">Valor</th></tr></thead><tbody id="bills"></tbody></table></div>
-      </div>
-    </section>
-
-    <!-- PLANO -->
-    <section class="view" id="v-plano">
-      <h1 class="bebas">Meu plano</h1>
-      <p class="sub">Troque ou cancele quando quiser, sem fidelidade.</p>
-      <div class="grid2">
-        <div class="card box"><h3>Detalhes</h3><div class="kv" id="plandetail"></div></div>
-        <div class="card box"><h3>Gerenciar</h3>
-          <div style="display:grid;gap:10px">
-            <button class="btn btn-ghost" data-modal="m-change">Trocar de plano</button>
-            <button class="btn btn-ghost" data-modal="m-day">Alterar dia de cobrança</button>
-            <button class="btn btn-ghost" data-modal="m-pay">Alterar forma de pagamento</button>
-            <button class="btn btn-danger" data-modal="m-cancel">Cancelar assinatura</button>
-          </div>
-        </div>
-      </div>
-      <div class="card box" style="margin-top:16px"><h3>Regras do plano</h3><ul class="perks" id="rules"></ul></div>
-    </section>
+    <section class="view" id="v-inicio"></section>
+    <section class="view" id="v-agenda"></section>
+    <section class="view" id="v-pagamentos"></section>
+    <section class="view" id="v-plano"></section>
   </main>
 </div>
 <nav class="bnav" id="bnav"></nav>
-
-<!-- demo switcher -->
-<div class="demo" id="demobox" hidden><small>Simular cenário</small><div id="demo">
-  <button class="on" data-s="ilim">Ilimitado ativo</button><button data-s="pack">Pacote 2x</button><button data-s="late">Pagamento pendente</button>
-</div></div>
-
-<!-- MODAIS -->
-<div class="modal" id="m-change"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Trocar de plano</h3><p>A troca vale a partir da próxima cobrança.</p>
-  <div class="plans" id="plan-opts" style="margin-top:18px"></div>
-  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Troca agendada para a próxima cobrança">Confirmar troca</button></div>
-</div></div>
-<div class="modal" id="m-day"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Dia de cobrança</h3><p>Escolha o dia do mês em que a cobrança cai.</p>
-  <div class="opts"><div class="opt">Dia 01</div><div class="opt on">Dia 07</div></div>
-  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Dia de cobrança atualizado">Salvar</button></div>
-</div></div>
-<div class="modal" id="m-pay"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Forma de pagamento</h3><p>Cobrança automática no dia escolhido.</p>
-  <div class="opts"><div class="opt on">Pix automático</div><div class="opt">Cartão de crédito</div></div>
-  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Forma de pagamento atualizada">Salvar</button></div>
-</div></div>
-<div class="modal" id="m-cancel"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Cancelar assinatura?</h3><p id="cancel-txt"></p>
-  <div class="offer">Antes de ir: que tal o <b>2 Cortes por R$ 80/mês</b>? Você continua com preço de assinante.</div>
-  <div class="mact"><button class="btn btn-ghost" data-modal="m-change">Trocar plano</button><button class="btn btn-danger" data-ok="Assinatura cancelada. Vale até o fim do ciclo.">Cancelar mesmo</button></div>
-</div></div>
-<div class="modal" id="m-pix"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Pagar com Pix</h3><p>Copie o código e pague no app do seu banco. A assinatura volta na hora.</p>
-  <div class="pix">00020126580014BR.GOV.BCB.PIX0136athosbarber-demo-0000-0000-000000000000520400005303986540520.005802BR5913ATHOS BARBER6011PARAUAPEBAS62070503***6304ABCD</div>
-  <div class="mact"><button class="btn btn-ghost" data-close>Fechar</button><button class="btn btn-primary" id="pixpaid">Copiar código</button></div>
-</div></div>
-<div class="modal" id="m-move"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Remarcar horário</h3><p>Escolha um novo horário livre.</p>
-  <div class="opts" style="grid-template-columns:repeat(3,1fr)"><div class="opt">09:30</div><div class="opt on">11:00</div><div class="opt">14:30</div><div class="opt">15:00</div><div class="opt">16:30</div><div class="opt">17:00</div></div>
-  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Horário remarcado. Confirmação enviada no WhatsApp.">Confirmar</button></div>
-</div></div>
-<div class="modal" id="m-del"><div class="mbox"><button class="x" data-close>&times;</button>
-  <h3>Cancelar horário?</h3><p>O horário fica livre para outro cliente. Se for do plano, o uso não é descontado.</p>
-  <div class="mact"><button class="btn btn-ghost" data-close>Manter</button><button class="btn btn-danger" data-ok="Horário cancelado">Cancelar horário</button></div>
-</div></div>
-
+<div class="demo" id="demobox" hidden><small>Ver como (demonstração)</small><select id="demosel"></select></div>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <div class="toast" id="toast"></div>
 
+<script src="store.js"></script>
 <script>
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const db=DB.data;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)};
 const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],MOF=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const today=new Date();today.setHours(0,0,0,0);
+const today=new Date();today.setHours(0,0,0,0);const TODAY=DB.iso(today);
+const fmtD=s=>s?s.slice(8,10)+'/'+s.slice(5,7):'—';
+const dt=s=>new Date(s+'T00:00:00');
 const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
-const nextWeekday=(from,wds)=>{let d=addD(from,1);while(!wds.includes(d.getDay()))d=addD(d,1);return d};
-const fmt=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-const nextBill=(()=>{let d=new Date(today.getFullYear(),today.getMonth(),7);if(d<=today)d=new Date(today.getFullYear(),today.getMonth()+1,7);return d})();
-const curRef=new Date(today.getFullYear(),today.getMonth(),7);
-const a1=nextWeekday(today,[1,2,3,4]), a2=nextWeekday(addD(a1,5),[1,2,3,4]);
 
-const PLANS=[{k:'ci',n:'Corte Ilimitado',p:120},{k:'cbi',n:'Corte + Barba Ilimitado',p:200},{k:'c2',n:'2 Cortes',p:80},{k:'cb2',n:'2 Cortes + 2 Barbas',p:130}];
-const S={
-  ilim:{plan:'Corte + Barba Ilimitado',price:200,status:'ok',
-    meters:[['Cortes no mês','Ilimitado',100,'ilim'],['Hidratação grátis','0 de 1',0],['Sobrancelha grátis','1 de 1',100]],
-    perks:[['Corte + barba (seg a qui)','Incluso'],['Lavagem','Inclusa'],['Sobrancelha extra','R$ 5'],['Cavanhaque','R$ 10']],
-    rules:[['Dias válidos','Segunda a quinta'],['Intervalo mínimo entre cortes','7 dias'],['Brindes do mês','1 hidratação + 1 sobrancelha'],['Saldo','Renova todo mês, não acumula']],
-    next:[[a1,'15:30','Corte + Barba','45 min','Incluso'],[a2,'16:00','Corte + Hidratação','1h','Incluso']]},
-  pack:{plan:'2 Cortes',price:80,status:'ok',
-    meters:[['Cortes no mês','1 de 2',50]],
-    perks:[['Corte (seg a qui)','2 por mês'],['Lavagem','Inclusa'],['Sobrancelha','R$ 5'],['Cavanhaque','R$ 10']],
-    rules:[['Dias válidos','Segunda a quinta'],['Cota','2 cortes por mês'],['Saldo','Renova todo mês, não acumula']],
-    next:[[a1,'15:30','Corte','45 min','Plano · 2º de 2']]},
-  late:{plan:'Corte + Barba Ilimitado',price:200,status:'late',
-    meters:[['Cortes no mês','Suspenso',0],['Hidratação grátis','0 de 1',0],['Sobrancelha grátis','0 de 1',0]],
-    perks:[['Corte + barba (seg a qui)','Suspenso'],['Lavagem','Suspensa'],['Sobrancelha extra','R$ 15'],['Cavanhaque','R$ 20']],
-    rules:[['Dias válidos','Segunda a quinta'],['Intervalo mínimo entre cortes','7 dias'],['Brindes do mês','1 hidratação + 1 sobrancelha'],['Saldo','Renova todo mês, não acumula']],
-    next:[]}
-};
-const HIST=[[addD(today,-6),'Corte + Barba','Plano'],[addD(today,-13),'Corte + Barba + Sobrancelha','Plano'],[addD(today,-20),'Corte + Barba','Plano'],[addD(today,-28),'Corte + Barba + Hidratação','Plano'],[addD(today,-34),'Cavanhaque','R$ 10,00']];
+/* ===== quem está logado ===== */
+let ME=null;try{ME=localStorage.getItem('athos_me')}catch(e){}
+const q=new URLSearchParams(location.search);
+if(q.get('como'))ME=q.get('como');
+if(!db.clients.some(c=>c.id===ME))ME='c1';                       // demonstração: abre como Lucas
+const me=()=>db.clients.find(c=>c.id===ME);
+const mySub=()=>db.subs.filter(s=>s.cid===ME).sort((a,b)=>(a.status==='off')-(b.status==='off'))[0]||null;
+const plan=id=>db.plans.find(p=>p.id===id);
+const nextBill=s=>{let d=new Date(today.getFullYear(),today.getMonth(),s.day);if(d<=today)d=new Date(today.getFullYear(),today.getMonth()+1,s.day);return DB.iso(d)};
+const act=(key,fn,desc,area)=>{DB.mutate(key,fn,desc,area,(me()||{}).name+' (cliente)');render();const m=desc.replace(/^.*?: /,'');toast(m[0].toUpperCase()+m.slice(1))};
 
-// navegação
+/* ===== modal ===== */
+function modal(html){$('#mbox').innerHTML='<button class="x" data-close>&times;</button>'+html;$('#modal').classList.add('open')}
+const closeModal=()=>$('#modal').classList.remove('open');
+document.addEventListener('click',e=>{if(e.target.closest('[data-close]')||e.target.id==='modal')closeModal();const o=e.target.closest('.opt,.popt');if(o)[...o.parentNode.children].forEach(x=>x.classList.toggle('on',x===o))});
+addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ===== navegação ===== */
 const TABS=[['inicio','Início','<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],['agenda','Agenda','<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>'],['pagamentos','Pagamentos','<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'],['plano','Meu plano','<path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"/>']];
-const tabHtml=TABS.map(([k,n,ic])=>`<button class="tab" data-go="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg>${n}</button>`).join('');
-$('#side').innerHTML=tabHtml;$('#bnav').innerHTML=tabHtml;
-function go(k){$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+k));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===k&&b.classList.contains('tab')));scrollTo(0,0)}
-document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){e.preventDefault();go(g.dataset.go)}});
+let VIEW='inicio';
+const tabHtml=()=>TABS.map(([k,n,ic])=>`<button class="tab ${k===VIEW?'on':''}" data-go="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg>${n}</button>`).join('');
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){e.preventDefault();VIEW=g.dataset.go;render();scrollTo(0,0)}});
 
-// modais
-document.addEventListener('click',e=>{
-  const m=e.target.closest('[data-modal]');if(m){$$('.modal').forEach(x=>x.classList.remove('open'));$('#'+m.dataset.modal).classList.add('open')}
-  if(e.target.closest('[data-close]')||e.target.classList.contains('modal'))$$('.modal').forEach(x=>x.classList.remove('open'));
-  const ok=e.target.closest('[data-ok]');if(ok){$$('.modal').forEach(x=>x.classList.remove('open'));toast(ok.dataset.ok)}
-  const o=e.target.closest('.opt,.popt');if(o){[...o.parentNode.children].forEach(x=>x.classList.toggle('on',x===o))}
-});
-$('#pixpaid').onclick=()=>{$$('.modal').forEach(x=>x.classList.remove('open'));toast('Código Pix copiado')};
+/* ===== dados do cliente ===== */
+function upcoming(){return db.appts.filter(a=>a.cid===ME&&a.date>=TODAY&&['conf','pend','now'].includes(a.status)).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start))}
+function history(){return db.appts.filter(a=>a.cid===ME&&['done','miss','cancel'].includes(a.status)).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start))}
+function usage(s){
+  const p=plan(s.plan),ym=TODAY.slice(0,7);
+  const used=db.appts.filter(a=>a.cid===ME&&a.plan&&a.date.slice(0,7)===ym&&!['cancel','miss'].includes(a.status)).length;
+  const m=/^(\d+)(?: \+ (\d+))?/.exec(p.quota);const total=m?(+m[1]+(+m[2]||0)):null;
+  return {used,total:total!=null?total+(s.credit||0):null,credit:s.credit||0};
+}
+const canChange=a=>{const mins=(dt(a.date)-new Date())/60000+DB.toMin(a.start);return mins>=(db.settings.cancelUntil||120)};
 
-function apptHtml([d,h,s,t,tag],full){
+/* ===== telas ===== */
+function apptHtml(a,full){
+  const d=dt(a.date),ok=canChange(a);
   return `<div class="appt"><div class="dbox"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></div>
-  <div class="inf"><strong>${s}</strong><span>${h} · ${t} · com Athos</span></div>
-  <div class="acts"><span class="chip c-ok">${tag}</span>${full?'<button class="btn btn-ghost btn-sm" data-modal="m-move">Remarcar</button><button class="btn btn-danger btn-sm" data-modal="m-del">Cancelar</button>':''}</div></div>`;
+  <div class="inf"><strong>${esc(a.svc)}</strong><span>${a.start} · ${a.dur} min · com Athos</span></div>
+  <div class="acts"><span class="chip ${a.plan?'c-ok':'c-info'}">${a.plan?'Incluso no plano':brl(a.price)}</span>${full?(ok?`<button class="btn btn-ghost btn-sm" data-move="${a.id}">Remarcar</button><button class="btn btn-danger btn-sm" data-cancel="${a.id}">Cancelar</button>`:`<span class="chip c-dim" title="Menos de ${(db.settings.cancelUntil||120)/60} h para o horário">Fale com o Athos para alterar</span>`):''}</div></div>`;
 }
-const empty=t=>`<p style="color:var(--muted);font-size:14px">${t}</p>`;
+function vInicio(){
+  const c=me(),s=mySub(),p=s&&plan(s.plan),up=upcoming();
+  let card,alert='';
+  if(!s||s.status==='off'){
+    card=`<div class="card plan none"><div class="top"><span class="eyebrow">Seu plano</span><span class="chip c-dim">${s?'Cancelado':'Sem plano'}</span></div><h2>${s?'Assinatura cancelada':'Você ainda não assina'}</h2><div class="meta">Assine e corte o mês inteiro pagando menos que o avulso.</div><button class="btn btn-primary" data-go="plano">Ver planos</button></div>`;
+  }else{
+    const u=usage(s),late=s.status==='late',paused=s.status==='paused';
+    if(late)alert=`<div class="alert"><div><b>Pagamento não identificado</b><span>A cobrança do ${esc(p.n)} não foi paga. Pague para liberar os horários do plano.</span></div><button class="btn btn-primary btn-sm" data-pix>Pagar com Pix · ${brl(p.p)}</button></div>`;
+    else if(paused)alert=`<div class="alert warn"><div><b>Assinatura pausada</b><span>Volta automaticamente em ${fmtD(s.pausedUntil)}. Nenhuma cobrança até lá.</span></div></div>`;
+    else if(s.courtesyUntil&&s.courtesyUntil>=TODAY)alert=`<div class="alert info"><div><b>Você ganhou uma cortesia</b><span>Seu plano está garantido sem cobrança até ${fmtD(s.courtesyUntil)}.</span></div></div>`;
+    else if(s.exempt)alert=`<div class="alert info"><div><b>Próxima cobrança isenta</b><span>O Athos isentou sua cobrança de ${fmtD(nextBill(s))}.</span></div></div>`;
+    const meters=[`<div class="meter"><div class="lbl"><span>${p.quota==='Ilimitado'?'Atendimentos do plano no mês':'Saldo do mês'}</span><b>${u.total!=null?`${u.used} de ${u.total}`:`${u.used} · ilimitado`}</b></div><div class="bar"><i style="width:${u.total!=null?Math.min(100,u.used/u.total*100):100}%;${late?'background:var(--bad)':''}"></i></div></div>`];
+    if(u.credit)meters.push(`<p class="hint" style="font-size:12.5px;color:var(--teal-2)">${u.credit>0?'+':''}${u.credit} uso(s) ajustado(s) pelo Athos neste mês</p>`);
+    card=`<div class="card plan ${late?'susp':''}"><div class="top"><span class="eyebrow">Seu plano</span><span class="chip ${late?'c-bad':paused?'c-warn':'c-ok'}">${late?'Suspenso':paused?'Pausado':'Ativo'}</span></div>
+      <h2>${esc(p.n)}</h2><div class="meta">${brl(p.p)}/mês · ${late?'cobrança em aberto':paused?'pausado até '+fmtD(s.pausedUntil):'próxima cobrança '+fmtD(nextBill(s))+' · '+esc(s.method)}</div><div class="meters">${meters.join('')}</div></div>`;
+  }
+  const perks=[];if(s&&s.status!=='off'&&p){perks.push([`Válido em`,p.days.map(d=>WD[d]).join(', ')]);if(p.perks&&p.perks!=='—')perks.push(['Brindes do mês',p.perks]);if(p.gap)perks.push(['Intervalo entre cortes',p.gap+' dias'])}
+  db.services.filter(x=>x.on&&x.mp!=null).forEach(x=>perks.push([x.n+(s&&s.status==='ok'?'':' (assinante)'),brl(x.mp)]));
+  return `<h1>Fala, ${esc((c.name||'').split(' ')[0])}!</h1><p class="sub">${up.length?`Seu próximo horário é ${WD[dt(up[0].date).getDay()].toLowerCase()}, ${fmtD(up[0].date)} às ${up[0].start}.`:'Você não tem horários marcados.'}</p>${alert}
+  <div class="grid2"><div>${card}<div class="quick"><a href="agendar.html${s&&s.status==='ok'?'?cat=ass':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg>Novo agendamento</a><a href="https://wa.me/${db.content.wa}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com o Athos</a></div></div>
+  <div style="display:grid;gap:16px;align-content:start"><div class="card box"><h3>Próximos horários <a href="#" data-go="agenda">Ver todos</a></h3>${up.slice(0,2).map(a=>apptHtml(a,false)).join('')||'<p class="empty">Nenhum horário marcado.</p>'}</div>
+  <div class="card box"><h3>${s&&s.status==='ok'?'Seus benefícios':'Benefícios de assinante'}</h3><ul class="perks">${perks.map(([a,b])=>`<li>${esc(a)}<b>${esc(b)}</b></li>`).join('')}</ul></div></div></div>`;
+}
+function vAgenda(){
+  const up=upcoming(),hist=history();const ST={done:['Concluído','c-dim'],miss:['Faltou','c-bad'],cancel:['Cancelado','c-dim']};
+  return `<h1>Minha agenda</h1><p class="sub">Remarque ou cancele com até ${(db.settings.cancelUntil||120)/60} h de antecedência.</p>
+  <div class="card box" style="margin-bottom:16px"><h3>Próximos <a href="agendar.html">+ Agendar</a></h3>${up.map(a=>apptHtml(a,true)).join('')||'<p class="empty">Nenhum horário marcado.</p>'}</div>
+  <div class="card box"><h3>Histórico</h3><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>Serviço</th><th>Status</th><th class="r">Valor</th></tr></thead><tbody>${hist.map(a=>`<tr><td>${fmtD(a.date)}</td><td>${esc(a.svc)}</td><td><span class="chip ${ST[a.status][1]}">${ST[a.status][0]}</span></td><td class="r">${a.plan?'<span class="chip c-ok">Plano</span>':brl(a.price)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Sem histórico ainda.</td></tr>'}</tbody></table></div></div>`;
+}
+function vPagamentos(){
+  const s=mySub(),p=s&&plan(s.plan),tx=db.tx.filter(t=>t.cid===ME).sort((a,b)=>b.date.localeCompare(a.date));const TS={ok:['Pago','c-ok'],failed:['Em aberto','c-bad'],refunded:['Estornado','c-warn']};
+  const next=!s||s.status==='off'?'<p class="empty">Sem assinatura ativa.</p>':s.status==='late'?`<div class="kv"><div><span>Fatura em aberto</span><b style="color:var(--bad)">${brl(p.p)}</b></div><div><span>Ação</span><button class="btn btn-primary btn-sm" data-pix>Pagar agora</button></div></div>`
+    :`<div class="kv"><div><span>Valor</span><b>${s.exempt||(s.courtesyUntil&&s.courtesyUntil>=nextBill(s))?'<s style="color:var(--dim)">'+brl(p.p)+'</s> R$ 0,00':brl(p.p)}</b></div><div><span>Data</span><b>${s.status==='paused'?'após a pausa':dt(nextBill(s)).getDate()+' de '+MOF[dt(nextBill(s)).getMonth()]}</b></div><div><span>Plano</span><b>${esc(p.n)}</b></div></div>`;
+  return `<h1>Pagamentos</h1><p class="sub">Cobrança automática. Você não precisa lembrar de nada.</p>
+  <div class="grid2"><div class="card box"><h3>Próxima cobrança</h3>${next}</div><div class="card box"><h3>Forma de pagamento</h3>${s&&s.status!=='off'?`<div class="kv"><div><span>Método</span><b>${esc(s.method)}</b></div><div><span>Dia de cobrança</span><b>Todo dia ${String(s.day).padStart(2,'0')}</b></div></div><button class="btn btn-ghost btn-sm" style="margin-top:16px" data-m="pay">Alterar forma de pagamento</button>`:'<p class="empty">—</p>'}</div></div>
+  <div class="card box" style="margin-top:16px"><h3>Recibos</h3><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Status</th><th class="r">Valor</th></tr></thead><tbody>${tx.map(t=>`<tr><td>${fmtD(t.date)}</td><td>${esc(t.desc)}</td><td><span class="chip ${TS[t.status][1]}">${TS[t.status][0]}</span></td><td class="r">${brl(t.value)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Nenhum pagamento ainda.</td></tr>'}</tbody></table></div></div>`;
+}
+function vPlano(){
+  const s=mySub(),p=s&&s.status!=='off'&&plan(s.plan);
+  if(!p)return `<h1>Planos</h1><p class="sub">Escolha um plano. A cobrança é automática e você cancela quando quiser.</p><div class="card box"><div class="plans" style="margin:0">${db.plans.filter(x=>x.on).map((x,i)=>`<div class="popt ${i===1?'on':''}" data-pid="${x.id}"><div><strong>${esc(x.n)}</strong><small>${x.days.map(d=>WD[d]).join(', ')} · ${esc(x.quota)}${x.perks&&x.perks!=='—'?' · '+esc(x.perks):''}</small></div><b>${brl(x.p)}</b></div>`).join('')}</div><div class="opts"><div class="opt on">Pix automático</div><div class="opt">Cartão</div></div><button class="btn btn-primary" style="margin-top:16px" data-subscribe>Assinar agora</button></div>`;
+  const rules=[['Dias válidos',p.days.map(d=>WD[d]).join(', ')],['Cota',p.quota],['Intervalo mínimo',p.gap?p.gap+' dias':'Sem intervalo'],['Brindes',p.perks==='—'?'Nenhum':p.perks],['Saldo','Renova todo mês, não acumula']];
+  return `<h1>Meu plano</h1><p class="sub">Troque ou cancele quando quiser, sem fidelidade.</p>
+  <div class="grid2"><div class="card box"><h3>Detalhes</h3><div class="kv"><div><span>Plano</span><b>${esc(p.n)}</b></div><div><span>Valor</span><b>${brl(p.p)}/mês</b></div><div><span>Status</span><span class="chip ${s.status==='late'?'c-bad':s.status==='paused'?'c-warn':'c-ok'}">${{ok:'Ativo',late:'Suspenso',paused:'Pausado'}[s.status]}</span></div><div><span>Assinante desde</span><b>${esc(s.since)}</b></div></div></div>
+  <div class="card box"><h3>Gerenciar</h3><div style="display:grid;gap:10px"><button class="btn btn-ghost" data-m="change">Trocar de plano</button><button class="btn btn-ghost" data-m="day">Alterar dia de cobrança</button><button class="btn btn-ghost" data-m="pay">Alterar forma de pagamento</button><button class="btn btn-danger" data-m="cancel">Cancelar assinatura</button></div></div></div>
+  <div class="card box" style="margin-top:16px"><h3>Regras do plano</h3><ul class="perks">${rules.map(([a,b])=>`<li>${a}<b>${esc(b)}</b></li>`).join('')}</ul></div>`;
+}
 
-function render(k){
-  const s=S[k], late=s.status==='late';
-  $('#greet-sub').textContent=late?'Sua assinatura está suspensa até o pagamento.':`Seu próximo horário é ${s.next.length?`${WD[s.next[0][0].getDay()].toLowerCase()}, ${fmt(s.next[0][0])} às ${s.next[0][1]}`:'—'}.`;
-  $('#alert').innerHTML=late?`<div class="alert"><div><b>Pagamento não identificado</b><span>A cobrança de ${fmt(curRef)} não foi paga. Pague para liberar seus horários do plano.</span></div><button class="btn btn-primary btn-sm" data-modal="m-pix">Pagar com Pix · R$ ${s.price},00</button></div>`:'';
-  $('#plancard').className='card plan'+(late?' susp':'');
-  $('#plancard').innerHTML=`<div class="top"><span class="eyebrow">Seu plano</span><span class="chip ${late?'c-bad':'c-ok'}">${late?'Suspenso':'Ativo'}</span></div>
-    <h2>${s.plan}</h2><div class="meta">R$ ${s.price},00/mês · ${late?'vencida em '+fmt(curRef):'próxima cobrança '+fmt(nextBill)+' · Pix automático'}</div>
-    <div class="meters">${s.meters.map(([l,v,p])=>`<div class="meter"><div class="lbl"><span>${l}</span><b>${v}</b></div><div class="bar"><i style="width:${p}%;${late?'background:var(--bad)':''}"></i></div></div>`).join('')}</div>`;
-  $('#q-book').classList.toggle('dis',false);
-  $('#next-list').innerHTML=s.next.length?s.next.slice(0,2).map(a=>apptHtml(a,false)).join(''):empty(late?'Horários do plano bloqueados até o pagamento. Você ainda pode agendar avulso.':'Nenhum horário marcado.');
-  $('#agenda-next').innerHTML=s.next.length?s.next.map(a=>apptHtml(a,true)).join(''):empty('Nenhum horário marcado.');
-  $('#perks').innerHTML=s.perks.map(([a,b])=>`<li>${a}<b style="${late?'color:var(--muted)':''}">${b}</b></li>`).join('');
-  $('#rules').innerHTML=s.rules.map(([a,b])=>`<li>${a}<b>${b}</b></li>`).join('');
-  $('#hist').innerHTML=HIST.map(([d,sv,v])=>`<tr><td>${fmt(d)}</td><td>${sv}</td><td class="r">${v==='Plano'?'<span class="chip c-ok">Plano</span>':v}</td></tr>`).join('');
-  $('#nextbill').innerHTML=late?`<div><span>Fatura em aberto</span><b style="color:var(--bad)">R$ ${s.price},00</b></div><div><span>Venceu em</span><b>${fmt(curRef)}</b></div><div><span>Ação</span><button class="btn btn-primary btn-sm" data-modal="m-pix">Pagar agora</button></div>`
-    :`<div><span>Valor</span><b>R$ ${s.price},00</b></div><div><span>Data</span><b>${nextBill.getDate()} de ${MOF[nextBill.getMonth()]}</b></div><div><span>Plano</span><b>${s.plan}</b></div>`;
-  $('#paymethod').innerHTML=`<div><span>Método</span><b>Pix automático</b></div><div><span>Dia de cobrança</span><b>Todo dia 07</b></div><div><span>Banco autorizado</span><b>Nubank</b></div>`;
-  const bills=[0,1,2,3].map(i=>new Date(curRef.getFullYear(),curRef.getMonth()-i,7));
-  $('#bills').innerHTML=bills.map((d,i)=>`<tr><td style="text-transform:capitalize">${MOF[d.getMonth()]}</td><td>${fmt(d)}</td><td>${i===0&&late?'<span class="chip c-bad">Em aberto</span>':'<span class="chip c-ok">Pago</span>'}</td><td class="r">R$ ${s.price},00</td></tr>`).join('');
-  $('#plandetail').innerHTML=`<div><span>Plano</span><b>${s.plan}</b></div><div><span>Valor</span><b>R$ ${s.price},00/mês</b></div><div><span>Status</span><span class="chip ${late?'c-bad':'c-ok'}">${late?'Suspenso':'Ativo'}</span></div><div><span>Assinante desde</span><b>março de 2026</b></div>`;
-  $('#plan-opts').innerHTML=PLANS.map(p=>`<div class="popt ${p.n===s.plan?'on':''}"><div><strong>${p.n}</strong><small>${p.n===s.plan?'Plano atual':'seg a qui'}</small></div><b>R$ ${p.p}</b></div>`).join('');
-  $('#cancel-txt').textContent=`Seus benefícios continuam até ${fmt(late?curRef:nextBill)}. Depois disso, nenhuma nova cobrança é feita.`;
+/* ===== ações (gravam no mesmo banco que o painel usa) ===== */
+document.addEventListener('click',e=>{
+  const t=e.target;
+  const cn=t.closest('[data-cancel]');if(cn){const a=db.appts.find(x=>x.id===cn.dataset.cancel);
+    modal(`<h3>Cancelar horário?</h3><p>${esc(a.svc)} · ${fmtD(a.date)} às ${a.start}. O horário fica livre para outro cliente${a.plan?' e o uso do plano não é descontado':''}.</p><div class="mact"><button class="btn btn-ghost" data-close>Manter</button><button class="btn btn-danger" id="ok">Cancelar horário</button></div>`);
+    $('#ok').onclick=()=>{closeModal();act('appts',L=>{L.find(x=>x.id===a.id).status='cancel'},`${me().name}: horário de ${fmtD(a.date)} ${a.start} cancelado pelo cliente`,'Agenda')}}
+  const mv=t.closest('[data-move]');if(mv)moveAppt(mv.dataset.move);
+  if(t.closest('[data-pix]')){const s=mySub(),p=plan(s.plan);
+    modal(`<h3>Pagar com Pix</h3><p>Copie o código e pague no app do banco. A assinatura volta na hora.</p><div class="pix">00020126580014BR.GOV.BCB.PIX0136athosbarber-${s.id}520400005303986540${p.p.toFixed(2)}5802BR5913ATHOS BARBER6011PARAUAPEBAS6304ABCD</div><div class="mact"><button class="btn btn-ghost" id="copy">Copiar código</button><button class="btn btn-primary" id="paid">Já paguei</button></div>`);
+    $('#copy').onclick=()=>{try{navigator.clipboard.writeText($('.pix').textContent)}catch(e){}toast('Código Pix copiado')};
+    $('#paid').onclick=()=>{closeModal();DB.mutate('tx',L=>{const x=L.find(y=>y.cid===ME&&y.status==='failed');if(x){x.status='ok';x.method='Pix'}else L.unshift({id:DB.uid(),date:TODAY,cid:ME,desc:'Plano '+p.n,method:'Pix',value:p.p,kind:'plano',status:'ok'})},`${me().name}: pagou ${brl(p.p)} via Pix`,'Financeiro',me().name+' (cliente)');
+      act('subs',L=>{L.find(x=>x.id===s.id).status='ok'},`${me().name}: assinatura reativada após pagamento`,'Assinaturas')}}
+  if(t.closest('[data-subscribe]')){const pid=($('.popt.on')||{}).dataset.pid,met=$('.opts .opt.on').textContent,p=plan(pid);
+    DB.mutate('tx',L=>L.unshift({id:DB.uid(),date:TODAY,cid:ME,desc:'Plano '+p.n,method:met,value:p.p,kind:'plano',status:'ok'}),`${me().name}: primeira cobrança de ${brl(p.p)}`,'Financeiro',me().name+' (cliente)');
+    act('subs',L=>{const old=L.find(x=>x.cid===ME);const v={plan:pid,status:'ok',used:0,credit:0,day:today.getDate()<=4?1:7,method:met,pausedUntil:null,courtesyUntil:null,exempt:false};if(old)Object.assign(old,v);else L.push({id:'a'+DB.uid(),cid:ME,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2),...v})},`${me().name}: assinou o plano ${p.n}`,'Assinaturas');VIEW='inicio';render()}
+  const m=t.closest('[data-m]');if(m)M[m.dataset.m]();
+});
+const M={
+  change(){const s=mySub();modal(`<h3>Trocar de plano</h3><p>A troca vale a partir da próxima cobrança.</p><div class="plans">${db.plans.filter(x=>x.on).map(x=>`<div class="popt ${x.id===s.plan?'on':''}" data-pid="${x.id}"><div><strong>${esc(x.n)}</strong><small>${x.id===s.plan?'Plano atual':esc(x.quota)}</small></div><b>${brl(x.p)}</b></div>`).join('')}</div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Confirmar troca</button></div>`);
+    $('#ok').onclick=()=>{const np=$('.popt.on').dataset.pid;closeModal();if(np===s.plan)return;act('subs',L=>{L.find(x=>x.id===s.id).plan=np},`${me().name}: trocou de ${plan(s.plan).n} para ${plan(np).n}`,'Assinaturas')}},
+  day(){const s=mySub();modal(`<h3>Dia de cobrança</h3><p>Escolha o dia do mês em que a cobrança cai.</p><div class="opts"><div class="opt ${s.day===1?'on':''}" data-d="1">Dia 01</div><div class="opt ${s.day===7?'on':''}" data-d="7">Dia 07</div></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Salvar</button></div>`);
+    $('#ok').onclick=()=>{const d=+$('.opt.on').dataset.d;closeModal();act('subs',L=>{L.find(x=>x.id===s.id).day=d},`${me().name}: dia de cobrança alterado para ${String(d).padStart(2,'0')}`,'Assinaturas')}},
+  pay(){const s=mySub();modal(`<h3>Forma de pagamento</h3><p>Cobrança automática no dia escolhido.</p><div class="opts"><div class="opt ${s.method==='Pix automático'?'on':''}">Pix automático</div><div class="opt ${s.method==='Cartão'?'on':''}">Cartão</div></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Salvar</button></div>`);
+    $('#ok').onclick=()=>{const v=$('.opt.on').textContent;closeModal();act('subs',L=>{L.find(x=>x.id===s.id).method=v},`${me().name}: forma de pagamento alterada para ${v}`,'Assinaturas')}},
+  cancel(){const s=mySub(),alt=db.plans.filter(x=>x.on&&x.p<plan(s.plan).p).sort((a,b)=>a.p-b.p)[0];
+    modal(`<h3>Cancelar assinatura?</h3><p>Seus benefícios continuam até ${fmtD(nextBill(s))}. Depois disso, nenhuma nova cobrança é feita.</p>${alt?`<div class="offer">Antes de ir: que tal o <b>${esc(alt.n)} por ${brl(alt.p)}/mês</b>? Você continua com preço de assinante.</div>`:''}<div class="mact">${alt?'<button class="btn btn-ghost" id="alt">Trocar de plano</button>':'<button class="btn btn-ghost" data-close>Voltar</button>'}<button class="btn btn-danger" id="ok">Cancelar mesmo</button></div>`);
+    if($('#alt'))$('#alt').onclick=()=>M.change();
+    $('#ok').onclick=()=>{closeModal();act('subs',L=>{L.find(x=>x.id===s.id).status='off'},`${me().name}: cancelou a assinatura ${plan(s.plan).n}`,'Assinaturas')}},
+};
+function moveAppt(id){
+  const a=db.appts.find(x=>x.id===id);const s=mySub(),p=s&&plan(s.plan);
+  const days=Array.from({length:14},(_,i)=>addD(today,i)).filter(d=>DB.freeSlots(DB.iso(d),a.dur).length&&(!a.plan||(p&&p.days.includes(d.getDay()))));
+  let sel=days[0]?DB.iso(days[0]):null,time=null;
+  const draw=()=>{$('#mv-days').innerHTML=days.map(d=>{const ds=DB.iso(d);return `<button class="day ${ds===sel?'on':''}" data-ds="${ds}"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`}).join('');
+    const sl=sel?DB.freeSlots(sel,a.dur):[];$('#mv-slots').innerHTML=sl.map(t=>`<button class="slot ${t===time?'on':''}" data-t="${t}">${t}</button>`).join('')||'<p class="empty">Sem horários livres.</p>';
+    $$('#mv-days .day').forEach(b=>b.onclick=()=>{sel=b.dataset.ds;time=null;draw()});$$('#mv-slots .slot').forEach(b=>b.onclick=()=>{time=b.dataset.t;draw()});$('#ok').disabled=!time;$('#ok').style.opacity=time?1:.5};
+  modal(`<h3>Remarcar horário</h3><p>${esc(a.svc)} · hoje marcado para ${fmtD(a.date)} às ${a.start}.${a.plan?' Só aparecem os dias válidos do seu plano.':''}</p><div class="days" id="mv-days"></div><div class="slots" id="mv-slots"></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Confirmar</button></div>`);
+  draw();
+  $('#ok').onclick=()=>{if(!time)return;closeModal();act('appts',L=>{const x=L.find(y=>y.id===id);x.date=sel;x.start=time;x.status='conf'},`${me().name}: remarcou de ${fmtD(a.date)} ${a.start} para ${fmtD(sel)} ${time}`,'Agenda')};
 }
-$$('#demo button').forEach(b=>b.onclick=()=>{$$('#demo button').forEach(x=>x.classList.toggle('on',x===b));render(b.dataset.s)});
-if(new URLSearchParams(location.search).has('demo'))$('#demobox').hidden=false;
-render('ilim');go('inicio');
+
+/* ===== render ===== */
+const VIEWS={inicio:vInicio,agenda:vAgenda,pagamentos:vPagamentos,plano:vPlano};
+function render(){
+  const c=me();$('#av').textContent=(c.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  $('#side').innerHTML=tabHtml();$('#bnav').innerHTML=tabHtml();
+  $$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+VIEW));$('#v-'+VIEW).innerHTML=VIEWS[VIEW]();
+}
+$('#logout').onclick=()=>{try{localStorage.removeItem('athos_me')}catch(e){}location.href='entrar.html'};
+if(q.has('demo')){$('#demobox').hidden=false;$('#demosel').innerHTML=db.clients.map(c=>{const s=db.subs.find(x=>x.cid===c.id);return `<option value="${c.id}" ${c.id===ME?'selected':''}>${esc(c.name)}${s?' · '+({ok:'ativo',late:'pendente',paused:'pausado',off:'cancelado'})[s.status]:' · sem plano'}</option>`}).join('');
+  $('#demosel').onchange=e=>{ME=e.target.value;try{localStorage.setItem('athos_me',ME)}catch(x){}VIEW='inicio';render()}}
+render();
 </script>
 </body>
 </html>

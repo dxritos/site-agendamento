@@ -89,6 +89,7 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-
   </div>
 </main>
 <div class="toast" id="toast"></div>
+<script src="store.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -113,7 +114,11 @@ ins.forEach((el,i)=>{
   el.onpaste=e=>{const v=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(v){e.preventDefault();v.split('').forEach((c,j)=>ins[j].value=c);if(v.length===6)$('#verify').click()}};
 });
 $('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('err');$('#e2').textContent='Digite os 6 dígitos.';return}
-  $('#verify').textContent='Entrando...';setTimeout(()=>location.href='assinante.html',500)};
+  $('#verify').textContent='Entrando...';
+  const phone=$('#tel').value.replace(/\D/g,'');let c=DB.data.clients.find(x=>x.phone===phone);
+  if(!c){c={id:'c'+DB.uid(),name:'Novo cliente',phone,notes:'',blocked:false,misses:0,since:['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][new Date().getMonth()]+'/'+String(new Date().getFullYear()).slice(2)};DB.mutate('clients',L=>L.push(c),'Cliente novo criou conta pelo site','Clientes','Site')}
+  try{localStorage.setItem('athos_me',c.id)}catch(e){}
+  setTimeout(()=>location.href='assinante.html',400)};
 $('#change').onclick=()=>{$('#s2').classList.remove('on');$('#s1').classList.add('on');ins.forEach(x=>x.value='')};
 $('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};
 // equipe: e-mail + senha
