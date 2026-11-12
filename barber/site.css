@@ -451,3 +451,4 @@ a.slot{display:inline-block;text-align:center}
 .notice{background:linear-gradient(90deg,#0c9f6c,#34d985);color:#03140a;text-align:center;font-size:13.5px;font-weight:600;padding:8px 16px}
 .berr{color:#e46d6d;font-size:13px;min-height:0;margin:0 0 8px}
 .berr:empty{display:none}
+input,select,textarea{font-family:inherit}
