@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horários disponíveis | Athos Barber</title>
+<meta name="description" content="Veja os horários livres da semana e agende com o Athos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a href="index.html" class="logo"><div class="mono">AB</div><b>Athos <span>Barber</span></b></a>
+    <nav class="menu" id="menu"><a href="agendar.html">Agendar</a><a href="horarios.html" class="on" aria-current="page">Horários</a><a href="galeria.html">Galeria</a><a href="contato.html">Contato</a></nav>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="entrar.html" class="btn btn-ghost btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>Entrar</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><i></i><i></i><i></i></button>
+    </div>
+  </div>
+  <nav class="mnav" id="mnav"><a href="agendar.html">Agendar</a><a href="horarios.html" class="on" aria-current="page">Horários</a><a href="galeria.html">Galeria</a><a href="contato.html">Contato</a><a href="entrar.html">Entrar</a></nav>
+</header>
+
+<div class="crumb-wrap wrap"><div class="crumb"><a href="index.html">Início</a><span>/</span>Horários</div></div>
+<!-- HORARIOS -->
+<section class="glow page-first" id="horarios">
+  <div class="wrap hrs">
+    <div>
+      <div class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Agenda em tempo real</div>
+      <h2 class="bebas">Horários<em>disponíveis</em></h2>
+      <p class="lead">Veja as próximas janelas livres antes de agendar. Clicou no horário, ele já vem preenchido no agendamento.</p>
+      <div class="feats">
+        <div class="feat-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><b>Janelas livres</b><small>próximos 7 dias</small></div>
+        <div class="feat-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>Horário garantido</b><small>sem marcação dupla</small></div>
+        <div class="feat-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><b>Pagamento seguro</b><small>Pix ou cartão</small></div>
+      </div>
+    </div>
+    <div class="week">
+      <div class="week-h"><div><div class="eyebrow">Próximos 7 dias</div><h3 class="bebas">Escolha seu melhor horário</h3></div><a href="agendar.html" class="btn btn-primary btn-sm">Agendar</a></div>
+      <div id="week"></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="hours-card">
+      <div><div class="eyebrow">Funcionamento</div><h3 class="bebas">Horário da barbearia</h3><p>Planos valem de segunda a quinta. Sexta e sábado: atendimento avulso.</p></div>
+      <ul class="hours big">
+        <li>Segunda a Quinta<b>09:00 – 19:00</b></li><li>Sexta<b>09:00 – 20:00</b></li><li>Sábado<b>08:00 – 12:00</b></li><li>Domingo<b>Fechado</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="padding-top:20px">
+  <div class="wrap">
+    <div class="cta">
+      <div class="eyebrow">Pronto para o próximo corte?</div>
+      <h2 class="bebas">Agende seu horário</h2>
+      <p>Escolha o serviço e o melhor horário. Leva menos de um minuto.</p>
+      <div class="actions"><a href="agendar.html" class="btn btn-primary">Agendar agora <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a href="index.html#planos" class="btn btn-ghost">Conhecer o Clube</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER / CONTATO -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a href="index.html" class="logo"><div class="mono">AB</div><b>Athos <span>Barber</span></b></a>
+        <p>Corte, barba e estilo com precisão. Agende online ou assine o Clube Athos.</p>
+        <div class="soc">
+          <a href="https://instagram.com/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg></a>
+          <a href="https://wa.me/5594981248772" target="_blank" rel="noopener" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h5>Navegação</h5>
+        <ul><li><a href="agendar.html">Agendar horário</a></li><li><a href="horarios.html">Horários disponíveis</a></li><li><a href="index.html#planos">Planos</a></li><li><a href="galeria.html">Galeria</a></li><li><a href="contato.html">Contato</a></li><li><a href="entrar.html">Entrar no portal</a></li><li><a href="#">Política de Privacidade</a></li></ul>
+      </div>
+      <div>
+        <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Horário de funcionamento</h5>
+        <ul class="hours">
+          <li>Segunda a Quinta<b>09:00 – 19:00</b></li>
+          <li>Sexta<b>09:00 – 20:00</b></li>
+          <li>Sábado<b>08:00 – 12:00</b></li>
+          <li>Domingo<b>Fechado</b></li>
+        </ul>
+        <div class="contact">
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Av. Bom Jardim, Parauapebas – PA</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>(94) 98124-8772</div>
+        </div>
+      </div>
+    </div>
+    <div class="bar"><span>© 2026 Athos Barber. Todos os direitos reservados.</span></div>
+  </div>
+</footer>
+
+<a href="https://wa.me/5594981248772" target="_blank" rel="noopener" class="wa" aria-label="WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></a>
+
+<script src="site.js"></script>
+</body>
+</html>
