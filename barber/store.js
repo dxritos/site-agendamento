@@ -1,7 +1,7 @@
-/* Athos Barber — "banco de dados" do protótipo (salvo no navegador).
+/* Farias Barbearia — "banco de dados" do protótipo (salvo no navegador).
    Compartilhado entre o site e o painel: o que o admin altera aparece no site. */
 (function(){
-const KEY='athos_db_v1', IMGKEY='athos_img_v1';
+const KEY='farias_db_v1', IMGKEY='farias_img_v1';
 const pad=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const toMin=s=>+s.slice(0,2)*60+ +s.slice(3,5);
@@ -13,10 +13,10 @@ function defaults(){
   const today=new Date();today.setHours(0,0,0,0);
   const d={v:1,created:Date.now(),
     content:{notice_on:false,notice:'Fechado no feriado de 20/11. Agende para outro dia!',
-      hero_tag:'Barbearia em Parauapebas',hero_t1:'Visual em dia',hero_t2:'o mês inteiro.',
-      hero_lead:'Corte, barba e acabamento na navalha. Agende em segundos ou assine o Clube Athos e corte quantas vezes quiser por um valor fixo.',
+      hero_tag:'Barbearia na sua cidade',hero_t1:'Visual em dia',hero_t2:'o mês inteiro.',
+      hero_lead:'Corte, barba e acabamento na navalha. Agende em segundos ou assine o Clube Farias e corte quantas vezes quiser por um valor fixo.',
       about:'Especialista em fade e acabamento na navalha. Agenda individual e em tempo real — você escolhe o horário direto com ele.',
-      wa:'5594981248772',phone:'(94) 98124-8772',address:'Av. Bom Jardim, Parauapebas – PA',instagram:'athosbarber'},
+      wa:'5500900000000',phone:'(00) 90000-0000',address:'Rua das Tesouras, 123 – Centro',instagram:'fariasbarbearia'},
     hours:{0:null,1:['09:00','19:00'],2:['09:00','19:00'],3:['09:00','19:00'],4:['09:00','19:00'],5:['09:00','20:00'],6:['08:00','12:00']},
     lunch:['12:00','13:00'],
     holidays:[{id:uid(),date:'2026-11-20',name:'Consciência Negra'},{id:uid(),date:'2026-12-25',name:'Natal'}],
@@ -46,19 +46,17 @@ function defaults(){
       {id:uid(),name:'Lucas M.',info:'Assinante · Corte + Barba',text:'Assinei o ilimitado e corto toda semana. Agendo pelo celular em segundos e nunca mais esperei.'},
       {id:uid(),name:'Pedro H.',info:'Cliente',text:'Melhor fade da cidade. Pontual, caprichoso no acabamento e o ambiente é top.'},
       {id:uid(),name:'Gabriel S.',info:'Assinante · Corte Ilimitado',text:'O pagamento cai sozinho no Pix. Só chego, sento e corto. Prático demais.'}],
-    gallery:[['cortes','Low fade','Acabamento na navalha'],['cortes','Taper','Clássico e alinhado'],['barba','Barba completa','Desenho e contorno'],['cortes','Mid fade','Com risco'],
-      ['espaco','A barbearia','Av. Bom Jardim, Parauapebas'],['cortes','Pigmentação','Mais definição'],['barba','Barba e bigode','Alinhamento fino'],['cortes','Social','Tesoura e máquina'],
-      ['espaco','A cadeira','Onde a mágica acontece'],['cortes','Moicano disfarçado','Volume no topo'],['barba','Cavanhaque','Desenho preciso'],['cortes','Corte infantil','Paciência e capricho']]
-      .map(([cat,t,s])=>({id:uid(),cat,t,s,img:null})),
+    gallery:[['cortes','Low fade','Acabamento na navalha','Low fade de perfil, mostrando a transição na nuca e o acabamento na navalha.'],['cortes','Taper','Clássico e alinhado','Taper fade de lado, com pezinho e costeleta bem definidos.'],['barba','Barba completa','Desenho e contorno','Barba desenhada, de frente, com as linhas do rosto e do pescoço marcadas.'],['cortes','Mid fade','Com risco','Mid fade com risco lateral feito na navalha, visto de lado.'],['espaco','A barbearia','Rua das Tesouras, 123','Fachada da barbearia de dia, com o letreiro e a porta de entrada.'],['cortes','Pigmentação','Mais definição','Antes e depois da pigmentação, mostrando o contorno mais escuro e definido.'],['barba','Barba e bigode','Alinhamento fino','Close de perfil do bigode e da barba alinhados.'],['cortes','Social','Tesoura e máquina','Corte social na tesoura, cliente de frente com o cabelo penteado.'],['espaco','A cadeira','Onde a mágica acontece','A cadeira de barbeiro com as ferramentas na bancada e a luz do ambiente.'],['cortes','Moicano disfarçado','Volume no topo','Moicano disfarçado de costas, mostrando o volume no topo.'],['barba','Cavanhaque','Desenho preciso','Cavanhaque de frente, com o contorno simétrico.'],['cortes','Corte infantil','Paciência e capricho','Criança na cadeira depois do corte, sorrindo (com autorização dos pais).']]
+      .map(([cat,t,s,hint])=>({id:uid(),cat,t,s,hint,img:null})),
     messages:{
-      code:{on:true,lock:true,name:'Código de acesso',txt:'Seu código de acesso à Athos Barber é {codigo}. Não compartilhe com ninguém.'},
-      confirm:{on:true,name:'Confirmação de agendamento',txt:'Fala, {nome}! Horário confirmado: {servico} em {data} às {hora}. Até lá! — Athos Barber'},
-      r24:{on:true,name:'Lembrete 24 h antes',txt:'Oi, {nome}! Lembrete: amanhã às {hora} você tem {servico} com o Athos. Precisa remarcar? {link}'},
+      code:{on:true,lock:true,name:'Código de acesso',txt:'Seu código de acesso à Farias Barbearia é {codigo}. Não compartilhe com ninguém.'},
+      confirm:{on:true,name:'Confirmação de agendamento',txt:'Fala, {nome}! Horário confirmado: {servico} em {data} às {hora}. Até lá! — Farias Barbearia'},
+      r24:{on:true,name:'Lembrete 24 h antes',txt:'Oi, {nome}! Lembrete: amanhã às {hora} você tem {servico} com o Farias. Precisa remarcar? {link}'},
       r2:{on:true,name:'Lembrete 2 h antes',txt:'{nome}, seu horário é hoje às {hora}. Te espero!'},
       bill:{on:true,name:'Aviso de cobrança (2 dias antes)',txt:'Oi, {nome}! Sua assinatura {plano} (R$ {valor}) será cobrada em {data}.'},
       fail:{on:true,name:'Pagamento recusado',txt:'{nome}, não conseguimos processar o pagamento do {plano}. Regularize aqui para manter seus benefícios: {link}'},
-      daily:{on:false,name:'Resumo diário para o Athos (08:00)',txt:'Bom dia, Athos! Hoje você tem {qtd} atendimentos. Primeiro horário: {hora}.'}},
-    team:[{id:'u1',name:'Athos',email:'athos@athosbarber.com.br',role:'admin',active:true}],
+      daily:{on:false,name:'Resumo diário para o Farias (08:00)',txt:'Bom dia, Farias! Hoje você tem {qtd} atendimentos. Primeiro horário: {hora}.'}},
+    team:[{id:'u1',name:'Farias',email:'contato@fariasbarbearia.com.br',role:'admin',active:true}],
     roles:{
       perms:['Ver agenda','Editar agenda','Ver clientes','Editar clientes','Gerenciar assinaturas','Ver financeiro','Registrar pagamentos e estornos','Editar serviços e planos','Editar conteúdo do site','Editar mensagens','Equipe e permissões','Configurações e backup'],
       barbeiro:[1,1,1,0,0,0,0,0,0,0,0,0], recepcao:[1,1,1,1,1,0,1,0,0,0,0,0]},
@@ -110,7 +108,7 @@ function defaults(){
   d.appts.filter(a=>a.status==='done'&&!a.plan&&a.date.slice(0,7)===ym).forEach(a=>d.tx.push({id:uid(),date:a.date,cid:a.cid,desc:a.svc,method:['Pix','Dinheiro','Maquininha (débito)','Maquininha (crédito)'][a.start.charCodeAt(1)%4],value:a.price,kind:'avulso',status:'ok'}));
   d.tx.sort((a,b)=>b.date.localeCompare(a.date));
   d.log=[
-    {id:uid(),t:Date.now()-86400000*2,who:'Athos',area:'Serviços',desc:'Preço do Combo Especial alterado de R$ 95 para R$ 99'},
+    {id:uid(),t:Date.now()-86400000*2,who:'Farias',area:'Serviços',desc:'Preço do Combo Especial alterado de R$ 95 para R$ 99'},
     {id:uid(),t:Date.now()-86400000,who:'Sistema',area:'Assinaturas',desc:'Assinatura de Diego Ramos suspensa por falta de pagamento'},
     {id:uid(),t:Date.now()-3600000*5,who:'Site',area:'Agenda',desc:'Novo agendamento pelo site: Renan Dias'}];
   return d;
@@ -145,7 +143,7 @@ window.DB={
     this.refresh();
     const before={};keys.forEach(k=>before[k]=JSON.stringify(this.data[k]));
     fn(this.data);
-    this._log({id:uid(),t:Date.now(),who:who||'Athos',area:area||'Geral',desc,keys:before,key:keys.join(',')});
+    this._log({id:uid(),t:Date.now(),who:who||'Farias',area:area||'Geral',desc,keys:before,key:keys.join(',')});
     return this.save();
   },
   undo(id){
@@ -154,7 +152,7 @@ window.DB={
     const keys=e.keys||(e.key&&e.before?{[e.key]:e.before}:null);if(!keys)return false;
     const cur={};Object.keys(keys).forEach(k=>{cur[k]=JSON.stringify(this.data[k]);this.data[k]=JSON.parse(keys[k])});
     e.undone=true;
-    this._log({id:uid(),t:Date.now(),who:'Athos',area:e.area,desc:'Desfeito: '+e.desc,keys:cur,key:Object.keys(cur).join(',')});
+    this._log({id:uid(),t:Date.now(),who:'Farias',area:e.area,desc:'Desfeito: '+e.desc,keys:cur,key:Object.keys(cur).join(',')});
     return this.save();
   },
   canUndo(e){return !!(e&&!e.undone&&(e.keys||(e.key&&e.before)))},
@@ -162,7 +160,7 @@ window.DB={
   /* referências que ficariam quebradas se esta alteração fosse desfeita */
   undoOrphans(id){const e=this.data.log.find(x=>x.id===id);if(!e||!e.keys||!e.keys.clients)return 0;const ids=new Set(JSON.parse(e.keys.clients).map(c=>c.id));
     return this.data.appts.filter(a=>a.cid&&!ids.has(a.cid)).length+this.data.subs.filter(s=>!ids.has(s.cid)).length+this.data.tx.filter(t=>t.cid&&!ids.has(t.cid)).length},
-  reset(){try{localStorage.removeItem(KEY);localStorage.removeItem(IMGKEY);localStorage.removeItem('athos_me')}catch(e){}},
+  reset(){try{localStorage.removeItem(KEY);localStorage.removeItem(IMGKEY);localStorage.removeItem('farias_me')}catch(e){}},
   exportAll(){return JSON.stringify({db:this.data,images:imgs},null,1)},
   importAll(txt){const o=JSON.parse(txt);if(!o.db||o.db.v!==1)throw new Error('Arquivo inválido');
     const d=o.db,arr=['services','plans','faq','reviews','gallery','team','holidays','clients','subs','appts','tx','log'],HM=/^\d{2}:\d{2}$/,DT=/^\d{4}-\d{2}-\d{2}$/,IMG=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
@@ -193,7 +191,7 @@ window.DB={
   /* null = pode usar o plano; texto = motivo de não poder */
   planCheck(cid,date,svc,ignoreId){
     const c=this.data.clients.find(x=>x.id===cid);
-    if(this.isBlocked(c))return 'Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';
+    if(this.isBlocked(c))return 'Agendamento online indisponível para este número. Fale com o Farias pelo WhatsApp.';
     const s=c&&this.activeSub(c.id);
     if(!s)return 'Este número não tem assinatura ativa.';
     if(s.status==='late')return 'Sua assinatura está com o pagamento pendente. Regularize na sua área do cliente para usar o plano.';

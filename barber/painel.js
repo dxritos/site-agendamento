@@ -78,7 +78,7 @@ function vHoje(){
   const pend=db.appts.filter(a=>a.status==='pend'&&a.date>=TODAY);
   const hol=db.holidays.find(h=>h.date===TODAY);
   const hr=new Date().getHours();
-  return `<div class="top"><div><h1>${hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite'}, Athos</h1><p>${WDF[today.getDay()]}, ${today.getDate()} de ${MOF[today.getMonth()]}${hol?' · Feriado: '+esc(hol.name):''}</p></div>
+  return `<div class="top"><div><h1>${hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite'}, Farias</h1><p>${WDF[today.getDay()]}, ${today.getDate()} de ${MOF[today.getMonth()]}${hol?' · Feriado: '+esc(hol.name):''}</p></div>
    <div class="acts"><button class="btn btn-ghost" data-act="block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>Bloquear horário</button><button class="btn btn-primary" data-act="new-appt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Encaixe</button></div></div>
   <div class="kpis">
     <div class="card kpi"><small>Atendimentos hoje</small><b>${svc.length}</b><span>${svc.filter(a=>a.status==='done').length} concluídos · ${svc.filter(a=>a.plan).length} de assinantes</span></div>
@@ -243,7 +243,7 @@ function ficha(id){
 }
 ACT['new-cli']=()=>{modal(`<h3>Novo cliente</h3><div class="form"><div class="two"><input class="inp" id="nc-name" placeholder="Nome"><input class="inp" id="nc-phone" placeholder="WhatsApp com DDD"></div><textarea class="inp" id="nc-notes" placeholder="Observações"></textarea></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="nc-save">Cadastrar</button></div>`);
   $('#nc-save').onclick=()=>{const n=$('#nc-name').value.trim();if(!n)return toast('Informe o nome');closeModal();change('clients',L=>L.push({id:'c'+DB.uid(),name:n,phone:$('#nc-phone').value.replace(/\D/g,''),notes:$('#nc-notes').value,blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)}),`Cliente ${n} cadastrado`,'Clientes')}};
-ACT['exp-cli']=()=>download('clientes-athos.csv',csv(['Nome','WhatsApp','Faltas','Bloqueado','Desde','Observações'],db.clients.map(c=>[c.name,phoneFmt(c.phone),c.misses,c.blocked?'sim':'não',c.since,(c.notes||'').replace(/\n/g,' ')])),'text/csv');
+ACT['exp-cli']=()=>download('clientes-farias.csv',csv(['Nome','WhatsApp','Faltas','Bloqueado','Desde','Observações'],db.clients.map(c=>[c.name,phoneFmt(c.phone),c.misses,c.blocked?'sim':'não',c.since,(c.notes||'').replace(/\n/g,' ')])),'text/csv');
 
 /* ================= ASSINANTES ================= */
 let subFilter='all',subQ='';
@@ -261,7 +261,7 @@ function vAssinantes(){
     <td class="r">${s.status==='late'?`<button class="btn btn-primary btn-sm" data-subact="link" data-id="${s.id}">Cobrar</button> `:''}<button class="btn btn-ghost btn-sm" data-sub="${s.id}">Gerenciar</button></td></tr>`}).join('')||'<tr><td colspan="7" class="empty">Nenhuma assinatura.</td></tr>'}
   </tbody></table></div></div>`;
 }
-document.addEventListener('click',e=>{const f=e.target.closest('[data-sf]');if(f){subFilter=f.dataset.sf;render()}const g=e.target.closest('[data-sub]');if(g)gerSub(g.dataset.sub);const l=e.target.closest('[data-subact="link"]');if(l){const s=db.subs.find(x=>x.id===l.dataset.id);DB.refresh();DB._log({id:DB.uid(),t:Date.now(),who:'Athos',area:'Assinaturas',desc:`Link de pagamento reenviado para ${cname(s.cid)} no WhatsApp`});DB.save();render();toast('Link de pagamento enviado no WhatsApp')}});
+document.addEventListener('click',e=>{const f=e.target.closest('[data-sf]');if(f){subFilter=f.dataset.sf;render()}const g=e.target.closest('[data-sub]');if(g)gerSub(g.dataset.sub);const l=e.target.closest('[data-subact="link"]');if(l){const s=db.subs.find(x=>x.id===l.dataset.id);DB.refresh();DB._log({id:DB.uid(),t:Date.now(),who:'Farias',area:'Assinaturas',desc:`Link de pagamento reenviado para ${cname(s.cid)} no WhatsApp`});DB.save();render();toast('Link de pagamento enviado no WhatsApp')}});
 document.addEventListener('input',e=>{if(e.target.id==='sub-q'){subQ=e.target.value.toLowerCase();const pos=e.target.selectionStart;render();const i=$('#sub-q');i.focus();i.setSelectionRange(pos,pos)}});
 function gerSub(id){
   const s=db.subs.find(x=>x.id===id),nm=cname(s.cid),p=plan(s.plan),st=s.status,cur=price(s);
@@ -302,7 +302,7 @@ ACT['new-sub']=()=>{modal(`<h3>Nova assinatura</h3><p>Para cliente que assinou n
   $('#ns-save').onclick=()=>{const cid=$('#ns-cli').value,pl=DB.plan($('#ns-plan').value);DB.refresh();if(DB.activeSub(cid))return toast('Esse cliente já tem assinatura ativa');closeModal();
     mutMany(['subs','tx'],d=>{const v={plan:pl.id,price:pl.p,status:'ok',used:0,credit:0,creditMonth:null,day:+$('#ns-day').value,method:'Pix automático',pausedUntil:null,courtesyUntil:null,exempt:false,cancelAt:null,nextPlan:null,paidUntil:DB.addMonth(TODAY)};const old=d.subs.find(x=>x.cid===cid);if(old)Object.assign(old,v);else d.subs.push({id:'a'+DB.uid(),cid,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2),...v});
       d.tx.unshift({id:DB.uid(),date:TODAY,cid,desc:'Plano '+pl.n,method:'Pix automático',value:pl.p,kind:'plano',status:'ok'})},`Nova assinatura: ${cname(cid)} · ${pl.n} (${money(pl.p)})`,'Assinaturas')}};
-ACT['exp-sub']=()=>download('assinantes-athos.csv',csv(['Cliente','Plano','Status','Dia','Forma','Desde'],db.subs.map(s=>[cname(s.cid),(plan(s.plan)||{}).n,(SS[s.status]||['?'])[0],s.day,s.method,s.since])),'text/csv');
+ACT['exp-sub']=()=>download('assinantes-farias.csv',csv(['Cliente','Plano','Status','Dia','Forma','Desde'],db.subs.map(s=>[cname(s.cid),(plan(s.plan)||{}).n,(SS[s.status]||['?'])[0],s.day,s.method,s.since])),'text/csv');
 
 /* ================= FINANCEIRO ================= */
 let txF='all';
@@ -326,7 +326,7 @@ document.addEventListener('click',e=>{const f=e.target.closest('[data-tf]');if(f
 ACT['new-tx']=()=>{modal(`<h3>Registrar pagamento</h3><p>Dinheiro, maquininha ou Pix recebido no balcão.</p><div class="form"><div class="fl"><label>Cliente</label><select class="inp" id="t-cli">${clientOpts()}</select></div><div class="two"><div class="fl"><label>Descrição</label><input class="inp" id="t-desc" value="Corte" list="t-svcs"><datalist id="t-svcs">${db.services.map(s=>`<option>${esc(s.n)}</option>`).join('')}<option>Produto: Pomada</option><option>Produto: Óleo capilar</option></datalist></div><div class="fl"><label>Valor (R$)</label><input class="inp" id="t-val" type="number" step="0.01" value="50"></div></div><div class="fl"><label>Data</label><input class="inp" type="date" id="t-date" value="${TODAY}"></div><div class="fl"><label>Forma de pagamento</label><div class="opts4" id="t-met">${['Dinheiro','Pix','Maquininha (débito)','Maquininha (crédito)'].map((m,i)=>`<div class="opt pay ${i===0?'on':''}" data-payic="${m}" data-v="${m}">${payIcon(m)}${m.replace('Maquininha ','').replace(/[()]/g,'')}</div>`).join('')}</div></div></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary btn-pay" id="t-save" data-paybtn>${payIcon('Dinheiro')}Registrar</button></div>`);
   $('#t-desc').oninput=()=>{const s=db.services.find(x=>x.n===$('#t-desc').value);if(s)$('#t-val').value=s.p};
   $('#t-save').onclick=()=>{const v=+$('#t-val').value;if(!(v>0))return toast('Informe o valor');closeModal();change('tx',L=>L.unshift({id:DB.uid(),date:$('#t-date').value,cid:$('#t-cli').value,desc:$('#t-desc').value,method:$('#t-met .opt.on').dataset.v,value:v,kind:'avulso',status:'ok',manual:true}),`Pagamento de ${money(v)} registrado (${cname($('#t-cli').value)})`,'Financeiro')}};
-ACT['exp-tx']=()=>download('financeiro-athos.csv',csv(['Data','Cliente','Descrição','Forma','Status','Valor'],db.tx.map(t=>[t.date,cname(t.cid),t.desc,t.method,t.status,String(t.value).replace('.',',')])),'text/csv');
+ACT['exp-tx']=()=>download('financeiro-farias.csv',csv(['Data','Cliente','Descrição','Forma','Status','Valor'],db.tx.map(t=>[t.date,cname(t.cid),t.desc,t.method,t.status,String(t.value).replace('.',',')])),'text/csv');
 
 /* ================= SERVIÇOS E PLANOS ================= */
 const CAT={cab:'Cabelo e barba',com:'Combos',ext:'Tratamentos'};
@@ -380,8 +380,8 @@ function vConteudo(){
    </div>
   </div>
   <div class="card box" style="margin-top:16px"><h3>Galeria <span class="acts"><span class="hint">Fotos são reduzidas automaticamente.</span><button class="btn btn-ghost btn-sm" data-act="gal-add">+ Foto</button></span></h3>
-   <div class="gal-ed">${db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);return `<div class="gimg" data-gid="${g.id}"><div class="ph" style="${im&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(im)?`background-image:url(${im})`:''}">${im?'':'Sem foto'}</div><div class="tools"><label title="Enviar foto"><input type="file" accept="image/*" hidden data-up="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></label><button title="Remover" data-act="gal-rm" data-id="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
-   <div class="fields"><input class="inp" data-f="t" value="${esc(g.t)}" placeholder="Título"><input class="inp" data-f="s" value="${esc(g.s)}" placeholder="Legenda"><select class="inp" data-f="cat">${[['cortes','Cortes'],['barba','Barba'],['espaco','Espaço']].map(([k,v])=>`<option value="${k}" ${k===g.cat?'selected':''}>${v}</option>`).join('')}</select></div></div>`}).join('')}</div>
+   <div class="gal-ed">${db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);return `<div class="gimg" data-gid="${g.id}"><div class="ph" style="${im&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(im)?`background-image:url(${im})`:''}">${im?'':`<span style="padding:10px;text-transform:none;letter-spacing:0;font-size:11.5px;line-height:1.35;text-align:center">${esc(g.hint||'Sem foto')}</span>`}</div><div class="tools"><label title="Enviar foto"><input type="file" accept="image/*" hidden data-up="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></label><button title="Remover" data-act="gal-rm" data-id="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
+   <div class="fields"><input class="inp" data-f="t" value="${esc(g.t)}" placeholder="Título"><input class="inp" data-f="s" value="${esc(g.s)}" placeholder="Legenda"><textarea class="inp" data-f="hint" rows="2" placeholder="O que esta foto deve mostrar" style="min-height:54px;font-size:12.5px">${esc(g.hint||'')}</textarea><select class="inp" data-f="cat">${[['cortes','Cortes'],['barba','Barba'],['espaco','Espaço']].map(([k,v])=>`<option value="${k}" ${k===g.cat?'selected':''}>${v}</option>`).join('')}</select></div></div>`}).join('')}</div>
    <button class="btn btn-primary btn-sm" data-act="gal-save" style="margin-top:14px">Salvar galeria</button></div>`;
 }
 const readList=(sel,key,fields)=>$$(sel).map(el=>{const o={id:el.dataset[key]};fields.forEach(f=>o[f]=el.querySelector(`[data-f="${f}"]`).value);return o});
@@ -396,11 +396,11 @@ Object.assign(ACT,{
   'rev-add':()=>change('reviews',L=>{L.splice(0,L.length,...readList('#rev-ed .li-ed','rid',['name','info','text']));L.push({id:DB.uid(),name:'Nome',info:'Cliente',text:'Depoimento'})},'Avaliação adicionada','Conteúdo'),
   'rev-rm':b=>change('reviews',L=>{L.splice(0,L.length,...readList('#rev-ed .li-ed','rid',['name','info','text']).filter(x=>x.id!==b.dataset.id))},'Avaliação removida','Conteúdo'),
   'rev-save':()=>change('reviews',L=>L.splice(0,L.length,...readList('#rev-ed .li-ed','rid',['name','info','text'])),'Avaliações atualizadas','Conteúdo'),
-  'gal-add':()=>change('gallery',L=>{saveGalFields(L);L.push({id:DB.uid(),cat:'cortes',t:'Novo corte',s:'',img:null})},'Item adicionado à galeria','Conteúdo'),
+  'gal-add':()=>change('gallery',L=>{saveGalFields(L);L.push({id:DB.uid(),cat:'cortes',t:'Novo corte',s:'',hint:'Descreva aqui a foto que deve entrar (ex.: corte de perfil, com boa luz).',img:null})},'Item adicionado à galeria','Conteúdo'),
   'gal-rm':b=>confirmBox('Remover da galeria?','A foto sai do site.','Remover',()=>{const g=db.gallery.find(x=>x.id===b.dataset.id);change('gallery',L=>{saveGalFields(L);L.splice(L.findIndex(x=>x.id===g.id),1)},`Foto "${g.t}" removida da galeria`,'Conteúdo')}),
   'gal-save':()=>change('gallery',L=>saveGalFields(L),'Galeria atualizada','Conteúdo'),
 });
-function saveGalFields(L){$$('.gimg').forEach(el=>{const g=L.find(x=>x.id===el.dataset.gid);if(!g)return;['t','s','cat'].forEach(f=>g[f]=el.querySelector(`[data-f="${f}"]`).value)})}
+function saveGalFields(L){$$('.gimg').forEach(el=>{const g=L.find(x=>x.id===el.dataset.gid);if(!g)return;['t','s','cat','hint'].forEach(f=>{const x=el.querySelector(`[data-f="${f}"]`);if(x)g[f]=x.value})})}
 document.addEventListener('change',e=>{const up=e.target.dataset&&e.target.dataset.up;if(!up)return;const file=e.target.files[0];if(!file)return;
   const img=new Image(),rd=new FileReader();rd.onload=()=>{img.onload=()=>{const k=Math.min(1,900/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=img.width*k;cv.height=img.height*k;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
     const url=cv.toDataURL('image/jpeg',.72),iid='img_'+DB.uid();if(!DB.img.set(iid,url))return toast('Sem espaço para mais fotos no navegador');
@@ -408,7 +408,7 @@ document.addEventListener('change',e=>{const up=e.target.dataset&&e.target.datas
 
 /* ================= MENSAGENS ================= */
 const VARS=['{nome}','{servico}','{data}','{hora}','{plano}','{valor}','{link}','{codigo}'];
-const SAMPLE={nome:'Lucas',servico:'Corte + Barba',data:'14/11',hora:'15:30',plano:'Corte + Barba Ilimitado',valor:'200,00',link:'athos.bar/r/x7k',codigo:'482915',qtd:'9'};
+const SAMPLE={nome:'Lucas',servico:'Corte + Barba',data:'14/11',hora:'15:30',plano:'Corte + Barba Ilimitado',valor:'200,00',link:'farias.bar/r/x7k',codigo:'482915',qtd:'9'};
 const fillVars=t=>t.replace(/\{(\w+)\}/g,(m,k)=>SAMPLE[k]??m);
 function vMensagens(){
   return `<div class="top"><div><h1>Mensagens WhatsApp</h1><p>Edite os textos automáticos e escolha quais avisos são enviados.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="msg-save">Salvar mensagens</button></div></div>
@@ -497,7 +497,7 @@ Object.assign(ACT,{
     const go2=()=>change('holidays',L=>L.push({id:DB.uid(),date:d,name:n}),`Dia ${fmtD(d)} fechado: ${n}`,'Configurações');
     clash?confirmBox('Já há horários nesse dia',`${clash} cliente(s) marcados em ${fmtD(d)}. Eles continuam na agenda — avise e remarque pela Agenda.`,'Fechar o dia mesmo assim',go2,false):go2()},
   'hol-rm':b=>{const h=db.holidays.find(x=>x.id===b.dataset.id);change('holidays',L=>L.splice(L.findIndex(x=>x.id===h.id),1),`Dia ${fmtD(h.date)} reaberto (${h.name})`,'Configurações')},
-  'bk-exp':()=>download(`backup-athos-${TODAY}.json`,DB.exportAll(),'application/json'),
+  'bk-exp':()=>download(`backup-farias-${TODAY}.json`,DB.exportAll(),'application/json'),
   'bk-reset':()=>confirmBox('Voltar aos dados de exemplo?','Apaga todas as alterações feitas neste navegador. Baixe um backup antes, se quiser guardar.','Apagar e recomeçar',()=>{DB.reset();location.reload()}),
 });
 

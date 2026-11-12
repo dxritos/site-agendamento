@@ -13,7 +13,7 @@ const plural=(n,s,p)=>n+' '+(n===1?s:p);
 
 /* ===== quem está logado: sem sessão vai para o login (?demo libera o seletor para apresentação) ===== */
 const q=new URLSearchParams(location.search),DEMO=q.has('demo');
-let ME=null;try{ME=localStorage.getItem('athos_me')}catch(e){}
+let ME=null;try{ME=localStorage.getItem('farias_me')}catch(e){}
 if(DEMO&&q.get('como'))ME=q.get('como');
 let NOSESSION=false;
 if(!db.clients.some(c=>c.id===ME)){if(DEMO)ME=db.clients[0]&&db.clients[0].id;else{NOSESSION=true;location.replace('entrar.html')}}
@@ -52,13 +52,13 @@ const subState=s=>s.status==='late'?['Suspenso','c-bad']:s.status==='paused'?['P
 function apptHtml(a,full){
   const d=dt(a.date),ok=canChange(a)&&!blocked();
   return `<div class="appt"><div class="dbox"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></div>
-  <div class="inf"><strong>${esc(a.svc)}</strong><span>${esc(a.start)} · ${a.dur} min · com Athos</span></div>
-  <div class="acts"><span class="chip ${a.plan?'c-ok':'c-info'}">${a.plan?'Incluso no plano':brl(a.price)}</span>${full?(ok?`<button class="btn btn-ghost btn-sm" data-move="${a.id}">Remarcar</button><button class="btn btn-danger btn-sm" data-cancel="${a.id}">Cancelar</button>`:`<span class="chip c-dim">${blocked()?'Fale com o Athos para alterar':'Menos de '+DB.cancelText()+' para o horário: fale com o Athos'}</span>`):''}</div></div>`;
+  <div class="inf"><strong>${esc(a.svc)}</strong><span>${esc(a.start)} · ${a.dur} min · com Farias</span></div>
+  <div class="acts"><span class="chip ${a.plan?'c-ok':'c-info'}">${a.plan?'Incluso no plano':brl(a.price)}</span>${full?(ok?`<button class="btn btn-ghost btn-sm" data-move="${a.id}">Remarcar</button><button class="btn btn-danger btn-sm" data-cancel="${a.id}">Cancelar</button>`:`<span class="chip c-dim">${blocked()?'Fale com o Farias para alterar':'Menos de '+DB.cancelText()+' para o horário: fale com o Farias'}</span>`):''}</div></div>`;
 }
 function vInicio(){
   const c=me(),s=mySub(),has=s&&s.status!=='off',p=has&&plan(s.plan),up=upcoming();
   let card,alert='';
-  if(blocked())alert+=`<div class="alert"><div><b>Agendamento online indisponível</b><span>Fale com o Athos pelo WhatsApp para marcar ou alterar horários.</span></div></div>`;
+  if(blocked())alert+=`<div class="alert"><div><b>Agendamento online indisponível</b><span>Fale com o Farias pelo WhatsApp para marcar ou alterar horários.</span></div></div>`;
   if(db.content.notice_on&&db.content.notice)alert+=`<div class="alert info" role="status"><div><b>Aviso da barbearia</b><span>${esc(db.content.notice)}</span></div></div>`;
   if(!has){
     card=`<div class="card plan none"><div class="top"><span class="eyebrow">Seu plano</span><span class="chip c-dim">${s?'Cancelado':'Sem plano'}</span></div><h2>${s?'Assinatura cancelada':'Você ainda não assina'}</h2><div class="meta">Assine e corte o mês inteiro pagando menos que o avulso.</div><button class="btn btn-primary" data-go="plano">Ver planos</button></div>`;
@@ -68,13 +68,13 @@ function vInicio(){
     else if(paused)alert+=`<div class="alert warn"><div><b>Assinatura pausada</b><span>Volta automaticamente em ${fmtD(s.pausedUntil)}. Nenhuma cobrança até lá.</span></div></div>`;
     else if(s.cancelAt)alert+=`<div class="alert warn"><div><b>Cancelamento agendado</b><span>Seus benefícios continuam até ${fmtD(s.cancelAt)}. Depois disso, nenhuma nova cobrança.</span></div><button class="btn btn-ghost btn-sm" data-keep>Manter assinatura</button></div>`;
     else if(s.courtesyUntil&&s.courtesyUntil>=TODAY)alert+=`<div class="alert info"><div><b>Você ganhou uma cortesia</b><span>Seu plano está garantido sem cobrança até ${fmtD(s.courtesyUntil)}.</span></div></div>`;
-    else if(s.exempt)alert+=`<div class="alert info"><div><b>Próxima cobrança isenta</b><span>O Athos isentou sua cobrança de ${fmtD(DB.nextBill(s))}.</span></div></div>`;
+    else if(s.exempt)alert+=`<div class="alert info"><div><b>Próxima cobrança isenta</b><span>O Farias isentou sua cobrança de ${fmtD(DB.nextBill(s))}.</span></div></div>`;
     if(s.nextPlan)alert+=`<div class="alert info"><div><b>Troca de plano agendada</b><span>A partir de ${fmtD(s.nextPlanAt)} seu plano passa a ser ${esc(plan(s.nextPlan).n)} (${brl(plan(s.nextPlan).p)}/mês).</span></div><button class="btn btn-ghost btn-sm" data-undochange>Desistir da troca</button></div>`;
     let meters;
     if(qt){const parts=[['Cortes do mês',u.corte,qt.corte+cr]];if(qt.barba)parts.push(['Barbas do mês',u.barba,qt.barba+cr]);
       meters=parts.map(([l,a,b])=>`<div class="meter"><div class="lbl"><span>${l}</span><b>${Math.min(a,b)} de ${b}</b></div><div class="bar"><i style="width:${b?Math.min(100,a/b*100):0}%;${late?'background:var(--bad)':''}"></i></div></div>`).join('')}
     else meters=`<div class="meter"><div class="lbl"><span>Atendimentos do plano</span><b>${plural(u.total,'neste mês','neste mês')}</b></div><p style="font-size:12.5px;color:var(--muted);margin-top:4px">Ilimitado, ${p.days.map(d=>WD[d]).join(', ')}${p.gap?` · intervalo de ${p.gap} dias`:''}</p></div>`;
-    if(cr)meters+=`<p style="font-size:12.5px;color:var(--teal-2)">${cr>0?'+':''}${plural(cr,'uso ajustado','usos ajustados')} pelo Athos neste mês</p>`;
+    if(cr)meters+=`<p style="font-size:12.5px;color:var(--teal-2)">${cr>0?'+':''}${plural(cr,'uso ajustado','usos ajustados')} pelo Farias neste mês</p>`;
     const st=subState(s);
     card=`<div class="card plan ${late?'susp':''}"><div class="top"><span class="eyebrow">Seu plano</span><span class="chip ${st[1]}">${st[0]}</span></div>
       <h2>${esc(p.n)}</h2><div class="meta">${brl(price)}/mês · ${late?'cobrança em aberto':paused?'pausado até '+fmtD(s.pausedUntil):s.cancelAt?'termina em '+fmtD(s.cancelAt):'próxima cobrança '+fmtD(DB.nextBill(s))+' · '+esc(s.method)}</div><div class="meters">${meters}</div></div>`;
@@ -89,7 +89,7 @@ function vInicio(){
   const bookBtn=blocked()?`<a href="https://wa.me/${esc(db.content.wa)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/></svg>Agendar pelo WhatsApp</a>`
     :`<a href="agendar.html${active?'?cat=ass':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg>Novo agendamento</a>`;
   return `<h1>Fala, ${esc((c.name||'').split(' ')[0])}!</h1><p class="sub">${up.length?`Seu próximo horário é ${WD[dt(up[0].date).getDay()].toLowerCase()}, ${fmtD(up[0].date)} às ${esc(up[0].start)}.`:'Você não tem horários marcados.'}</p>${alert}
-  <div class="grid2"><div>${card}<div class="quick">${bookBtn}<a href="https://wa.me/${esc(db.content.wa)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com o Athos</a></div></div>
+  <div class="grid2"><div>${card}<div class="quick">${bookBtn}<a href="https://wa.me/${esc(db.content.wa)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com o Farias</a></div></div>
   <div style="display:grid;gap:16px;align-content:start"><div class="card box"><h3>Próximos horários <a href="#" data-go="agenda">Ver todos</a></h3>${up.slice(0,2).map(a=>apptHtml(a,false)).join('')||'<p class="empty">Nenhum horário marcado.</p>'}</div>
   <div class="card box">${perksBox}</div></div></div>`;
 }
@@ -113,7 +113,7 @@ function vPagamentos(){
 function vPlano(){
   const s=mySub(),has=s&&s.status!=='off',p=has&&plan(s.plan);
   if(!has){const on=db.plans.filter(x=>x.on);
-    if(blocked())return `<h1>Planos</h1><div class="card box"><p class="empty">Para assinar, fale com o Athos pelo WhatsApp.</p></div>`;
+    if(blocked())return `<h1>Planos</h1><div class="card box"><p class="empty">Para assinar, fale com o Farias pelo WhatsApp.</p></div>`;
     return `<h1>Planos</h1><p class="sub">Escolha um plano. A cobrança é automática e você cancela quando quiser.</p><div class="card box">${on.length?`<div class="plans" style="margin:0">${on.map((x,i)=>`<div class="popt ${i===Math.min(1,on.length-1)?'on':''}" data-pid="${esc(x.id)}"><div><strong>${esc(x.n)}</strong><small>${x.days.map(d=>WD[d]).join(', ')} · ${esc(x.quota)}${x.perks&&x.perks!=='—'?' · '+esc(x.perks):''}</small></div><b>${brl(x.p)}</b></div>`).join('')}</div><div class="opts"><div class="opt pay on" data-payic="pix">${payIcon('pix')}Pix automático</div><div class="opt pay" data-payic="card">${payIcon('card')}Cartão</div></div><button class="btn btn-primary btn-pay" style="margin-top:16px" data-subscribe data-paybtn>${payIcon('pix')}Assinar agora</button>`:'<p class="empty">Nenhum plano disponível no momento.</p>'}</div>`}
   const rules=[['Dias válidos',p.days.map(d=>WD[d]).join(', ')],['Cota',p.quota||'—'],['Intervalo mínimo',p.gap?p.gap+' dias':'Sem intervalo'],['Brindes',p.perks==='—'?'Nenhum':p.perks],['Saldo','Renova todo mês, não acumula']];
   const st=subState(s),late=s.status==='late';
@@ -130,21 +130,21 @@ function vPlano(){
 /* ===== ações (gravam no mesmo banco que o painel usa) ===== */
 document.addEventListener('click',e=>{
   const t=e.target;
-  const cn=t.closest('[data-cancel]');if(cn){const a=db.appts.find(x=>x.id===cn.dataset.cancel);if(!a||!canChange(a))return toast('Prazo para alterar encerrado. Fale com o Athos.');
+  const cn=t.closest('[data-cancel]');if(cn){const a=db.appts.find(x=>x.id===cn.dataset.cancel);if(!a||!canChange(a))return toast('Prazo para alterar encerrado. Fale com o Farias.');
     modal(`<h3 id="mt">Cancelar horário?</h3><p>${esc(a.svc)} · ${fmtD(a.date)} às ${esc(a.start)}. O horário fica livre para outro cliente${a.plan?' e o uso do plano não é descontado':''}.</p><div class="mact"><button class="btn btn-ghost" data-close>Manter</button><button class="btn btn-danger" id="ok">Cancelar horário</button></div>`);
     $('#ok').onclick=()=>{closeModal();act('appts',L=>{const x=L.find(y=>y.id===a.id);if(x)x.status='cancel'},`${me().name}: horário de ${fmtD(a.date)} ${a.start} cancelado pelo cliente`,'Agenda')}}
   const mv=t.closest('[data-move]');if(mv)moveAppt(mv.dataset.move);
   if(t.closest('[data-keep]')){const s=mySub();act('subs',L=>{const x=L.find(y=>y.id===s.id);x.cancelAt=null},`${me().name}: desistiu do cancelamento da assinatura`,'Assinaturas')}
   if(t.closest('[data-undochange]')){const s=mySub();act('subs',L=>{const x=L.find(y=>y.id===s.id);x.nextPlan=null;x.nextPlanAt=null},`${me().name}: desistiu da troca de plano`,'Assinaturas')}
   if(t.closest('[data-pix]')){const s=mySub(),p=plan(s.plan),price=DB.subPrice(s);
-    modal(`<h3 id="mt">Pagar com Pix</h3><p>Copie o código e pague no app do banco. A assinatura volta assim que o pagamento é confirmado.</p><div class="pix-head">${payIcon('pix')}<span>Pix copia e cola · ${brl(price)}</span></div><div class="pix">00020126580014BR.GOV.BCB.PIX0136athosbarber-${esc(s.id)}520400005303986540${price.toFixed(2)}5802BR5913ATHOS BARBER6011PARAUAPEBAS6304ABCD</div><p style="font-size:12px;color:var(--dim)">Demonstração: no sistema real a confirmação chega automaticamente pelo banco.</p><div class="mact"><button class="btn btn-ghost" id="copy">Copiar código</button><button class="btn btn-primary btn-pay" id="paid">${payIcon('pix')}Simular pagamento</button></div>`);
+    modal(`<h3 id="mt">Pagar com Pix</h3><p>Copie o código e pague no app do banco. A assinatura volta assim que o pagamento é confirmado.</p><div class="pix-head">${payIcon('pix')}<span>Pix copia e cola · ${brl(price)}</span></div><div class="pix">00020126580014BR.GOV.BCB.PIX0136fariasbarbearia-${esc(s.id)}520400005303986540${price.toFixed(2)}5802BR5913FARIAS BARBEARIA6011SUACIDADE6304ABCD</div><p style="font-size:12px;color:var(--dim)">Demonstração: no sistema real a confirmação chega automaticamente pelo banco.</p><div class="mact"><button class="btn btn-ghost" id="copy">Copiar código</button><button class="btn btn-primary btn-pay" id="paid">${payIcon('pix')}Simular pagamento</button></div>`);
     $('#copy').onclick=()=>{try{navigator.clipboard.writeText($('.pix').textContent)}catch(e){}toast('Código Pix copiado')};
     $('#paid').onclick=()=>{closeModal();
       const ok=DB.mutateMany(['tx','subs'],d=>{const x=d.tx.find(y=>y.cid===ME&&y.status==='failed');if(x){x.status='ok';x.method='Pix';x.value=price}else d.tx.unshift({id:DB.uid(),date:TODAY,cid:ME,desc:'Plano '+p.n,method:'Pix',value:price,kind:'plano',status:'ok'});const sub=d.subs.find(y=>y.id===s.id);sub.status='ok'},
         `${me().name}: pagou ${brl(price)} via Pix e a assinatura foi reativada`,'Financeiro',who());
       if(!ok)return toast('Não foi possível salvar neste aparelho.');render();toast('Pagamento confirmado. Assinatura reativada.')}}
   if(t.closest('[data-subscribe]')){
-    DB.refresh();if(blocked())return toast('Para assinar, fale com o Athos.');if(DB.activeSub(ME)){render();return toast('Você já tem uma assinatura.')}
+    DB.refresh();if(blocked())return toast('Para assinar, fale com o Farias.');if(DB.activeSub(ME)){render();return toast('Você já tem uma assinatura.')}
     const pid=($('.popt.on')||{}).dataset.pid,p=db.plans.find(x=>x.id===pid&&x.on);if(!p)return toast('Escolha um plano.');
     const met=$('.opts .opt.on').dataset.payic==='pix'?'Pix automático':'Cartão',mo=MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2);
     const ok=DB.mutateMany(['subs','tx'],d=>{
@@ -172,8 +172,8 @@ const M={
 };
 function moveAppt(id){
   DB.refresh();const a=db.appts.find(x=>x.id===id);if(!a)return;
-  if(blocked())return toast('Fale com o Athos para alterar seus horários.');
-  if(!canChange(a))return toast('Prazo para alterar encerrado. Fale com o Athos.');
+  if(blocked())return toast('Fale com o Farias para alterar seus horários.');
+  if(!canChange(a))return toast('Prazo para alterar encerrado. Fale com o Farias.');
   // dias possíveis: com horário livre e, se for do plano, dentro de todas as regras do plano
   const ok=ds=>DB.freeSlots(ds,a.dur,a.id).length&&(!a.plan||!DB.planCheck(ME,ds,a.svc,a.id));
   const days=Array.from({length:14},(_,i)=>DB.iso(addD(today,i))).filter(ok);
@@ -198,13 +198,13 @@ function render(){
   $$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+VIEW));$('#v-'+VIEW).innerHTML=VIEWS[VIEW]();wireOpts($('#v-'+VIEW));
 }
 window.onDBChange=()=>{if(!$('#modal').classList.contains('open'))render()};
-$('#logout').onclick=()=>{try{localStorage.removeItem('athos_me')}catch(e){}location.href='entrar.html'};
+$('#logout').onclick=()=>{try{localStorage.removeItem('farias_me')}catch(e){}location.href='entrar.html'};
 if(!NOSESSION){
 if(DEMO){$('#demobox').hidden=false;$('#demosel').innerHTML=db.clients.map(c=>{const s=DB.activeSub(c.id)||db.subs.find(x=>x.cid===c.id);return `<option value="${esc(c.id)}" ${c.id===ME?'selected':''}>${esc(c.name)}${s?' · '+({ok:'ativo',late:'pendente',paused:'pausado',off:'cancelado'})[s.status]:' · sem plano'}</option>`}).join('');
-  $('#demosel').onchange=e=>{ME=e.target.value;try{localStorage.setItem('athos_me',ME)}catch(x){}VIEW='inicio';render()}}
+  $('#demosel').onchange=e=>{ME=e.target.value;try{localStorage.setItem('farias_me',ME)}catch(x){}VIEW='inicio';render()}}
 render();
 // cliente sem nome (cadastro antigo/incompleto): pede o nome uma vez
-if(!me().name||/^novo cliente$/i.test(me().name)){modal(`<h3 id="mt">Como podemos te chamar?</h3><p>Seu nome aparece para o Athos na agenda.</p><label class="t" for="nm" style="margin-top:14px">Seu nome</label><input class="inp" id="nm" autocomplete="name"><div class="mact"><button class="btn btn-primary" id="nm-ok">Salvar</button></div>`);
+if(!me().name||/^novo cliente$/i.test(me().name)){modal(`<h3 id="mt">Como podemos te chamar?</h3><p>Seu nome aparece para o Farias na agenda.</p><label class="t" for="nm" style="margin-top:14px">Seu nome</label><input class="inp" id="nm" autocomplete="name"><div class="mact"><button class="btn btn-primary" id="nm-ok">Salvar</button></div>`);
   $('#nm-ok').onclick=()=>{const v=$('#nm').value.trim();if(v.length<2)return toast('Digite seu nome');closeModal();act('clients',L=>{L.find(x=>x.id===ME).name=v},`${v}: nome cadastrado`,'Clientes')}}
 
 }

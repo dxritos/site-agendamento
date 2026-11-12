@@ -1,4 +1,4 @@
-/* Athos Barber — scripts compartilhados do site público */
+/* Farias Barbearia — scripts compartilhados do site público */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const brl=v=>'R$ '+Number(v||0).toFixed(2).replace('.',',');
 const brl0=v=>'R$ '+Math.round(v);
@@ -95,7 +95,7 @@ if($('.faq'))$('.faq').innerHTML=db.faq.map((f,i)=>`<div class="faq-i"><button c
 if($('.reviews'))$('.reviews').innerHTML=db.reviews.map(r=>`<div class="rev"><div class="stars" aria-label="5 estrelas">★★★★★</div><p>“${esc(r.text)}”</p><div class="who"><span aria-hidden="true">${esc((r.name||'?')[0])}</span><div><b>${esc(r.name)}</b><small>${esc(r.info)}</small></div></div></div>`).join('');
 const IMGOK=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
 if($('#gal'))$('#gal').innerHTML=db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img),ok=im&&IMGOK.test(im)?im:null;
-  return `<button class="gi" data-cat="${esc(g.cat)}" aria-label="Ampliar foto: ${esc(g.t)}"${ok?` style="background:url(${ok}) center/cover" data-img="${esc(g.img)}"`:''}>${ok?'':'<span class="ph">Foto</span>'}<span class="cap"><b>${esc(g.t)}</b>${esc(g.s)}</span><i class="zoom" aria-hidden="true"></i></button>`}).join('');
+  return `<button class="gi" data-cat="${esc(g.cat)}" aria-label="Ampliar foto: ${esc(g.t)}" data-hint="${esc(g.hint||'')}"${ok?` style="background:url(${ok}) center/cover" data-img="${esc(g.img)}"`:''}>${ok?'':`<span class="ph"><em>Foto</em>${esc(g.hint||'Foto do trabalho')}</span>`}<span class="cap"><b>${esc(g.t)}</b>${esc(g.s)}</span><i class="zoom" aria-hidden="true"></i></button>`}).join('');
 
 /* ===== opções clicáveis (forma de pagamento, dia) acessíveis por teclado ===== */
 function wireOpts(root){root.querySelectorAll('.opts').forEach(g=>{g.setAttribute('role','radiogroup');g.querySelectorAll('.opt').forEach(o=>{o.setAttribute('role','radio');o.tabIndex=0;o.setAttribute('aria-checked',o.classList.contains('on'));
@@ -127,7 +127,7 @@ if(modal){
     if(phone.length!==11)return $('#serr').textContent='WhatsApp inválido. Use DDD + 9 dígitos.';
     if(!curPlan)return $('#serr').textContent='Plano indisponível. Atualize a página.';
     DB.refresh();let c=db.clients.find(x=>x.phone===phone);
-    if(DB.isBlocked(c))return $('#serr').textContent='Não foi possível assinar por este número. Fale com o Athos pelo WhatsApp.';
+    if(DB.isBlocked(c))return $('#serr').textContent='Não foi possível assinar por este número. Fale com o Farias pelo WhatsApp.';
     if(c&&DB.activeSub(c.id))return $('#serr').innerHTML='Este número já tem assinatura. <a href="entrar.html" style="color:var(--teal-2)">Entre na sua área</a> para trocar de plano.';
     const day=$$('#m1 .opts')[0].querySelector('.opt.on').textContent.includes('07')?7:1,met=$$('#m1 .opts')[1].querySelector('.opt.on').dataset.payic==='pix'?'Pix automático':'Cartão';
     const isNew=!c;if(isNew)c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:mo()};
@@ -138,7 +138,7 @@ if(modal){
       d.tx.unshift({id:DB.uid(),date:DB.iso(today),cid:c.id,desc:'Plano '+curPlan.n,method:met,value:curPlan.p,kind:'plano',status:'ok'});
     },`Nova assinatura pelo site: ${c.name} · ${curPlan.n} (${brl(curPlan.p)})`,'Assinaturas','Site');
     if(!ok)return $('#serr').textContent='Não foi possível salvar neste aparelho. Libere espaço do navegador e tente de novo.';
-    try{localStorage.setItem('athos_me',c.id)}catch(e){}
+    try{localStorage.setItem('farias_me',c.id)}catch(e){}
     $('#m1').style.display='none';$('#m2').style.display='';$('#m2 .btn-primary').focus();
   };
 }
@@ -201,7 +201,7 @@ if($('#svclist')){
     [1,2,3,4,5].forEach(n=>$('#p'+n).classList.toggle('on',n===st.step));
     $('#sel').innerHTML=st.svc?`<b>${esc(st.svc.n)}</b> · ${st.svc.plan?'Incluso no plano':brl(priceNow())}${st.time?` · ${dayLabel(st.day)} às ${esc(st.time)}`:''}`:'Nenhum serviço selecionado';
     if(st.step===3)$('#sum').innerHTML=`<label class="t">Resumo</label>
-      <div class="row"><span>Serviço</span><b>${esc(st.svc.n)}</b></div><div class="row"><span>Barbeiro</span><b>Athos</b></div>
+      <div class="row"><span>Serviço</span><b>${esc(st.svc.n)}</b></div><div class="row"><span>Barbeiro</span><b>Farias</b></div>
       <div class="row"><span>Quando</span><b>${dayLabel(st.day)} · ${esc(st.time)}</b></div><div class="row"><span>Duração</span><b>${st.svc.t} min</b></div>
       <div class="row"><span>Valor</span><b>${st.svc.plan?'R$ 0,00 (plano)':brl(priceNow())+(priceNow()<st.svc.p?' <small style="color:var(--teal-2);font-weight:500">preço de assinante</small>':'')}</b></div>`;
     if(st.step===4)$('#otptel').textContent=$('#btel').value;
@@ -227,11 +227,11 @@ if($('#svclist')){
   $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';
     if(st.step===3||st.step===4){DB.refresh();const c=clientNow();
       const back=()=>{if(st.step===4){st.step=3;update()}};
-      if(DB.isBlocked(c)){back();$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';return}
+      if(DB.isBlocked(c)){back();$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Farias pelo WhatsApp.';return}
       if(st.svc.plan){const err=c?DB.planCheck(c.id,DB.iso(days[st.day]),st.svc.base):'Este número não tem assinatura ativa.';if(err){back();planFail(err);return}}}
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
     if(st.step===1)renderDays();
-    if(st.step===4&&!saveBooking()){$('#bblock2').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Athos.';return}
+    if(st.step===4&&!saveBooking()){$('#bblock2').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Farias.';return}
     st.step++;if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
   $('#back').onclick=()=>{st.step--;update()};
   codeIns.forEach((el,i)=>{el.oninput=()=>{el.value=el.value.replace(/\D/g,'').slice(-1);if(el.value&&i<5)codeIns[i+1].focus();update()};
@@ -242,7 +242,7 @@ if($('#svclist')){
   const q=new URLSearchParams(location.search);
   if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0]||null;if(st.svc){st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}}
   if(q.get('cat')==='ass'){st.cat='ass';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='ass');x.setAttribute('aria-pressed',x.dataset.c==='ass')})}
-  try{const me=db.clients.find(c=>c.id===localStorage.getItem('athos_me'));if(me){$('#bname').value=me.name;$('#btel').value=maskPhone(me.phone)}}catch(e){}
+  try{const me=db.clients.find(c=>c.id===localStorage.getItem('farias_me'));if(me){$('#bname').value=me.name;$('#btel').value=maskPhone(me.phone)}}catch(e){}
   renderSvc();update();
   // outra aba mudou a agenda: atualiza os horários livres
   window.onDBChange=()=>{if(st.step<=2){renderDays()}};
@@ -258,7 +258,7 @@ if($('#gal')){
   const vis=()=>items.filter(i=>!i.classList.contains('hide'));
   const show=i=>{const v=vis();cur=(i+v.length)%v.length;const it=v[cur];
     $('#lb-title').textContent=it.querySelector('b').textContent;$('#lb-sub').textContent=it.querySelector('.cap').lastChild.textContent;
-    $('#lb-count').textContent=`${cur+1} / ${v.length}`;const im=it.dataset.img&&DB.img.get(it.dataset.img),li=$('.lb-img');li.style.background=im&&IMGOK.test(im)?`url(${im}) center/contain no-repeat #000`:'';li.textContent=im?'':'Foto';const f=$('#lb-frame');f.classList.remove('in');void f.offsetWidth;f.classList.add('in')};
+    $('#lb-count').textContent=`${cur+1} / ${v.length}`;const im=it.dataset.img&&DB.img.get(it.dataset.img),li=$('.lb-img');li.style.background=im&&IMGOK.test(im)?`url(${im}) center/contain no-repeat #000`:'';li.innerHTML=im?'':'<span><em>Foto</em>'+esc(it.dataset.hint||'Foto do trabalho')+'</span>';const f=$('#lb-frame');f.classList.remove('in');void f.offsetWidth;f.classList.add('in')};
   const close=()=>{lb.classList.remove('open');if(closeA11y){const c=closeA11y;closeA11y=null;c()}};
   lb.setAttribute('aria-modal','true');
   items.forEach(it=>it.onclick=()=>{opener=it;show(vis().indexOf(it));lb.classList.add('open');closeA11y=modalA11y(lb,()=>lb.classList.remove('open'));setTimeout(()=>$('#lb-close').focus(),40)});
@@ -273,7 +273,7 @@ if($('#cform')){
   $('#cform').onsubmit=e=>{e.preventDefault();
     const n=$('#cname').value.trim(),m=$('#cmsg').value.trim(),a=$('#csub').value;
     if(!n||!m){$('#cerr').textContent='Preencha nome e mensagem.';return}
-    window.open('https://wa.me/'+C.wa+'?text='+encodeURIComponent(`Olá, Athos! Sou ${n}. Assunto: ${a}.\n${m}`),'_blank','noopener');
+    window.open('https://wa.me/'+C.wa+'?text='+encodeURIComponent(`Olá, Farias! Sou ${n}. Assunto: ${a}.\n${m}`),'_blank','noopener');
   };
   ['#cname','#cmsg'].forEach(s=>$(s).oninput=()=>$('#cerr').textContent='');
 }

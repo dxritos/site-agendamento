@@ -25,11 +25,11 @@ $('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('e
   $('#verify').textContent='Entrando...';
   const phone=$('#tel').value.replace(/\D/g,'');let c=DB.data.clients.find(x=>x.phone===phone);
   if(!c){$('#s2').classList.remove('on');$('#s3').classList.add('on');$('#nm').focus();$('#verify').textContent='Entrar';return}
-  try{localStorage.setItem('athos_me',c.id)}catch(e){}
+  try{localStorage.setItem('farias_me',c.id)}catch(e){}
   setTimeout(()=>location.href='assinante.html',400)};
 $('#nm-ok').onclick=()=>{const name=$('#nm').value.trim();if(name.length<2){$('#e4').textContent='Digite seu nome.';return}
   const phone=$('#tel').value.replace(/\D/g,''),c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][new Date().getMonth()]+'/'+String(new Date().getFullYear()).slice(2)};
-  DB.mutate('clients',L=>L.push(c),`${name} criou conta pelo site`,'Clientes','Site');try{localStorage.setItem('athos_me',c.id)}catch(e){}
+  DB.mutate('clients',L=>L.push(c),`${name} criou conta pelo site`,'Clientes','Site');try{localStorage.setItem('farias_me',c.id)}catch(e){}
   $('#nm-ok').textContent='Entrando...';setTimeout(()=>location.href='assinante.html',400)};
 $('#nm').onkeydown=e=>{if(e.key==='Enter')$('#nm-ok').click()};
 $('#change').onclick=()=>{$('#s2').classList.remove('on');$('#s1').classList.add('on');ins.forEach(x=>x.value='')};
