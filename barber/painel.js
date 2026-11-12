@@ -12,21 +12,35 @@ const fmtD=s=>s?s.slice(8,10)+'/'+s.slice(5,7):'—';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)};
 const client=id=>db.clients.find(c=>c.id===id);
 const cname=id=>(client(id)||{}).name||'—';
-const plan=id=>db.plans.find(p=>p.id===id);
+const plan=id=>DB.plan(id);
+const plural=(n,a,b)=>n+' '+(n===1?a:b);
 const phoneFmt=p=>{const d=String(p||'').replace(/\D/g,'');return d.length===11?`(${d.slice(0,2)}) ${d[2]} ${d.slice(3,7)}-${d.slice(7)}`:p};
-const nextBill=s=>{let d=new Date(today.getFullYear(),today.getMonth(),s.day);if(d<=today)d=new Date(today.getFullYear(),today.getMonth()+1,s.day);return DB.iso(d)};
+const nextBill=s=>DB.nextBill(s);
+const price=s=>DB.subPrice(s);
 const sw=(id,on,dis)=>`<label class="sw"><input type="checkbox" id="${id}" ${on?'checked':''} ${dis?'disabled':''}><span></span></label>`;
 const timeOpts=(sel,from=7*60,to=21*60,step=15)=>{let o='';for(let m=from;m<=to;m+=step){const t=DB.toHM(m);o+=`<option ${t===sel?'selected':''}>${t}</option>`}return o};
+function mutMany(keys,fn,desc,area){if(!DB.mutateMany(keys,fn,desc,area))toast('Sem espaço no navegador para salvar');render();toast(desc)}
 function change(key,fn,desc,area){if(!DB.mutate(key,fn,desc,area))toast('Sem espaço no navegador para salvar');render();toast(desc)}
 const cell=v=>{v=String(v??'');if(/^[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
 const csv=(head,rows)=>'\ufeff'+[head,...rows].map(r=>r.map(cell).join(';')).join('\n');
 function download(name,content,type){const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 /* ================= modal genérico ================= */
-function modal(html,wide){$('#mbox').className='mbox'+(wide?' wide':'');$('#mbox').innerHTML='<button class="x" data-close>&times;</button>'+html;$('#modal').classList.add('open')}
-const closeModal=()=>$('#modal').classList.remove('open');
+/* acessibilidade: liga cada rótulo ao seu campo e dá nome a botões só com ícone */
+function a11y(root){root.querySelectorAll('.fl').forEach(f=>{const l=f.querySelector('label'),i=f.querySelector('input,select,textarea');if(l&&i){if(!i.id)i.id='f'+DB.uid();l.htmlFor=i.id}});
+  root.querySelectorAll('input[placeholder]:not([aria-label]),textarea[placeholder]:not([aria-label])').forEach(i=>{if(!(i.id&&document.querySelector('label[for="'+i.id+'"]')))i.setAttribute('aria-label',i.placeholder)});
+  root.querySelectorAll('.rm').forEach(b=>b.setAttribute('aria-label','Remover'));
+  root.querySelectorAll('.sw input').forEach(i=>{if(!i.getAttribute('aria-label')){const t=(i.closest('tr,.set,.msg,h3,label,.hrow')||{}).textContent||'';i.setAttribute('aria-label','Ativar: '+t.trim().replace(/\s+/g,' ').slice(0,40))}});
+  root.querySelectorAll('.opts4 .opt,.days-pick span').forEach(o=>{o.tabIndex=0;if(!o.getAttribute('role'))o.setAttribute('role','button')})}
+let lastFocus=null;
+function modal(html,wide){lastFocus=document.activeElement;$('#mbox').className='mbox'+(wide?' wide':'');$('#mbox').innerHTML='<button class="x" data-close aria-label="Fechar">&times;</button>'+html;const m=$('#modal');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.classList.add('open');a11y($('#mbox'));setTimeout(()=>{const f=$('#mbox input:not([type=hidden]),#mbox select,#mbox textarea,#mbox button:not(.x)');(f||$('#mbox .x')).focus()},30)}
+const closeModal=()=>{if(!$('#modal').classList.contains('open'))return;$('#modal').classList.remove('open');if(lastFocus&&lastFocus.focus&&document.contains(lastFocus))lastFocus.focus()};
 document.addEventListener('click',e=>{if(e.target.closest('[data-close]')||e.target.id==='modal')closeModal();const o=e.target.closest('.opts4 .opt');if(o)[...o.parentNode.children].forEach(x=>x.classList.toggle('on',x===o))});
-addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModal();
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('[role="button"],[role="radio"],tr.click')){e.preventDefault();e.target.click()}
+  if(e.key==='Tab'&&$('#modal').classList.contains('open')){const f=[...$('#mbox').querySelectorAll('button,a[href],input,select,textarea,[tabindex="0"]')].filter(x=>!x.disabled&&x.offsetParent!==null);if(!f.length)return;const a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}
+});
 function confirmBox(title,text,label,fn,danger=true){modal(`<h3>${title}</h3><p>${text}</p><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn ${danger?'btn-danger':'btn-primary'}" id="cf-ok">${label}</button></div>`);$('#cf-ok').onclick=()=>{closeModal();fn()}}
 
 /* ================= navegação ================= */
@@ -49,7 +63,8 @@ function renderNav(){
   const h=NAV.map(([g,items])=>`<div class="ngrp">${g}</div>`+items.map(([k,n])=>`<button class="tab ${k===VIEW?'on':''}" data-go="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${I[k]}</svg>${n}${k==='assinantes'&&late?`<span class="cnt">${late}</span>`:''}</button>`).join('')).join('');
   $('#snav').innerHTML=h;$('#mnav').innerHTML=h;
 }
-function go(k){VIEW=k;history.replaceState(null,'','#'+k);render();scrollTo(0,0)}
+function go(k){if(!VIEWS[k])k='hoje';if(VIEW!==k)history.pushState(null,'','#'+k);VIEW=k;render();scrollTo(0,0)}
+addEventListener('hashchange',()=>{const k=(location.hash||'#hoje').slice(1);if(/^[a-z]+$/.test(k)&&VIEWS[k]&&k!==VIEW){VIEW=k;render()}});
 document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);if(g.dataset.filter){subFilter=g.dataset.filter;render()}}});
 
 /* ================= HOJE ================= */
@@ -58,8 +73,8 @@ function vHoje(){
   const list=db.appts.filter(a=>a.date===TODAY&&a.status!=='cancel').sort((a,b)=>a.start.localeCompare(b.start));
   const svc=list.filter(a=>a.status!=='block');
   const ok=db.subs.filter(s=>s.status==='ok'),late=db.subs.filter(s=>s.status==='late');
-  const mrr=ok.reduce((t,s)=>t+(plan(s.plan)||{p:0}).p,0),lateV=late.reduce((t,s)=>t+(plan(s.plan)||{p:0}).p,0);
-  const avToday=svc.filter(a=>a.status==='done'&&!a.plan).reduce((t,a)=>t+a.price,0);
+  const mrr=ok.reduce((t,s)=>t+price(s),0),lateV=late.reduce((t,s)=>t+price(s),0);
+  const avToday=db.tx.filter(t=>t.date===TODAY&&t.kind!=='plano'&&t.status==='ok').reduce((t,x)=>t+x.value,0);
   const pend=db.appts.filter(a=>a.status==='pend'&&a.date>=TODAY);
   const hol=db.holidays.find(h=>h.date===TODAY);
   const hr=new Date().getHours();
@@ -76,13 +91,13 @@ function vHoje(){
     <div class="card box"><h3>Agenda de hoje <small>clique para editar</small></h3>${list.length?list.map(apptRow).join(''):`<p class="empty">${hol?'Feriado — barbearia fechada.':'Nenhum horário marcado para hoje.'}</p>`}</div>
     <div>
       <div class="card box"><h3>Precisa da sua atenção</h3>
-        ${late.length?`<div class="al"><div class="ic" style="background:var(--bad-bg);color:var(--bad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div><b>${late.length} assinante(s) com pagamento pendente</b><span>${late.map(s=>esc(cname(s.cid))).join(', ')}</span><br><button class="btn btn-ghost btn-sm" data-go="assinantes" data-filter="late">Ver e corrigir</button></div></div>`:''}
-        ${pend.length?`<div class="al"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>${pend.length} horário(s) aguardando confirmação</b><span>${pend.slice(0,2).map(a=>esc(cname(a.cid))+' · '+fmtD(a.date)+' '+a.start).join(' · ')}</span></div></div>`:''}
+        ${late.length?`<div class="al"><div class="ic" style="background:var(--bad-bg);color:var(--bad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div><b>${plural(late.length,'assinante','assinantes')} com pagamento pendente</b><span>${late.map(s=>esc(cname(s.cid))).join(', ')}</span><br><button class="btn btn-ghost btn-sm" data-go="assinantes" data-filter="late">Ver e corrigir</button></div></div>`:''}
+        ${pend.length?`<div class="al"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>${plural(pend.length,'horário aguardando','horários aguardando')} confirmação</b><span>${pend.slice(0,2).map(a=>esc(cname(a.cid))+' · '+fmtD(a.date)+' '+a.start).join(' · ')}</span></div></div>`:''}
         ${db.content.notice_on?`<div class="al"><div class="ic" style="background:var(--teal-bg);color:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18L3 13z"/></svg></div><div><b>Aviso ativo no site</b><span>${esc(db.content.notice)}</span><br><button class="btn btn-ghost btn-sm" data-go="conteudo">Editar</button></div></div>`:''}
         ${!late.length&&!pend.length&&!db.content.notice_on?'<p class="empty">Tudo em dia.</p>':''}
       </div>
       <div class="card box"><h3>Últimas alterações <small><a href="#historico" data-go="historico" style="color:var(--teal-2)">ver tudo</a></small></h3>
-        <div class="hist-mini">${db.log.slice(-5).reverse().map(l=>`<div><span>${esc(l.desc)}</span><span>${new Date(l.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')||'<p class="empty">Sem alterações.</p>'}</div>
+        <div class="hist-mini">${db.log.slice().sort((a,b)=>b.t-a.t).slice(0,5).map(l=>`<div><span>${esc(l.desc)}</span><span>${new Date(l.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')||'<p class="empty">Sem alterações.</p>'}</div>
       </div>
     </div>
   </div>`;
@@ -95,9 +110,14 @@ function apptRow(a){
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-st]');if(b){const a=db.appts.find(x=>x.id===b.dataset.id);const st=b.dataset.st;
-    change('appts',L=>{const x=L.find(y=>y.id===a.id);x.status=st;if(st==='done'){const n=L.filter(y=>y.date===TODAY&&y.status==='conf').sort((p,q)=>p.start.localeCompare(q.start))[0];if(n&&!L.some(y=>y.date===TODAY&&y.status==='now'))n.status='now'}},
-      `${cname(a.cid)}: ${st==='done'?'atendimento concluído':'falta registrada'} (${fmtD(a.date)} ${a.start})`,'Agenda');
-    if(st==='miss')DB.mutate('clients',L=>{const c=L.find(y=>y.id===a.cid);if(c)c.misses=(c.misses||0)+1},`Falta somada para ${cname(a.cid)}`,'Clientes')}
+    const nextNow=L=>{const n=L.filter(y=>y.date===TODAY&&y.status==='conf').sort((p,q)=>p.start.localeCompare(q.start))[0];if(n&&!L.some(y=>y.date===TODAY&&y.status==='now'))n.status='now'};
+    if(st==='miss'){mutMany(['appts','clients'],d=>{d.appts.find(y=>y.id===a.id).status='miss';const c=d.clients.find(y=>y.id===a.cid);if(c)c.misses=(c.misses||0)+1},`${cname(a.cid)}: falta registrada (${fmtD(a.date)} ${a.start})`,'Agenda');return}
+    if(a.plan||!a.price){change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído (${fmtD(a.date)} ${a.start})`,'Agenda');return}
+    const M=['Dinheiro','Pix','Maquininha (débito)','Maquininha (crédito)'];
+    modal(`<div class="eyebrow">Concluir atendimento</div><h3>${esc(cname(a.cid))}</h3><p>${esc(a.svc)} · ${money(a.price)}. Como o cliente pagou?</p><div class="opts4" id="cp-met" style="margin-top:16px">${M.map((m,i)=>`<div class="opt pay ${i===0?'on':''}" role="radio" tabindex="0" aria-checked="${i===0}" data-payic="${m}" data-v="${m}">${payIcon(m)}${m.replace('Maquininha ','').replace(/[()]/g,'')}</div>`).join('')}</div>
+      <div class="mact"><button class="btn btn-ghost" id="cp-later">Concluir sem pagamento</button><button class="btn btn-primary btn-pay" id="cp-ok" data-paybtn>${payIcon('Dinheiro')}Concluir e registrar</button></div>`);
+    $('#cp-ok').onclick=()=>{const m=$('#cp-met .opt.on').dataset.v;closeModal();mutMany(['appts','tx'],d=>{d.appts.find(y=>y.id===a.id).status='done';nextNow(d.appts);d.tx.unshift({id:DB.uid(),date:TODAY,cid:a.cid,desc:a.svc,method:m,value:a.price,kind:'avulso',status:'ok'})},`${cname(a.cid)}: atendimento concluído e ${money(a.price)} recebido (${m})`,'Agenda')};
+    $('#cp-later').onclick=()=>{closeModal();change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído sem pagamento registrado`,'Agenda')}}
   const ed=e.target.closest('[data-edit]');if(ed)editAppt(ed.dataset.edit);
   const ac=e.target.closest('[data-act]');if(ac&&ACT[ac.dataset.act])ACT[ac.dataset.act](ac);
 });
@@ -127,7 +147,7 @@ function vAgenda(){
   <div class="card box"><div class="legend" style="margin-bottom:14px"><span><i style="background:var(--teal)"></i>Assinante</span><span><i style="background:var(--info)"></i>Avulso</span><span><i style="background:var(--bad)"></i>Faltou</span><span><i style="background:var(--dim)"></i>Bloqueado</span><span class="hint">Clique num horário para editar, remarcar ou cancelar.</span></div>
   <div class="cal-wrap"><div class="cal">${cal}</div></div></div>`;
 }
-const svcOpts=sel=>db.services.map(s=>`<option ${s.n===sel?'selected':''}>${esc(s.n)}</option>`).join('')+['Corte + Barba'].filter(n=>!db.services.some(s=>s.n===n)).map(n=>`<option ${n===sel?'selected':''}>${n}</option>`).join('');
+const svcOpts=sel=>(sel&&!db.services.some(s=>s.n===sel)&&sel!=='Corte + Barba'?`<option selected>${esc(sel)}</option>`:'')+db.services.map(s=>`<option ${s.n===sel?'selected':''}>${esc(s.n)}</option>`).join('')+['Corte + Barba'].filter(n=>!db.services.some(s=>s.n===n)).map(n=>`<option ${n===sel?'selected':''}>${n}</option>`).join('');
 const clientOpts=sel=>db.clients.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)} · ${phoneFmt(c.phone)}</option>`).join('');
 const svcInfo=n=>{const s=db.services.find(x=>x.n===n);return s?{p:s.p,t:s.t}:n==='Corte + Barba'?{p:95,t:60}:{p:0,t:45}};
 function editAppt(id){
@@ -149,14 +169,15 @@ function editAppt(id){
    <div class="mact"><button class="btn btn-danger" id="f-cancel">Cancelar horário</button><button class="btn btn-ghost" id="f-wa">Avisar no WhatsApp</button><button class="btn btn-primary" id="f-save">Salvar</button></div>`);
   $('#f-svc').onchange=()=>{const s=svcInfo($('#f-svc').value);if(!$('#f-plan').checked)$('#f-price').value=s.p};
   $('#f-plan').onchange=()=>{$('#f-price').value=$('#f-plan').checked?0:svcInfo($('#f-svc').value).p};
-  $('#f-save').onclick=()=>{const nd=$('#f-date').value,ns=$('#f-start').value,moved=nd!==a.date||ns!==a.start,dur=svcInfo($('#f-svc').value).t;
+  $('#f-save').onclick=()=>{const nd=$('#f-date').value,ns=$('#f-start').value,svcCh=$('#f-svc').value!==a.svc,dur=svcCh?svcInfo($('#f-svc').value).t:a.dur,moved=nd!==a.date||ns!==a.start||dur!==a.dur,newSt=$('#f-st').value;
     const clash=db.appts.find(x=>x.id!==id&&x.date===nd&&!['cancel'].includes(x.status)&&DB.toMin(x.start)<DB.toMin(ns)+dur&&DB.toMin(x.start)+x.dur>DB.toMin(ns));
-    const hol=db.holidays.find(h=>h.date===nd),open=db.hours[new Date(nd+'T00:00').getDay()];
-    const warn=clash?`Já existe ${clash.status==='block'?'um bloqueio':'o horário de '+esc(cname(clash.cid))} às ${clash.start} nesse dia.`:hol?`${fmtD(nd)} está fechado (${esc(hol.name)}).`:!open?'A barbearia não abre nesse dia.':(DB.toMin(ns)<DB.toMin(open[0])||DB.toMin(ns)+dur>DB.toMin(open[1]))?`Fora do horário de funcionamento (${open[0]} – ${open[1]}).`:'';
+    const hol=db.holidays.find(h=>h.date===nd),open=db.hours[new Date(nd+'T00:00').getDay()],planErr=$('#f-plan').checked&&(!a.plan||moved||svcCh)?DB.planCheck(a.cid,nd,$('#f-svc').value,id):null;
+    const warn=clash?`Já existe ${clash.status==='block'?'um bloqueio':'o horário de '+esc(cname(clash.cid))} às ${clash.start} nesse dia.`:hol?`${fmtD(nd)} está fechado (${esc(hol.name)}).`:!open?'A barbearia não abre nesse dia.':(DB.toMin(ns)<DB.toMin(open[0])||DB.toMin(ns)+dur>DB.toMin(open[1]))?`Fora do horário de funcionamento (${open[0]} – ${open[1]}).`:nd<TODAY&&moved?'A data escolhida já passou.':planErr?'Regra do plano: '+esc(planErr):'';
     const doSave=()=>{closeModal();
-    change('appts',L=>{const x=L.find(y=>y.id===id);Object.assign(x,{svc:$('#f-svc').value,status:$('#f-st').value,date:nd,start:ns,price:+$('#f-price').value,plan:$('#f-plan').checked,note:$('#f-note').value,dur:svcInfo($('#f-svc').value).t})},
+    mutMany(['appts','clients'],d=>{const x=d.appts.find(y=>y.id===id);Object.assign(x,{svc:$('#f-svc').value,status:newSt,date:nd,start:ns,price:+$('#f-price').value,plan:$('#f-plan').checked,note:$('#f-note').value,dur});
+      if(newSt==='miss'&&a.status!=='miss'){const cl=d.clients.find(y=>y.id===a.cid);if(cl)cl.misses=(cl.misses||0)+1}},
       moved?`${c.name}: remarcado de ${fmtD(a.date)} ${a.start} para ${fmtD(nd)} ${ns}`:`${c.name}: agendamento de ${fmtD(a.date)} ${a.start} editado`,'Agenda')};
-    if(warn&&moved)confirmBox('Atenção',warn+' Salvar mesmo assim?','Salvar assim mesmo',doSave,false);else doSave()};
+    if(warn&&(moved||planErr))confirmBox('Atenção',warn+' Salvar mesmo assim?','Salvar assim mesmo',doSave,false);else doSave()};
   $('#f-cancel').onclick=()=>confirmBox('Cancelar horário?',`${esc(c.name)} · ${fmtD(a.date)} às ${a.start}. O horário volta a ficar livre no site.`,'Cancelar horário',()=>change('appts',L=>{L.find(y=>y.id===id).status='cancel'},`${c.name}: horário de ${fmtD(a.date)} ${a.start} cancelado`,'Agenda'));
   $('#f-wa').onclick=()=>window.open(`https://wa.me/55${String(c.phone).replace(/\D/g,'')}?text=${encodeURIComponent(`Oi, ${c.name}! Sobre seu horário de ${fmtD(a.date)} às ${a.start}:`)}`,'_blank','noopener');
 }
@@ -174,7 +195,7 @@ const ACT={
     $('#n-svc').onchange=fill;$('#n-date').onchange=fill;fill();
     $('#n-save').onclick=()=>{let cid=$('#n-cli').value;const t=$('#n-time').value;if(!t)return toast('Escolha um horário livre');
       if(!cid){const nm=$('#n-name').value.trim();if(!nm)return toast('Informe o nome do cliente');cid='c'+DB.uid();DB.mutate('clients',L=>L.push({id:cid,name:nm,phone:$('#n-phone').value.replace(/\D/g,''),notes:'',blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)}),`Cliente ${nm} cadastrado`,'Clientes')}
-      const s=svcInfo($('#n-svc').value),sub=db.subs.find(x=>x.cid===cid&&x.status==='ok');const d=new Date($('#n-date').value+'T00:00');const usePlan=!!sub&&(plan(sub.plan)||{days:[]}).days.includes(d.getDay())&&/^Corte( \+ Barba)?$/.test($('#n-svc').value);
+      const s=svcInfo($('#n-svc').value),ds=$('#n-date').value,isPlanSvc=/^corte( \+ barba)?$/i.test($('#n-svc').value),usePlan=isPlanSvc&&!DB.planCheck(cid,ds,$('#n-svc').value);
       closeModal();change('appts',L=>L.push({id:DB.uid(),date:$('#n-date').value,start:t,dur:s.t,cid,svc:$('#n-svc').value,price:usePlan?0:s.p,plan:usePlan,status:'conf',note:'Encaixe',origin:'painel'}),`Encaixe: ${cname(cid)} em ${fmtD($('#n-date').value)} às ${t}`,'Agenda')};
   },
   block:()=>{
@@ -214,12 +235,11 @@ function ficha(id){
    <div class="sec"><h4>Mesclar cadastro duplicado</h4><div class="fix"><select class="inp" id="c-merge"><option value="">Escolha o cadastro duplicado...</option>${db.clients.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)} · ${phoneFmt(x.phone)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="c-mergebtn">Mesclar neste</button></div><p class="hint">Horários, assinatura e faltas do duplicado passam para esta ficha, e o duplicado é apagado.</p></div>
    <div class="mact"><button class="btn btn-danger" id="c-del">Excluir dados (LGPD)</button><button class="btn btn-primary" id="c-save">Salvar</button></div>`,true);
   $('#c-save').onclick=()=>{closeModal();change('clients',L=>{const x=L.find(y=>y.id===id);Object.assign(x,{name:$('#c-name').value.trim()||x.name,phone:$('#c-phone').value.replace(/\D/g,''),notes:$('#c-notes').value,misses:+$('#c-miss').value,blocked:$('#c-block').checked})},`Ficha de ${c.name} atualizada`,'Clientes')};
-  $('#c-mergebtn').onclick=()=>{const o=$('#c-merge').value;if(!o)return toast('Escolha o cadastro duplicado');const on=cname(o);
+  $('#c-mergebtn').onclick=()=>{const o=$('#c-merge').value;if(!o)return toast('Escolha o cadastro duplicado');const on=cname(o);if(DB.activeSub(o)&&DB.activeSub(id))return toast('Os dois cadastros têm assinatura. Cancele uma delas antes de mesclar.');
     confirmBox('Mesclar cadastros?',`Tudo de <b>${esc(on)}</b> passa para <b>${esc(c.name)}</b>, e o cadastro de ${esc(on)} é apagado.`,'Mesclar',()=>{
-      DB.mutate('appts',L=>L.forEach(a=>{if(a.cid===o)a.cid=id}),`Horários de ${on} movidos para ${c.name}`,'Clientes');
-      DB.mutate('subs',L=>L.forEach(a=>{if(a.cid===o)a.cid=id}),`Assinatura de ${on} movida para ${c.name}`,'Clientes');
-      change('clients',L=>{const x=L.find(y=>y.id===id),y=L.find(z=>z.id===o);x.misses=(x.misses||0)+(y.misses||0);if(y.notes)x.notes=(x.notes?x.notes+'\n':'')+y.notes;L.splice(L.indexOf(y),1)},`Cadastro ${on} mesclado em ${c.name}`,'Clientes')},false)};
-  $('#c-del').onclick=()=>confirmBox('Excluir dados do cliente?',`Apaga nome, telefone e observações de ${esc(c.name)}. Os atendimentos ficam no histórico como "Cliente removido".`,'Excluir',()=>change('clients',L=>{const x=L.find(y=>y.id===id);Object.assign(x,{name:'Cliente removido',phone:'',notes:'',blocked:true})},`Dados de ${c.name} excluídos (LGPD)`,'Clientes'));
+      mutMany(['appts','subs','tx','clients'],d=>{d.appts.forEach(a=>{if(a.cid===o)a.cid=id});d.tx.forEach(t=>{if(t.cid===o)t.cid=id});d.subs.forEach(a=>{if(a.cid===o)a.cid=id});
+        const x=d.clients.find(y=>y.id===id),y=d.clients.find(z=>z.id===o);x.misses=(x.misses||0)+(y.misses||0);if(y.notes)x.notes=(x.notes?x.notes+'\n':'')+y.notes;d.clients.splice(d.clients.indexOf(y),1)},`Cadastro ${on} mesclado em ${c.name} (horários, assinatura e pagamentos)`,'Clientes')},false)};
+  $('#c-del').onclick=()=>confirmBox('Excluir dados do cliente?',`Apaga nome, telefone e observações de ${esc(c.name)}, encerra a assinatura e cancela os horários futuros. Os atendimentos passados ficam como "Cliente removido".`,'Excluir',()=>mutMany(['clients','subs','appts'],d=>{Object.assign(d.clients.find(y=>y.id===id),{name:'Cliente removido',phone:'',notes:'',blocked:true});d.subs.forEach(x=>{if(x.cid===id&&x.status!=='off'){x.status='off';x.cancelAt=null}});d.appts.forEach(a=>{if(a.cid===id&&a.date>=TODAY&&['conf','pend'].includes(a.status))a.status='cancel'})},`Dados de ${c.name} excluídos (LGPD): assinatura encerrada e horários futuros cancelados`,'Clientes'));
 }
 ACT['new-cli']=()=>{modal(`<h3>Novo cliente</h3><div class="form"><div class="two"><input class="inp" id="nc-name" placeholder="Nome"><input class="inp" id="nc-phone" placeholder="WhatsApp com DDD"></div><textarea class="inp" id="nc-notes" placeholder="Observações"></textarea></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="nc-save">Cadastrar</button></div>`);
   $('#nc-save').onclick=()=>{const n=$('#nc-name').value.trim();if(!n)return toast('Informe o nome');closeModal();change('clients',L=>L.push({id:'c'+DB.uid(),name:n,phone:$('#nc-phone').value.replace(/\D/g,''),notes:$('#nc-notes').value,blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)}),`Cliente ${n} cadastrado`,'Clientes')}};
@@ -231,46 +251,57 @@ const SS={ok:['Ativo','c-ok'],late:['Pendente','c-bad'],paused:['Pausado','c-war
 function vAssinantes(){
   const rows=db.subs.filter(s=>(subFilter==='all'||s.status===subFilter)&&cname(s.cid).toLowerCase().includes(subQ));
   return `<div class="top"><div><h1>Assinantes</h1><p>Cobrança automática. Use "Gerenciar" para qualquer correção.</p></div><div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-sub">Exportar planilha</button><button class="btn btn-primary btn-sm" data-act="new-sub">+ Nova assinatura</button></div></div>
-  <div class="pcards">${db.plans.map(p=>{const n=db.subs.filter(s=>s.plan===p.id&&s.status==='ok').length;return `<div class="card pc"><small>${esc(p.n)}${p.on?'':' (pausado)'}</small><b>${n}</b><span>${money0(n*p.p)}/mês</span></div>`}).join('')}</div>
+  <div class="pcards">${db.plans.map(p=>{const L=db.subs.filter(s=>s.plan===p.id&&s.status==='ok'),n=L.length;return `<div class="card pc"><small>${esc(p.n)}${p.on?'':' (fora da venda)'}</small><b>${n}</b><span>${money0(L.reduce((t,s)=>t+price(s),0))}/mês</span></div>`}).join('')}</div>
   <div class="card box"><div class="filters">${[['all','Todos'],['ok','Ativos'],['late','Pendentes'],['paused','Pausados'],['off','Cancelados']].map(([k,n])=>`<button class="fbtn ${subFilter===k?'on':''}" data-sf="${k}">${n}</button>`).join('')}<input class="inp search" id="sub-q" placeholder="Buscar assinante..." value="${esc(subQ)}"></div>
   <div class="tw"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th><th>Uso no mês</th><th>Próx. cobrança</th><th>Forma</th><th class="r">Ações</th></tr></thead><tbody>
   ${rows.map(s=>{const p=plan(s.plan)||{n:'—',quota:''};const q=/^(\d)/.exec(p.quota);const tot=q?(p.quota.includes('+')?+q[1]*2:+q[1]):0;
-    return `<tr><td><b>${esc(cname(s.cid))}</b><small>desde ${esc(s.since)}</small></td><td>${esc(p.n)}</td><td><span class="chip ${SS[s.status][1]}">${SS[s.status][0]}</span>${s.courtesyUntil?`<small>cortesia até ${fmtD(s.courtesyUntil)}</small>`:''}${s.pausedUntil&&s.status==='paused'?`<small>até ${fmtD(s.pausedUntil)}</small>`:''}</td>
-    <td>${s.status==='ok'?(tot?`<span class="mini-bar"><i style="width:${Math.min(100,(s.used/tot)*100)}%"></i></span>${s.used} de ${tot+(s.credit||0)}`:`${s.used} usos`):'<span class="hint">—</span>'}</td>
+    return `<tr><td><b>${esc(cname(s.cid))}</b><small>desde ${esc(s.since)}</small></td><td>${esc(p.n)}</td><td><span class="chip ${SS[s.status][1]}">${SS[s.status][0]}</span>${s.courtesyUntil?`<small>cortesia até ${fmtD(s.courtesyUntil)}</small>`:''}${s.pausedUntil&&s.status==='paused'?`<small>até ${fmtD(s.pausedUntil)}</small>`:''}${s.cancelAt?`<small>cancela em ${fmtD(s.cancelAt)}</small>`:''}</td>
+    <td>${s.status==='ok'?(()=>{const ym=TODAY.slice(0,7),u=DB.usage(s.cid,ym),qt=DB.quota(p),cr=DB.credit(s,ym);if(!qt)return plural(u.total,'atendimento','atendimentos')+' no mês';const lim=qt.corte+qt.barba+2*cr*(qt.barba?1:0)+(qt.barba?0:cr),used=u.corte+(qt.barba?u.barba:0);return `<span class="mini-bar"><i style="width:${Math.min(100,used/lim*100)}%"></i></span>${Math.min(used,lim)} de ${lim}`})():'<span class="hint">—</span>'}</td>
     <td>${s.status==='off'?'—':s.status==='late'?`<span class="dn">em aberto</span>`:fmtD(nextBill(s))+(s.exempt?' <span class="chip c-warn">isenta</span>':'')}</td><td>${payIcon(s.method)} ${esc(s.method)}</td>
     <td class="r">${s.status==='late'?`<button class="btn btn-primary btn-sm" data-subact="link" data-id="${s.id}">Cobrar</button> `:''}<button class="btn btn-ghost btn-sm" data-sub="${s.id}">Gerenciar</button></td></tr>`}).join('')||'<tr><td colspan="7" class="empty">Nenhuma assinatura.</td></tr>'}
   </tbody></table></div></div>`;
 }
-document.addEventListener('click',e=>{const f=e.target.closest('[data-sf]');if(f){subFilter=f.dataset.sf;render()}const g=e.target.closest('[data-sub]');if(g)gerSub(g.dataset.sub);const l=e.target.closest('[data-subact="link"]');if(l){const s=db.subs.find(x=>x.id===l.dataset.id);change('subs',L=>{},`Link de pagamento reenviado para ${cname(s.cid)} no WhatsApp`,'Assinaturas')}});
+document.addEventListener('click',e=>{const f=e.target.closest('[data-sf]');if(f){subFilter=f.dataset.sf;render()}const g=e.target.closest('[data-sub]');if(g)gerSub(g.dataset.sub);const l=e.target.closest('[data-subact="link"]');if(l){const s=db.subs.find(x=>x.id===l.dataset.id);DB.refresh();DB._log({id:DB.uid(),t:Date.now(),who:'Athos',area:'Assinaturas',desc:`Link de pagamento reenviado para ${cname(s.cid)} no WhatsApp`});DB.save();render();toast('Link de pagamento enviado no WhatsApp')}});
 document.addEventListener('input',e=>{if(e.target.id==='sub-q'){subQ=e.target.value.toLowerCase();const pos=e.target.selectionStart;render();const i=$('#sub-q');i.focus();i.setSelectionRange(pos,pos)}});
 function gerSub(id){
-  const s=db.subs.find(x=>x.id===id),nm=cname(s.cid),p=plan(s.plan);
+  const s=db.subs.find(x=>x.id===id),nm=cname(s.cid),p=plan(s.plan),st=s.status,cur=price(s);
   const upd=(fn,desc)=>{closeModal();change('subs',L=>fn(L.find(x=>x.id===id)),desc,'Assinaturas')};
-  modal(`<div class="eyebrow">Gerenciar assinatura</div><h3>${esc(nm)}</h3><p><span class="chip ${SS[s.status][1]}">${SS[s.status][0]}</span> &nbsp;${esc(p.n)} · ${money(p.p)}/mês</p>
+  modal(`<div class="eyebrow">Gerenciar assinatura</div><h3>${esc(nm)}</h3><p><span class="chip ${SS[st][1]}">${SS[st][0]}</span> &nbsp;${esc(p.n)} · ${money(cur)}/mês${cur!==DB.plan(s.plan).p&&db.plans.some(x=>x.id===s.plan)?` <span class="hint">(preço contratado; tabela atual ${money(DB.plan(s.plan).p)})</span>`:''}${s.cancelAt?` · <span class="chip c-warn">cancela em ${fmtD(s.cancelAt)}</span>`:''}${s.nextPlan?` · <span class="chip c-info">troca para ${esc(plan(s.nextPlan).n)} em ${fmtD(s.nextPlanAt)}</span>`:''}</p>
    <div class="form"><div class="three"><div class="fl"><label>Plano</label><select class="inp" id="s-plan">${db.plans.map(x=>`<option value="${x.id}" ${x.id===s.plan?'selected':''}>${esc(x.n)}</option>`).join('')}</select></div><div class="fl"><label>Dia da cobrança</label><select class="inp" id="s-day"><option value="1" ${s.day===1?'selected':''}>Dia 01</option><option value="7" ${s.day===7?'selected':''}>Dia 07</option></select></div><div class="fl"><label>Forma</label><select class="inp" id="s-met">${['Pix automático','Cartão'].map(m=>`<option ${m===s.method?'selected':''}>${m}</option>`).join('')}</select></div></div>
    <button class="btn btn-primary btn-sm" id="s-save" style="justify-self:start">Salvar plano e cobrança</button></div>
    <div class="sec"><h4>Correções</h4>
-     <div class="fix"><input class="inp" type="number" id="s-credit" placeholder="Usos a somar (+) ou tirar (−) neste mês"><button class="btn btn-ghost btn-sm" id="s-credit-b">Ajustar saldo</button></div>
-     <div class="fix"><select class="inp" id="s-court"><option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option></select><button class="btn btn-ghost btn-sm" id="s-court-b">Dar cortesia</button></div>
-     <div class="fix"><input class="inp" type="date" id="s-pause" value="${DB.iso(addD(today,30))}"><button class="btn btn-ghost btn-sm" id="s-pause-b">${s.status==='paused'?'Alterar pausa':'Pausar até'}</button></div>
-     <div class="fix"><span style="font-size:14px;color:var(--muted)">Próxima cobrança${s.exempt?' está isenta':''}</span><button class="btn btn-ghost btn-sm" id="s-exempt">${s.exempt?'Voltar a cobrar':'Isentar próxima cobrança'}</button></div>
-     <div class="fix"><span style="font-size:14px;color:var(--muted)">Última cobrança paga</span><button class="btn btn-ghost btn-sm" id="s-refund">Estornar</button></div>
+     ${st==='off'?'<p class="hint">Assinatura cancelada. Reative para fazer correções.</p>':`
+     ${st==='ok'?`<div class="fix"><input class="inp" type="number" id="s-credit" aria-label="Usos a ajustar" placeholder="Usos a somar (+) ou tirar (−) neste mês"><button class="btn btn-ghost btn-sm" id="s-credit-b">Ajustar saldo</button></div>`:''}
+     <div class="fix"><select class="inp" id="s-court" aria-label="Dias de cortesia"><option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option></select><button class="btn btn-ghost btn-sm" id="s-court-b">${st==='late'?'Perdoar fatura e dar cortesia':'Dar cortesia'}</button></div>
+     ${st==='ok'||st==='paused'?`<div class="fix"><input class="inp" type="date" id="s-pause" aria-label="Pausar até" value="${DB.iso(addD(today,30))}"><button class="btn btn-ghost btn-sm" id="s-pause-b">${st==='paused'?'Alterar pausa':'Pausar até'}</button></div>`:''}
+     ${st==='ok'?`<div class="fix"><span style="font-size:14px;color:var(--muted)">Próxima cobrança${s.exempt?' está isenta':''}</span><button class="btn btn-ghost btn-sm" id="s-exempt">${s.exempt?'Voltar a cobrar':'Isentar próxima cobrança'}</button></div>`:''}
+     <div class="fix"><span style="font-size:14px;color:var(--muted)">Última cobrança paga</span><button class="btn btn-ghost btn-sm" id="s-refund">Estornar</button></div>`}
      ${s.status==='late'?`<div class="fix"><span style="font-size:14px;color:var(--muted)">Pagamento em aberto</span><button class="btn btn-ghost btn-sm" id="s-paid">Marcar como pago</button></div>`:''}
    </div>
-   <div class="mact">${s.status==='off'?`<button class="btn btn-primary" id="s-react">Reativar assinatura</button>`:`${s.status==='paused'?'<button class="btn btn-ghost" id="s-react">Retomar agora</button>':''}<button class="btn btn-danger" id="s-cancel">Cancelar assinatura</button>`}</div>`,true);
-  $('#s-save').onclick=()=>{const np=$('#s-plan').value;upd(x=>{x.plan=np;x.day=+$('#s-day').value;x.method=$('#s-met').value},np!==s.plan?`${nm}: plano trocado de ${p.n} para ${plan(np).n}`:`${nm}: dados de cobrança atualizados`)};
-  $('#s-credit-b').onclick=()=>{const v=parseInt($('#s-credit').value);if(!v)return toast('Informe quantos usos ajustar');upd(x=>{x.credit=(x.credit||0)+v},`${nm}: saldo do mês ajustado em ${v>0?'+':''}${v} uso(s)`)};
-  $('#s-court-b').onclick=()=>{const n=+$('#s-court').value,base=s.courtesyUntil&&s.courtesyUntil>TODAY?new Date(s.courtesyUntil+'T00:00'):new Date(nextBill(s)+'T00:00');const until=DB.iso(addD(base,n));upd(x=>{x.courtesyUntil=until;if(x.status==='late')x.status='ok'},`${nm}: cortesia de ${n} dias (até ${fmtD(until)})`)};
-  $('#s-pause-b').onclick=()=>{const d=$('#s-pause').value;if(!d||d<=TODAY)return toast('Escolha uma data futura');upd(x=>{x.status='paused';x.pausedUntil=d},`${nm}: assinatura pausada até ${fmtD(d)}`)};
-  $('#s-exempt').onclick=()=>upd(x=>{x.exempt=!x.exempt},`${nm}: próxima cobrança ${s.exempt?'volta a ser cobrada':'isenta'}`);
-  $('#s-refund').onclick=()=>{const t=db.tx.find(x=>x.cid===s.cid&&x.kind==='plano'&&x.status==='ok');if(!t)return toast('Nenhuma cobrança paga para estornar');
-    confirmBox('Estornar cobrança?',`${money(t.value)} de ${fmtD(t.date)} volta para ${esc(nm)}.`,'Estornar',()=>change('tx',L=>{L.find(x=>x.id===t.id).status='refunded'},`${nm}: estorno de ${money(t.value)} (${fmtD(t.date)})`,'Financeiro'))};
-  if($('#s-paid'))$('#s-paid').onclick=()=>{closeModal();DB.mutate('tx',L=>{const t=L.find(x=>x.cid===s.cid&&x.status==='failed');if(t){t.status='ok';t.method='Pago manualmente'}},`${nm}: pagamento registrado manualmente`,'Financeiro');change('subs',L=>{L.find(x=>x.id===id).status='ok'},`${nm}: assinatura reativada após pagamento`,'Assinaturas')};
-  if($('#s-react'))$('#s-react').onclick=()=>upd(x=>{x.status='ok';x.pausedUntil=null},`${nm}: assinatura ${s.status==='off'?'reativada':'retomada'}`);
-  if($('#s-cancel'))$('#s-cancel').onclick=()=>confirmBox('Cancelar assinatura?',`${esc(nm)} perde os benefícios no fim do ciclo atual (${fmtD(nextBill(s))}). Nenhuma nova cobrança é feita.`,'Cancelar assinatura',()=>change('subs',L=>{L.find(x=>x.id===id).status='off'},`${nm}: assinatura cancelada`,'Assinaturas'));
+   <div class="mact">${st==='off'?`<button class="btn btn-primary" id="s-react">Reativar e cobrar ${money(DB.plan(s.plan).p)}</button>`:`${st==='paused'?'<button class="btn btn-ghost" id="s-react">Retomar agora</button>':''}${s.cancelAt?'<button class="btn btn-ghost" id="s-keep">Desfazer cancelamento</button><button class="btn btn-danger" id="s-cancel-now">Encerrar agora</button>':'<button class="btn btn-danger" id="s-cancel">Cancelar assinatura</button>'}`}</div>`,true);
+  $('#s-save').onclick=()=>{const np=$('#s-plan').value;upd(x=>{if(np!==x.plan){x.plan=np;x.price=DB.plan(np).p;x.nextPlan=null;x.nextPlanAt=null}x.day=+$('#s-day').value;x.method=$('#s-met').value},np!==s.plan?`${nm}: plano trocado de ${p.n} para ${plan(np).n} (${money(DB.plan(np).p)})`:`${nm}: dados de cobrança atualizados`)};
+  if($('#s-credit-b'))$('#s-credit-b').onclick=()=>{const v=parseInt($('#s-credit').value);if(!v)return toast('Informe quantos usos ajustar');const ym=TODAY.slice(0,7);upd(x=>{x.credit=DB.credit(x,ym)+v;x.creditMonth=ym},`${nm}: saldo de ${MOF[today.getMonth()]} ajustado em ${v>0?'+':''}${plural(v,'uso','usos')}`)};
+  if($('#s-court-b'))$('#s-court-b').onclick=()=>{const n=+$('#s-court').value,base=s.courtesyUntil&&s.courtesyUntil>TODAY?new Date(s.courtesyUntil+'T00:00'):new Date(nextBill(s)+'T00:00');const until=DB.iso(addD(base,n));closeModal();
+    mutMany(['subs','tx'],d=>{const x=d.subs.find(y=>y.id===id);x.courtesyUntil=until;if(x.status==='late'){x.status='ok';d.tx.forEach(t=>{if(t.cid===s.cid&&t.status==='failed')t.status='waived'})}},`${nm}: cortesia de ${n} dias (até ${fmtD(until)})${st==='late'?' e fatura em aberto perdoada':''}`,'Assinaturas')};
+  if($('#s-pause-b'))$('#s-pause-b').onclick=()=>{const d=$('#s-pause').value;if(!d||d<=TODAY)return toast('Escolha uma data futura');upd(x=>{x.status='paused';x.pausedUntil=d},`${nm}: assinatura pausada até ${fmtD(d)}`)};
+  if($('#s-exempt'))$('#s-exempt').onclick=()=>upd(x=>{x.exempt=!x.exempt},`${nm}: próxima cobrança ${s.exempt?'volta a ser cobrada':'isenta'}`);
+  if($('#s-refund'))$('#s-refund').onclick=()=>{const t=db.tx.find(x=>x.cid===s.cid&&x.kind==='plano'&&x.status==='ok');if(!t)return toast('Nenhuma cobrança paga para estornar');
+    modal(`<h3>Estornar cobrança?</h3><p>${money(t.value)} de ${fmtD(t.date)} volta para ${esc(nm)}.</p><label style="display:flex;gap:10px;align-items:center;font-size:14px;margin-top:14px">${sw('rf-susp',st==='ok')} Suspender a assinatura até um novo pagamento</label><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-danger" id="rf-ok">Estornar</button></div>`);
+    $('#rf-ok').onclick=()=>{const susp=$('#rf-susp').checked;closeModal();mutMany(['tx','subs'],d=>{d.tx.find(x=>x.id===t.id).status='refunded';if(susp){const x=d.subs.find(y=>y.id===id);if(x.status==='ok')x.status='late'}},`${nm}: estorno de ${money(t.value)} (${fmtD(t.date)})${susp?' e assinatura suspensa':''}`,'Financeiro')}};
+  if($('#s-paid'))$('#s-paid').onclick=()=>{closeModal();mutMany(['tx','subs'],d=>{const t=d.tx.find(x=>x.cid===s.cid&&x.status==='failed');if(t){t.status='ok';t.method='Pago no balcão';t.value=cur}else d.tx.unshift({id:DB.uid(),date:TODAY,cid:s.cid,desc:'Plano '+p.n,method:'Pago no balcão',value:cur,kind:'plano',status:'ok'});d.subs.find(x=>x.id===id).status='ok'},`${nm}: pagamento de ${money(cur)} registrado no balcão e assinatura reativada`,'Assinaturas')};
+  if($('#s-react'))$('#s-react').onclick=()=>{
+    if(st==='paused')return upd(x=>{x.status='ok';x.pausedUntil=null},`${nm}: assinatura retomada`);
+    if(DB.activeSub(s.cid))return toast('Esse cliente já tem outra assinatura ativa.');
+    const np=DB.plan(s.plan);if(!db.plans.some(x=>x.id===s.plan))return toast('O plano desta assinatura foi excluído. Crie uma nova assinatura.');
+    confirmBox('Reativar assinatura?',`Cobra ${money(np.p)} agora (plano ${esc(np.n)}, preço atual) e libera os benefícios.`,'Reativar e cobrar',()=>mutMany(['subs','tx'],d=>{Object.assign(d.subs.find(y=>y.id===id),{status:'ok',price:np.p,pausedUntil:null,cancelAt:null,nextPlan:null,paidUntil:DB.addMonth(TODAY),credit:0,creditMonth:null});d.tx.unshift({id:DB.uid(),date:TODAY,cid:s.cid,desc:'Plano '+np.n,method:s.method,value:np.p,kind:'plano',status:'ok'})},`${nm}: assinatura reativada (${money(np.p)} cobrado)`,'Assinaturas'),false)};
+  if($('#s-keep'))$('#s-keep').onclick=()=>upd(x=>{x.cancelAt=null},`${nm}: cancelamento desfeito`);
+  if($('#s-cancel-now'))$('#s-cancel-now').onclick=()=>confirmBox('Encerrar agora?',`${esc(nm)} perde os benefícios hoje, sem esperar ${fmtD(s.cancelAt)}.`,'Encerrar agora',()=>change('subs',L=>{const x=L.find(y=>y.id===id);x.status='off';x.cancelAt=null},`${nm}: assinatura encerrada`,'Assinaturas'));
+  if($('#s-cancel'))$('#s-cancel').onclick=()=>{const end=nextBill(s);confirmBox('Cancelar assinatura?',`${esc(nm)} mantém os benefícios até o fim do ciclo atual (${fmtD(end)}). Nenhuma nova cobrança é feita.`,'Cancelar no fim do ciclo',()=>change('subs',L=>{const x=L.find(y=>y.id===id);x.cancelAt=st==='ok'?end:null;if(st!=='ok')x.status='off';x.nextPlan=null},`${nm}: ${st==='ok'?'cancelamento agendado para '+fmtD(end):'assinatura cancelada'}`,'Assinaturas'))};
 }
 ACT['new-sub']=()=>{modal(`<h3>Nova assinatura</h3><p>Para cliente que assinou no balcão. O link de pagamento vai pelo WhatsApp.</p><div class="form"><div class="fl"><label>Cliente</label><select class="inp" id="ns-cli">${clientOpts()}</select></div><div class="two"><div class="fl"><label>Plano</label><select class="inp" id="ns-plan">${db.plans.filter(p=>p.on).map(p=>`<option value="${p.id}">${esc(p.n)} · ${money0(p.p)}</option>`).join('')}</select></div><div class="fl"><label>Dia da cobrança</label><select class="inp" id="ns-day"><option value="1">Dia 01</option><option value="7" selected>Dia 07</option></select></div></div></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="ns-save">Criar e enviar link</button></div>`);
-  $('#ns-save').onclick=()=>{const cid=$('#ns-cli').value;if(db.subs.some(s=>s.cid===cid&&s.status!=='off'))return toast('Esse cliente já tem assinatura ativa');closeModal();change('subs',L=>L.push({id:'a'+DB.uid(),cid,plan:$('#ns-plan').value,status:'ok',used:0,credit:0,day:+$('#ns-day').value,method:'Pix automático',since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2),pausedUntil:null,courtesyUntil:null,exempt:false}),`Nova assinatura: ${cname(cid)} · ${plan($('#ns-plan').value).n}`,'Assinaturas')}};
+  $('#ns-save').onclick=()=>{const cid=$('#ns-cli').value,pl=DB.plan($('#ns-plan').value);DB.refresh();if(DB.activeSub(cid))return toast('Esse cliente já tem assinatura ativa');closeModal();
+    mutMany(['subs','tx'],d=>{const v={plan:pl.id,price:pl.p,status:'ok',used:0,credit:0,creditMonth:null,day:+$('#ns-day').value,method:'Pix automático',pausedUntil:null,courtesyUntil:null,exempt:false,cancelAt:null,nextPlan:null,paidUntil:DB.addMonth(TODAY)};const old=d.subs.find(x=>x.cid===cid);if(old)Object.assign(old,v);else d.subs.push({id:'a'+DB.uid(),cid,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2),...v});
+      d.tx.unshift({id:DB.uid(),date:TODAY,cid,desc:'Plano '+pl.n,method:'Pix automático',value:pl.p,kind:'plano',status:'ok'})},`Nova assinatura: ${cname(cid)} · ${pl.n} (${money(pl.p)})`,'Assinaturas')}};
 ACT['exp-sub']=()=>download('assinantes-athos.csv',csv(['Cliente','Plano','Status','Dia','Forma','Desde'],db.subs.map(s=>[cname(s.cid),(plan(s.plan)||{}).n,(SS[s.status]||['?'])[0],s.day,s.method,s.since])),'text/csv');
 
 /* ================= FINANCEIRO ================= */
@@ -281,10 +312,10 @@ function vFinanceiro(){
   const refunds=mt.filter(t=>t.status==='refunded').reduce((s,t)=>s+t.value,0),failed=mt.filter(t=>t.status==='failed').reduce((s,t)=>s+t.value,0);
   const REC=[1200,1640,2080,2560,3120,rec],AV=[4100,3900,3700,3500,3400,av],mx=Math.max(...REC.map((r,i)=>r+AV[i]),1);
   const rows=db.tx.filter(t=>txF==='all'||t.status===txF||(txF==='manual'&&t.manual));
-  const TS={ok:['Pago','c-ok'],failed:['Falhou','c-bad'],refunded:['Estornado','c-warn']};
+  const TS={ok:['Pago','c-ok'],failed:['Falhou','c-bad'],refunded:['Estornado','c-warn'],waived:['Perdoado','c-dim']};
   return `<div class="top"><div><h1>Financeiro</h1><p>${MOF[today.getMonth()][0].toUpperCase()+MOF[today.getMonth()].slice(1)} de ${today.getFullYear()}</p></div><div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-tx">Exportar CSV</button><button class="btn btn-primary btn-sm" data-act="new-tx">+ Registrar pagamento</button></div></div>
   <div class="kpis"><div class="card kpi"><small>Receita do mês</small><b>${money0(rec+av)}</b><span>até hoje</span></div><div class="card kpi"><small>Planos</small><b>${money0(rec)}</b><span>${mt.filter(t=>t.kind==='plano'&&t.status==='ok').length} cobranças pagas</span></div><div class="card kpi"><small>Avulso e balcão</small><b>${money0(av)}</b><span>${mt.filter(t=>t.kind!=='plano'&&t.status==='ok').length} recebimentos</span></div><div class="card kpi"><small>Em aberto</small><b class="${failed?'dn':''}">${money0(failed)}</b><span>cobranças que falharam</span></div><div class="card kpi"><small>Estornos</small><b>${money0(refunds)}</b><span>no mês</span></div></div>
-  <div class="g21"><div class="card box"><h3>Receita por mês <small><span style="color:var(--teal)">■</span> Planos &nbsp;<span style="color:#52525b">■</span> Avulso</small></h3><div class="chart">${REC.map((r,i)=>`<div class="col"><span class="v">${money0(r+AV[i])}</span><div class="stack" style="height:${(r+AV[i])/mx*180}px"><i class="s1" style="height:${r/(r+AV[i]||1)*100}%"></i><i class="s2" style="height:${AV[i]/(r+AV[i]||1)*100}%"></i></div></div>`).join('')}</div><div class="xl">${REC.map((_,i)=>`<span>${MO[new Date(today.getFullYear(),today.getMonth()-5+i,1).getMonth()]}</span>`).join('')}</div></div>
+  <div class="g21"><div class="card box"><h3>Receita por mês <small><span style="color:var(--teal)">■</span> Planos &nbsp;<span style="color:var(--info)">■</span> Avulso</small></h3><div class="chart">${REC.map((r,i)=>`<div class="col"><span class="v">${money0(r+AV[i])}</span><div class="stack" style="height:${(r+AV[i])/mx*180}px"><i class="s1" style="height:${r/(r+AV[i]||1)*100}%"></i><i class="s2" style="height:${AV[i]/(r+AV[i]||1)*100}%"></i></div></div>`).join('')}</div><div class="xl">${REC.map((_,i)=>`<span>${MO[new Date(today.getFullYear(),today.getMonth()-5+i,1).getMonth()]}</span>`).join('')}</div></div>
   <div class="card box"><h3>Formas de pagamento <small>no mês</small></h3>${['Pix automático','Pix','Cartão','Dinheiro','Maquininha (débito)','Maquininha (crédito)'].map(m=>{const v=mt.filter(t=>t.status==='ok'&&t.method===m).reduce((s,t)=>s+t.value,0);return v?`<div class="meter" style="margin-bottom:12px"><div class="lbl"><span>${m}</span><b>${money0(v)}</b></div><div class="bar"><i style="width:${v/(rec+av||1)*100}%"></i></div></div>`:''}).join('')||'<p class="empty">Sem recebimentos.</p>'}</div></div>
   <div class="card box"><h3>Lançamentos</h3><div class="filters">${[['all','Todos'],['ok','Pagos'],['failed','Falharam'],['refunded','Estornados'],['manual','Lançados à mão']].map(([k,n])=>`<button class="fbtn ${txF===k?'on':''}" data-tf="${k}">${n}</button>`).join('')}</div>
   <div class="tw"><table><thead><tr><th>Data</th><th>Cliente</th><th>Descrição</th><th>Forma</th><th>Status</th><th class="r">Valor</th><th class="r"></th></tr></thead><tbody>
@@ -320,7 +351,7 @@ ACT['svc-ed']=b=>{const s=db.services.find(x=>x.id===b.dataset.id)||{cat:'cab',n
     if(isNew)change('services',L=>L.push({id:DB.uid(),on:true,...v}),`Serviço ${v.n} criado (${money(v.p)})`,'Serviços');
     else change('services',L=>Object.assign(L.find(x=>x.id===s.id),v),s.p!==v.p?`Preço de ${v.n} alterado de ${money(s.p)} para ${money(v.p)}`:`Serviço ${v.n} editado`,'Serviços')};
   if($('#e-del'))$('#e-del').onclick=()=>confirmBox('Excluir serviço?',`${esc(s.n)} sai do site e do agendamento. Horários já marcados continuam.`,'Excluir',()=>change('services',L=>L.splice(L.findIndex(x=>x.id===s.id),1),`Serviço ${s.n} excluído`,'Serviços'))};
-ACT['plan-ed']=b=>{const p=plan(b.dataset.id)||{n:'',p:'',days:[1,2,3,4],quota:'Ilimitado',gap:7,perks:'',on:true};const isNew=!p.id;
+ACT['plan-ed']=b=>{const p=db.plans.find(x=>x.id===b.dataset.id)||{n:'',p:'',days:[1,2,3,4],quota:'Ilimitado',gap:7,perks:'',on:true};const isNew=!p.id;
   modal(`<h3>${isNew?'Novo plano':'Editar plano'}</h3><p>Mudança de preço vale para novos assinantes. Atuais são avisados com 30 dias.</p><div class="form"><div class="two"><div class="fl"><label>Nome</label><input class="inp" id="p-n" value="${esc(p.n)}"></div><div class="fl"><label>Preço por mês (R$)</label><input class="inp" type="number" id="p-p" value="${p.p}"></div></div>
   <div class="fl"><label>Dias válidos</label><div class="days-pick" id="p-days">${WD.map((d,i)=>`<span data-d="${i}" class="${p.days.includes(i)?'on':''}">${d}</span>`).join('')}</div></div>
   <div class="two"><div class="fl"><label>Cota</label><select class="inp" id="p-q">${['Ilimitado','2 por mês','4 por mês','2 + 2 por mês'].map(q=>`<option ${q===p.quota?'selected':''}>${q}</option>`).join('')}</select></div><div class="fl"><label>Intervalo mínimo</label><select class="inp" id="p-gap">${[0,7,10,14].map(g=>`<option value="${g}" ${g===p.gap?'selected':''}>${g?g+' dias':'Sem intervalo'}</option>`).join('')}</select></div></div>
@@ -330,7 +361,7 @@ ACT['plan-ed']=b=>{const p=plan(b.dataset.id)||{n:'',p:'',days:[1,2,3,4],quota:'
   $('#p-save').onclick=()=>{const v={n:$('#p-n').value.trim(),p:+$('#p-p').value||0,days:$$('#p-days span.on').map(x=>+x.dataset.d),quota:$('#p-q').value,gap:+$('#p-gap').value,perks:$('#p-perks').value||'—'};if(!v.n)return toast('Informe o nome');if(!v.days.length)return toast('Escolha pelo menos um dia');closeModal();
     if(isNew)change('plans',L=>L.push({id:DB.uid(),on:true,...v}),`Plano ${v.n} criado (${money0(v.p)}/mês)`,'Serviços');
     else change('plans',L=>Object.assign(L.find(x=>x.id===p.id),v),p.p!==v.p?`Preço do plano ${v.n} alterado de ${money0(p.p)} para ${money0(v.p)}`:`Plano ${v.n} editado`,'Serviços')};
-  if($('#p-del'))$('#p-del').onclick=()=>{const n=db.subs.filter(s=>s.plan===p.id&&s.status!=='off').length;if(n)return toast(`Não dá para excluir: ${n} assinante(s) ativos. Oculte o plano.`);confirmBox('Excluir plano?',esc(p.n),'Excluir',()=>change('plans',L=>L.splice(L.findIndex(x=>x.id===p.id),1),`Plano ${p.n} excluído`,'Serviços'))}};
+  if($('#p-del'))$('#p-del').onclick=()=>{const n=db.subs.filter(s=>s.plan===p.id||s.nextPlan===p.id).length;if(n)return toast(`Não dá para excluir: ${plural(n,'assinatura usa','assinaturas usam')} este plano (inclusive canceladas). Oculte o plano em vez de excluir.`);confirmBox('Excluir plano?',esc(p.n),'Excluir',()=>change('plans',L=>L.splice(L.findIndex(x=>x.id===p.id),1),`Plano ${p.n} excluído`,'Serviços'))}};
 
 /* ================= CONTEÚDO DO SITE ================= */
 function vConteudo(){
@@ -339,7 +370,7 @@ function vConteudo(){
   <div class="g11">
    <div>
     <div class="card box"><h3>Aviso no topo do site ${sw('k-notice_on',c.notice_on)}</h3><div class="form"><input class="inp" id="k-notice" value="${esc(c.notice)}" placeholder="Ex.: Fechado no feriado"><p class="hint">Faixa que aparece no topo de todas as páginas. Use para feriado, promoção ou mudança de horário.</p></div></div>
-    <div class="card box"><h3>Página inicial</h3><div class="form"><div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div><div class="two"><div class="fl"><label>Título (linha 1)</label><input class="inp" id="k-hero_t1" value="${esc(c.hero_t1)}"></div><div class="fl"><label>Título (destaque verde)</label><input class="inp" id="k-hero_t2" value="${esc(c.hero_t2)}"></div></div><div class="fl"><label>Texto</label><textarea class="inp" id="k-hero_lead">${esc(c.hero_lead)}</textarea></div><div class="fl"><label>Sobre o barbeiro</label><textarea class="inp" id="k-about">${esc(c.about)}</textarea></div></div></div>
+    <div class="card box"><h3>Página inicial</h3><div class="form"><div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div><div class="two"><div class="fl"><label>Título (linha 1)</label><input class="inp" id="k-hero_t1" value="${esc(c.hero_t1)}"></div><div class="fl"><label>Título (destaque)</label><input class="inp" id="k-hero_t2" value="${esc(c.hero_t2)}"></div></div><div class="fl"><label>Texto</label><textarea class="inp" id="k-hero_lead">${esc(c.hero_lead)}</textarea></div><div class="fl"><label>Sobre o barbeiro</label><textarea class="inp" id="k-about">${esc(c.about)}</textarea></div></div></div>
     <div class="card box"><h3>Contato</h3><div class="form"><div class="two"><div class="fl"><label>WhatsApp (com 55 e DDD)</label><input class="inp" id="k-wa" value="${esc(c.wa)}"></div><div class="fl"><label>Telefone exibido</label><input class="inp" id="k-phone" value="${esc(c.phone)}"></div></div><div class="two"><div class="fl"><label>Endereço</label><input class="inp" id="k-address" value="${esc(c.address)}"></div><div class="fl"><label>Instagram (sem @)</label><input class="inp" id="k-instagram" value="${esc(c.instagram)}"></div></div></div></div>
     <button class="btn btn-primary" data-act="save-content" style="margin-top:16px">Salvar e publicar</button>
    </div>
@@ -392,7 +423,7 @@ const ROLE={admin:'Administrador',barbeiro:'Barbeiro',recepcao:'Recepção'};
 function vEquipe(){
   return `<div class="top"><div><h1>Equipe e permissões</h1><p>Quem acessa o painel e o que cada um pode fazer.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="team-add">+ Adicionar pessoa</button></div></div>
   <div class="card box"><h3>Pessoas</h3><div class="tw"><table><thead><tr><th>Nome</th><th>Função</th><th>Acesso</th><th></th></tr></thead><tbody>
-  ${db.team.map(u=>`<tr><td><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${u.id==='u1'?'Administrador (dono)':`<select class="inp" data-role="${u.id}" style="width:auto">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}" ${k===u.role?'selected':''}>${v}</option>`).join('')}</select>`}</td><td>${sw('tm-'+u.id,u.active,u.id==='u1')}</td><td class="r">${u.id==='u1'?'':`<button class="btn btn-danger btn-sm" data-act="team-rm" data-id="${u.id}">Remover</button>`}</td></tr>`).join('')}
+  ${db.team.map(u=>`<tr><td><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${u.id==='u1'?'Administrador (dono)':`<select class="inp" data-role="${u.id}" style="width:auto">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}" ${k===u.role?'selected':''}>${v}</option>`).join('')}</select>`}</td><td>${sw('tmon-'+u.id,u.active,u.id==='u1')}</td><td class="r">${u.id==='u1'?'':`<button class="btn btn-danger btn-sm" data-act="team-rm" data-id="${u.id}">Remover</button>`}</td></tr>`).join('')}
   </tbody></table></div></div>
   <div class="card box"><h3>Permissões por função <button class="btn btn-primary btn-sm" data-act="perm-save">Salvar permissões</button></h3><div class="tw"><table class="perm"><thead><tr><th>Permissão</th><th>Administrador</th><th>Barbeiro</th><th>Recepção</th></tr></thead><tbody>
   ${db.roles.perms.map((p,i)=>`<tr><td>${esc(p)}</td><td><input type="checkbox" checked disabled></td><td><input type="checkbox" data-perm="barbeiro" data-i="${i}" ${db.roles.barbeiro[i]?'checked':''}></td><td><input type="checkbox" data-perm="recepcao" data-i="${i}" ${db.roles.recepcao[i]?'checked':''}></td></tr>`).join('')}
@@ -400,7 +431,7 @@ function vEquipe(){
 }
 document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.role){const u=db.team.find(x=>x.id===t.dataset.role);change('team',L=>{L.find(x=>x.id===u.id).role=t.value},`${u.name}: função alterada para ${ROLE[t.value]}`,'Equipe')}
-  if(t.id&&t.id.startsWith('tm-')){const u=db.team.find(x=>x.id===t.id.slice(3));change('team',L=>{L.find(x=>x.id===u.id).active=t.checked},`${u.name}: acesso ${t.checked?'liberado':'suspenso'}`,'Equipe')}});
+  if(t.id&&t.id.startsWith('tmon-')){const u=db.team.find(x=>x.id===t.id.slice(5));if(!u)return;change('team',L=>{L.find(x=>x.id===u.id).active=t.checked},`${u.name}: acesso ${t.checked?'liberado':'suspenso'}`,'Equipe')}});
 Object.assign(ACT,{
   'team-add':()=>{modal(`<h3>Adicionar pessoa</h3><p>Ela recebe um convite por e-mail para criar a senha.</p><div class="form"><div class="two"><input class="inp" id="tm-name" placeholder="Nome"><input class="inp" id="tm-email" type="email" placeholder="E-mail"></div><select class="inp" id="tm-role"><option value="barbeiro">Barbeiro</option><option value="recepcao">Recepção</option><option value="admin">Administrador</option></select></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tm-save">Enviar convite</button></div>`);
     $('#tm-save').onclick=()=>{const n=$('#tm-name').value.trim(),em=$('#tm-email').value.trim();if(!n||!/\S+@\S+\.\S+/.test(em))return toast('Informe nome e e-mail');closeModal();change('team',L=>L.push({id:'u'+DB.uid(),name:n,email:em,role:$('#tm-role').value,active:true}),`${n} adicionado(a) à equipe como ${ROLE[$('#tm-role').value]}`,'Equipe')}},
@@ -415,10 +446,11 @@ function vHistorico(){
   const rows=db.log.slice().reverse().filter(l=>(logF==='all'||l.area===logF)&&l.desc.toLowerCase().includes(logQ));
   return `<div class="top"><div><h1>Histórico</h1><p>Toda alteração fica registrada. As mais recentes podem ser desfeitas.</p></div></div>
   <div class="card box"><div class="filters"><button class="fbtn ${logF==='all'?'on':''}" data-lf="all">Tudo</button>${areas.map(a=>`<button class="fbtn ${logF===a?'on':''}" data-lf="${esc(a)}">${esc(a)}</button>`).join('')}<input class="inp search" id="log-q" placeholder="Buscar..." value="${esc(logQ)}"></div>
-  ${rows.map(l=>{const d=new Date(l.t);return `<div class="loge ${l.undone?'undone':''}"><time>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time><div><b>${esc(l.desc)}</b><span>${esc(l.who)} · ${esc(l.area)}${l.undone?' · desfeito':''}</span></div><div>${l.key&&l.before&&!l.undone?`<button class="btn btn-ghost btn-sm" data-undo="${l.id}">Desfazer</button>`:''}</div></div>`}).join('')||'<p class="empty">Nenhum registro.</p>'}</div>`;
+  ${rows.map(l=>{const d=new Date(l.t);return `<div class="loge ${l.undone?'undone':''}"><time>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time><div><b>${esc(l.desc)}</b><span>${esc(l.who)} · ${esc(l.area)}${l.undone?' · desfeito':''}</span></div><div>${DB.canUndo(l)?`<button class="btn btn-ghost btn-sm" data-undo="${l.id}">Desfazer</button>`:''}</div></div>`}).join('')||'<p class="empty">Nenhum registro.</p>'}</div>`;
 }
-document.addEventListener('click',e=>{const f=e.target.closest('[data-lf]');if(f){logF=f.dataset.lf;render()}const u=e.target.closest('[data-undo]');if(u){const id=u.dataset.undo,l=db.log.find(x=>x.id===id),n=DB.laterSameKey(id);
-  const doit=()=>{if(DB.undo(id)){render();toast('Alteração desfeita')}};
+document.addEventListener('click',e=>{const f=e.target.closest('[data-lf]');if(f){logF=f.dataset.lf;render()}const u=e.target.closest('[data-undo]');if(u){const id=u.dataset.undo,l=db.log.find(x=>x.id===id),n=DB.laterSameKey(id),orf=DB.undoOrphans(id);
+  if(orf)return confirmBox('Não dá para desfazer só isso',`Desfazer deixaria ${plural(orf,'registro','registros')} (agenda, assinatura ou pagamento) sem cliente. Desfaça antes as alterações mais recentes ligadas a este cliente.`,'Entendi',()=>{},false);
+  const doit=()=>{if(DB.undo(id)){render();toast('Alteração desfeita')}else toast('Não foi possível desfazer')};
   n?confirmBox('Desfazer esta alteração?',`Isso também desfaz ${n} alteração(ões) feita(s) depois na mesma área (${esc(l.area)}).`,'Desfazer',doit,false):doit()}});
 document.addEventListener('input',e=>{if(e.target.id==='log-q'){logQ=e.target.value.toLowerCase();const pos=e.target.selectionStart;render();const i=$('#log-q');i.focus();i.setSelectionRange(pos,pos)}});
 
@@ -441,7 +473,7 @@ function vConfig(){
      <div class="set"><div>Tolerância de atraso</div>${sel('cf-tolerance',[[10,'10 min'],[15,'15 min'],[20,'20 min']],s.tolerance)}</div>
      <div class="set"><div>Faltas sem aviso<small>Bloqueia agendamento online após</small></div>${sel('cf-noShow',[[2,'2 faltas'],[3,'3 faltas'],[5,'5 faltas'],[99,'Nunca bloquear']],s.noShow)}</div></div>
     <div class="card box"><h3>Backup dos dados</h3><p class="hint" style="margin-bottom:14px">Baixe uma cópia de tudo (clientes, agenda, financeiro, conteúdo) ou restaure um backup.</p>
-     <div class="acts"><button class="btn btn-ghost btn-sm" data-act="bk-exp">Baixar backup</button><label class="btn btn-ghost btn-sm">Restaurar backup<input type="file" accept=".json" hidden id="bk-imp"></label><button class="btn btn-danger btn-sm" data-act="bk-reset">Voltar aos dados de exemplo</button></div></div>
+     <div class="acts"><button class="btn btn-ghost btn-sm" data-act="bk-exp">Baixar backup</button><label class="btn btn-ghost btn-sm">Restaurar backup<input type="file" accept=".json" hidden id="bk-imp"></label>${new URLSearchParams(location.search).has('demo')?'<button class="btn btn-danger btn-sm" data-act="bk-reset">Voltar aos dados de exemplo</button>':''}</div></div>
    </div>
   </div>`;
 }
@@ -452,8 +484,12 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.id)return;
 Object.assign(ACT,{
   'cfg-save':()=>{
     const hrs={},ch=[];[0,1,2,3,4,5,6].forEach(d=>{hrs[d]=$('#h-on-'+d).checked?[$('#h-a-'+d).value,$('#h-b-'+d).value]:null;if(JSON.stringify(hrs[d])!==JSON.stringify(db.hours[d]))ch.push(WDF[d])});
+    const bad=[0,1,2,3,4,5,6].filter(d=>hrs[d]&&DB.toMin(hrs[d][0])>=DB.toMin(hrs[d][1]));if(bad.length)return toast(`${bad.map(d=>WDF[d]).join(', ')}: o horário de abertura precisa ser antes do fechamento.`);
+    const lunchV=$('#l-on').checked?[$('#l-a').value,$('#l-b').value]:null;if(lunchV&&DB.toMin(lunchV[0])>=DB.toMin(lunchV[1]))return toast('Almoço: o início precisa ser antes do fim.');
+    const hit=db.appts.filter(a=>a.date>=TODAY&&['conf','pend'].includes(a.status)&&(()=>{const h=hrs[new Date(a.date+'T00:00').getDay()];return !h||DB.toMin(a.start)<DB.toMin(h[0])||DB.toMin(a.start)+a.dur>DB.toMin(h[1])})());
+    if(hit.length&&!ACT._cfgOk){return confirmBox('Clientes fora do novo horário',`${plural(hit.length,'horário marcado fica','horários marcados ficam')} fora do novo funcionamento: ${hit.slice(0,4).map(a=>esc(cname(a.cid))+' '+fmtD(a.date)+' '+a.start).join(', ')}${hit.length>4?'…':''}. Eles continuam na agenda: avise e remarque.`,'Salvar assim mesmo',()=>{ACT._cfgOk=true;ACT['cfg-save']();ACT._cfgOk=false},false)}
     if(ch.length)DB.mutate('hours',H=>Object.assign(H,hrs),`Horário de funcionamento alterado: ${ch.join(', ')}`,'Configurações');
-    const lunch=$('#l-on').checked?[$('#l-a').value,$('#l-b').value]:null;if(JSON.stringify(lunch)!==JSON.stringify(db.lunch)){const before=JSON.stringify(db.lunch);db.lunch=lunch;db.log.push({id:DB.uid(),t:Date.now(),who:'Athos',area:'Configurações',desc:lunch?`Almoço: ${lunch.join(' – ')}`:'Almoço removido',key:'lunch',before});ch.push('almoço')}
+    const lunch=lunchV;if(JSON.stringify(lunch)!==JSON.stringify(db.lunch)){DB.mutateMany(['lunch'],d=>{d.lunch=lunch},lunch?`Almoço: ${lunch.join(' – ')}`:'Almoço removido','Configurações');ch.push('almoço')}
     const ns={};['step','minAdv','cancelUntil','tolerance','noShow'].forEach(k=>ns[k]=+$('#cf-'+k).value);
     if(JSON.stringify(ns)!==JSON.stringify(db.settings)){DB.mutate('settings',S=>Object.assign(S,ns),'Regras da agenda alteradas','Configurações');ch.push('regras')}
     DB.save();render();toast(ch.length?'Configurações salvas':'Nada foi alterado')},
@@ -467,5 +503,7 @@ Object.assign(ACT,{
 
 /* ================= render ================= */
 const VIEWS={hoje:vHoje,agenda:vAgenda,clientes:vClientes,assinantes:vAssinantes,financeiro:vFinanceiro,servicos:vServicos,conteudo:vConteudo,mensagens:vMensagens,equipe:vEquipe,historico:vHistorico,config:vConfig};
-function render(){renderNav();$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+VIEW));$('#v-'+VIEW).innerHTML=VIEWS[VIEW]()}
+function render(){renderNav();$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+VIEW));$('#v-'+VIEW).innerHTML=VIEWS[VIEW]();a11y($('#v-'+VIEW));$$('tr.click').forEach(t=>{t.tabIndex=0})}
+/* outra aba (site ou área do cliente) gravou: atualiza a tela se nenhuma janela estiver aberta */
+window.onDBChange=()=>{if(!$('#modal').classList.contains('open'))render()};
 render();

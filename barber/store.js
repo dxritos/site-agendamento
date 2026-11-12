@@ -40,7 +40,7 @@ function defaults(){
       {id:uid(),q:'Como funciona a assinatura?',a:'Você escolhe um plano e paga automaticamente todo mês, por Pix ou cartão, no dia 01 ou 07. Com o plano ativo, os serviços inclusos saem por R$ 0 no agendamento.'},
       {id:uid(),q:'Posso usar o plano na sexta e no sábado?',a:'Os planos valem de segunda a quinta. Na sexta e no sábado você agenda normalmente, pagando o valor avulso.'},
       {id:uid(),q:'Tem fidelidade? Como cancelo?',a:'Não tem fidelidade. Você cancela pela sua área do cliente e os benefícios continuam até o fim do mês já pago.'},
-      {id:uid(),q:'E se eu precisar remarcar ou faltar?',a:'Você remarca ou cancela pelo celular até 2 horas antes. Faltas sem aviso podem bloquear o agendamento online.'},
+      {id:uid(),q:'E se eu precisar remarcar ou faltar?',a:'Você remarca ou cancela pelo celular até {prazo_cancelamento} antes. Faltas sem aviso podem bloquear o agendamento online.'},
       {id:uid(),q:'Preciso criar senha para agendar?',a:'Não. Você entra com seu WhatsApp e confirma com um código que chega na hora.'}],
     reviews:[
       {id:uid(),name:'Lucas M.',info:'Assinante · Corte + Barba',text:'Assinei o ilimitado e corto toda semana. Agendo pelo celular em segundos e nunca mais esperei.'},
@@ -74,7 +74,7 @@ function defaults(){
   d.clients=CL.map(([name,phone,notes],i)=>({id:'c'+(i+1),name,phone,notes,blocked:false,misses:i===15?2:0,since:since[i%since.length]}));
   // assinaturas
   const SB=[['c1','cbi','ok',4],['c2','ci','ok',3],['c3','cbi','ok',2],['c4','c2','ok',1],['c5','cbi','ok',3],['c6','ci','late',0],['c7','cb2','late',0],['c8','cb2','ok',2],['c9','cb2','ok',0],['c10','ci','ok',2],['c11','c2','ok',2],['c12','ci','off',0]];
-  d.subs=SB.map(([cid,plan,status,used],i)=>({id:'a'+(i+1),cid,plan,status,used,credit:0,day:i%3===2?1:7,method:i%4===3?'Cartão':'Pix automático',since:d.clients.find(c=>c.id===cid).since,pausedUntil:null,courtesyUntil:null,exempt:false}));
+  d.subs=SB.map(([cid,plan,status,used],i)=>({id:'a'+(i+1),cid,plan,price:d.plans.find(x=>x.id===plan).p,status,used,credit:0,creditMonth:null,cancelAt:null,nextPlan:null,paidUntil:null,day:i%3===2?1:7,method:i%4===3?'Cartão':'Pix automático',since:d.clients.find(c=>c.id===cid).since,pausedUntil:null,courtesyUntil:null,exempt:false}));
   // agenda: semana atual + próxima
   const monday=new Date(today);monday.setDate(monday.getDate()-((today.getDay()+6)%7));
   const now=new Date(),nowM=now.getHours()*60+now.getMinutes();
@@ -83,12 +83,13 @@ function defaults(){
     if(!h||d.holidays.some(x=>x.date===ds))continue;
     const r=rng(ds);let m=toMin(h[0]);const end=toMin(h[1]);
     while(m<end){
-      if(day.getDay()<=5&&m===toMin(d.lunch[0])){m=toMin(d.lunch[1]);continue}
+      const L0=toMin(d.lunch[0]),L1=toMin(d.lunch[1]);if(day.getDay()<=5&&m>=L0&&m<L1){m=L1;continue}
       const x=r();
       if(x<.6){
         const svc=x<.25?'Corte + Barba':['Corte','Barba','Combo Especial','Corte','Corte + Pigmentação'][Math.floor(x*100)%5];
         const dur=svc==='Corte + Barba'||svc==='Combo Especial'||svc==='Corte + Pigmentação'?60:svc==='Barba'?30:45;
         if(m+dur>end)break;
+        if(day.getDay()<=5&&m<L1&&m+dur>L0){m=L1;continue}
         const c=d.clients[Math.floor(r()*16)];
         const sub=d.subs.find(s=>s.cid===c.id&&s.status==='ok');
         const plan=!!sub&&day.getDay()>=1&&day.getDay()<=4&&(svc==='Corte'||svc==='Corte + Barba');
@@ -118,26 +119,50 @@ function defaults(){
 function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return o}}catch(e){}return null}
 let data=load();if(!data){data=defaults();try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
 let imgs={};try{imgs=JSON.parse(localStorage.getItem(IMGKEY)||'{}')}catch(e){}
+const addMonth=(ds,n=1)=>{const d=new Date(ds+'T00:00:00');d.setMonth(d.getMonth()+n);return iso(d)};
+const todayIso=()=>iso(new Date());
 
 window.DB={
-  data,iso,toMin,toHM,uid,
+  data,iso,toMin,toHM,uid,addMonth,
   save(){try{localStorage.setItem(KEY,JSON.stringify(this.data));return true}catch(e){return false}},
-  /* toda alteração passa por aqui: grava o estado anterior para poder desfazer */
-  mutate(key,fn,desc,area,who){
-    const before=JSON.stringify(this.data[key]);fn(this.data[key]);
-    this.data.log.push({id:uid(),t:Date.now(),who:who||'Athos',area:area||'Geral',desc,key,before});
-    const L=this.data.log;if(L.length>120)L.splice(0,L.length-120);
-    L.slice(0,-30).forEach(e=>{if(e.before){delete e.before;e.key=null}});
+  /* traz para a memória o que outra aba gravou (sem trocar o objeto, as telas continuam apontando para ele) */
+  refresh(){const f=load();if(!f)return false;Object.keys(this.data).forEach(k=>{if(!(k in f))delete this.data[k]});Object.assign(this.data,f);return true},
+  /* estados que vencem com o tempo: pausa, cancelamento e troca de plano agendados */
+  normalize(){
+    const t=todayIso();let ch=false;
+    (this.data.subs||[]).forEach(s=>{
+      if(s.status==='paused'&&s.pausedUntil&&s.pausedUntil<=t){s.status='ok';s.pausedUntil=null;ch=true}
+      if(s.cancelAt&&s.cancelAt<=t&&s.status!=='off'){s.status='off';s.cancelAt=null;s.nextPlan=null;ch=true}
+      if(s.nextPlan&&s.nextPlanAt&&s.nextPlanAt<=t){const p=this.data.plans.find(x=>x.id===s.nextPlan);if(p){s.plan=p.id;s.price=p.p}s.nextPlan=null;s.nextPlanAt=null;ch=true}
+      if(s.price==null){const p=this.data.plans.find(x=>x.id===s.plan);s.price=p?p.p:0;ch=true}
+    });
+    if(ch)this.save();return ch;
+  },
+  _log(entry){const L=this.data.log;L.push(entry);if(L.length>120)L.splice(0,L.length-120);L.slice(0,-30).forEach(e=>{delete e.before;delete e.keys;e.key=null})},
+  /* toda alteração passa por aqui: lê o banco atualizado, grava o estado anterior (para desfazer) e salva */
+  mutate(key,fn,desc,area,who){return this.mutateMany([key],d=>fn(d[key]),desc,area,who)},
+  mutateMany(keys,fn,desc,area,who){
+    this.refresh();
+    const before={};keys.forEach(k=>before[k]=JSON.stringify(this.data[k]));
+    fn(this.data);
+    this._log({id:uid(),t:Date.now(),who:who||'Athos',area:area||'Geral',desc,keys:before,key:keys.join(',')});
     return this.save();
   },
   undo(id){
-    const e=this.data.log.find(x=>x.id===id);if(!e||!e.key||!e.before||e.undone)return false;
-    const cur=JSON.stringify(this.data[e.key]);this.data[e.key]=JSON.parse(e.before);e.undone=true;
-    this.data.log.push({id:uid(),t:Date.now(),who:'Athos',area:e.area,desc:'Desfeito: '+e.desc,key:e.key,before:cur});
+    this.refresh();
+    const e=this.data.log.find(x=>x.id===id);if(!e||e.undone)return false;
+    const keys=e.keys||(e.key&&e.before?{[e.key]:e.before}:null);if(!keys)return false;
+    const cur={};Object.keys(keys).forEach(k=>{cur[k]=JSON.stringify(this.data[k]);this.data[k]=JSON.parse(keys[k])});
+    e.undone=true;
+    this._log({id:uid(),t:Date.now(),who:'Athos',area:e.area,desc:'Desfeito: '+e.desc,keys:cur,key:Object.keys(cur).join(',')});
     return this.save();
   },
-  laterSameKey(id){const i=this.data.log.findIndex(x=>x.id===id),e=this.data.log[i];return e?this.data.log.slice(i+1).filter(x=>x.key===e.key).length:0},
-  reset(){try{localStorage.removeItem(KEY);localStorage.removeItem(IMGKEY)}catch(e){}},
+  canUndo(e){return !!(e&&!e.undone&&(e.keys||(e.key&&e.before)))},
+  laterSameKey(id){const i=this.data.log.findIndex(x=>x.id===id),e=this.data.log[i];if(!e)return 0;const ks=(e.key||'').split(',');return this.data.log.slice(i+1).filter(x=>(x.key||'').split(',').some(k=>ks.includes(k))).length},
+  /* referências que ficariam quebradas se esta alteração fosse desfeita */
+  undoOrphans(id){const e=this.data.log.find(x=>x.id===id);if(!e||!e.keys||!e.keys.clients)return 0;const ids=new Set(JSON.parse(e.keys.clients).map(c=>c.id));
+    return this.data.appts.filter(a=>a.cid&&!ids.has(a.cid)).length+this.data.subs.filter(s=>!ids.has(s.cid)).length+this.data.tx.filter(t=>t.cid&&!ids.has(t.cid)).length},
+  reset(){try{localStorage.removeItem(KEY);localStorage.removeItem(IMGKEY);localStorage.removeItem('athos_me')}catch(e){}},
   exportAll(){return JSON.stringify({db:this.data,images:imgs},null,1)},
   importAll(txt){const o=JSON.parse(txt);if(!o.db||o.db.v!==1)throw new Error('Arquivo inválido');
     const d=o.db,arr=['services','plans','faq','reviews','gallery','team','holidays','clients','subs','appts','tx','log'],HM=/^\d{2}:\d{2}$/,DT=/^\d{4}-\d{2}-\d{2}$/,IMG=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
@@ -149,19 +174,56 @@ window.DB={
     d.holidays.forEach(h=>{if(!DT.test(h.date))bad('feriados')});
     d.gallery.forEach(g=>{if(!['cortes','barba','espaco'].includes(g.cat))bad('galeria')});
     d.subs.forEach(s=>{if(!['ok','late','paused','off'].includes(s.status)||![1,7].includes(s.day)||!['Pix automático','Cartão'].includes(s.method))bad('assinaturas')});
-    d.tx.forEach(t=>{if(!DT.test(t.date)||typeof t.value!=='number'||!['ok','failed','refunded'].includes(t.status))bad('financeiro')});
+    d.tx.forEach(t=>{if(!DT.test(t.date)||typeof t.value!=='number'||!['ok','failed','refunded','waived'].includes(t.status))bad('financeiro')});
     if(!Array.isArray(d.roles.perms))bad('permissões');
     const im=o.images||{};Object.values(im).forEach(u=>{if(!IMG.test(u))bad('imagens')});localStorage.setItem(KEY,JSON.stringify(o.db));localStorage.setItem(IMGKEY,JSON.stringify(o.images||{}))},
   img:{get:id=>imgs[id]||null,set(id,url){imgs[id]=url;try{localStorage.setItem(IMGKEY,JSON.stringify(imgs));return true}catch(e){delete imgs[id];return false}},del(id){delete imgs[id];try{localStorage.setItem(IMGKEY,JSON.stringify(imgs))}catch(e){}}},
-  /* horários livres de um dia, respeitando funcionamento, almoço, feriados, agendamentos e bloqueios */
-  freeSlots(date,dur){
+
+  /* ===== regras de negócio compartilhadas (site, área do cliente e painel usam as mesmas) ===== */
+  plan(id){return this.data.plans.find(p=>p.id===id)||{id,n:'(plano excluído)',p:0,days:[],quota:'',gap:0,perks:'—',on:false}},
+  activeSub(cid){return this.data.subs.find(s=>s.cid===cid&&s.status!=='off')||null},
+  subPrice(s){return s.price!=null?s.price:this.plan(s.plan).p},
+  nextBill(s){const t=new Date(todayIso()+'T00:00:00');let d=new Date(t.getFullYear(),t.getMonth(),s.day);if(d<=t)d=new Date(t.getFullYear(),t.getMonth()+1,s.day);
+    if(s.paidUntil){while(iso(d)<s.paidUntil)d=new Date(d.getFullYear(),d.getMonth()+1,s.day)}return iso(d)},
+  credit(s,ym){return s.creditMonth===ym?(s.credit||0):0},
+  isBlocked(c){if(!c)return false;const lim=this.data.settings.noShow||99;return !!c.blocked||(lim<99&&(c.misses||0)>=lim)},
+  quota(p){const m=/^(\d+)(?: \+ (\d+))?/.exec(p.quota||'');return m?{corte:+m[1],barba:m[2]?+m[2]:0}:null},
+  usage(cid,ym,ignoreId){const L=this.data.appts.filter(a=>a.cid===cid&&a.plan&&a.id!==ignoreId&&a.date.slice(0,7)===ym&&!['cancel','miss'].includes(a.status));
+    return {total:L.length,corte:L.filter(a=>/corte/i.test(a.svc)).length,barba:L.filter(a=>/barba/i.test(a.svc)).length}},
+  /* null = pode usar o plano; texto = motivo de não poder */
+  planCheck(cid,date,svc,ignoreId){
+    const c=this.data.clients.find(x=>x.id===cid);
+    if(this.isBlocked(c))return 'Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';
+    const s=c&&this.activeSub(c.id);
+    if(!s)return 'Este número não tem assinatura ativa.';
+    if(s.status==='late')return 'Sua assinatura está com o pagamento pendente. Regularize na sua área do cliente para usar o plano.';
+    if(s.status==='paused')return `Sua assinatura está pausada${s.pausedUntil?' até '+s.pausedUntil.slice(8)+'/'+s.pausedUntil.slice(5,7):''}.`;
+    if(s.cancelAt&&date>=s.cancelAt)return `Sua assinatura termina em ${s.cancelAt.slice(8)}/${s.cancelAt.slice(5,7)}. Depois dessa data o atendimento é avulso.`;
+    const p=this.plan(s.plan),d=new Date(date+'T00:00:00'),WDS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],WDF=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+    const wantsBarba=/barba/i.test(svc),wantsCorte=/corte/i.test(svc);
+    if(wantsBarba&&!/barba/i.test(p.n))return `Seu plano (${p.n}) não inclui barba.`;
+    if(!p.days.includes(d.getDay()))return `Seu plano vale só ${p.days.map(x=>WDS[x]).join(', ')}. ${WDF[d.getDay()]} é atendimento avulso.`;
+    const ym=date.slice(0,7),q=this.quota(p),u=this.usage(c.id,ym,ignoreId),cr=this.credit(s,ym);
+    if(q){if(wantsCorte&&u.corte>=q.corte+cr)return `Você já usou ${q.corte+cr===1?'o corte':'os '+(q.corte+cr)+' cortes'} do plano neste mês. O saldo renova no dia 1º.`;
+      if(wantsBarba&&u.barba>=q.barba+cr)return `Você já usou ${q.barba+cr===1?'a barba':'as '+(q.barba+cr)+' barbas'} do plano neste mês. O saldo renova no dia 1º.`}
+    if(p.gap){const t=d.getTime(),near=this.data.appts.find(a=>a.cid===c.id&&a.plan&&a.id!==ignoreId&&!['cancel','miss'].includes(a.status)&&Math.abs(new Date(a.date+'T00:00').getTime()-t)<p.gap*864e5);
+      if(near){const nx=new Date(near.date+'T00:00');nx.setDate(nx.getDate()+p.gap);return `Seu plano pede ${p.gap} dias entre um corte e outro (você tem horário em ${near.date.slice(8)}/${near.date.slice(5,7)}). Pelo plano, o próximo é a partir de ${pad(nx.getDate())}/${pad(nx.getMonth()+1)}.`}}
+    return null;
+  },
+  /* horários livres de um dia, respeitando funcionamento, almoço, feriados, agendamentos, bloqueios e o passado */
+  freeSlots(date,dur,ignoreId){
+    if(date<todayIso())return[];
     const dt=new Date(date+'T00:00:00'),h=this.data.hours[dt.getDay()];
     if(!h||this.data.holidays.some(x=>x.date===date))return[];
-    const step=this.data.settings.step||30,busy=this.data.appts.filter(a=>a.date===date&&a.status!=='cancel').map(a=>[toMin(a.start),toMin(a.start)+a.dur]);
+    const step=this.data.settings.step||30,busy=this.data.appts.filter(a=>a.date===date&&a.status!=='cancel'&&a.id!==ignoreId).map(a=>[toMin(a.start),toMin(a.start)+a.dur]);
     if(dt.getDay()<=5&&this.data.lunch)busy.push([toMin(this.data.lunch[0]),toMin(this.data.lunch[1])]);
-    const now=new Date(),isToday=date===iso(new Date()),lim=now.getHours()*60+now.getMinutes()+(this.data.settings.minAdv||0);
+    const now=new Date(),isToday=date===todayIso(),lim=now.getHours()*60+now.getMinutes()+(this.data.settings.minAdv||0);
     const out=[];for(let m=toMin(h[0]);m+dur<=toMin(h[1]);m+=step){if(isToday&&m<lim)continue;if(busy.some(([a,b])=>m<b&&m+dur>a))continue;out.push(toHM(m))}
     return out;
-  }
+  },
+  cancelText(){const m=this.data.settings.cancelUntil||120;return m>=1440?(m/1440)+(m/1440>1?' dias':' dia'):m>=60?(m/60)+(m/60>1?' horas':' hora'):m+' minutos'}
 };
+DB.normalize();
+/* outra aba gravou: atualiza a memória e avisa a tela (cada página define window.onDBChange) */
+addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){DB.refresh();DB.normalize();if(typeof window.onDBChange==='function')window.onDBChange()}});
 })();

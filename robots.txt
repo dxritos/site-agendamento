@@ -1,4 +1,4 @@
 User-agent: *
-Disallow: /barber/painel
-Disallow: /barber/entrar
-Disallow: /barber/assinante
+Allow: /
+
+Sitemap: https://agendamento.farias.app.br/sitemap.xml

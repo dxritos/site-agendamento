@@ -7,6 +7,16 @@
 <meta name="description" content="Athos Barber — corte, barba e assinatura mensal em Parauapebas. Agende seu horário online.">
 <link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://agendamento.farias.app.br/barber/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Athos Barber">
+<meta property="og:title" content="Athos Barber | Barbearia em Parauapebas – PA">
+<meta property="og:description" content="Athos Barber — corte, barba e assinatura mensal em Parauapebas. Agende seu horário online.">
+<meta property="og:url" content="https://agendamento.farias.app.br/barber/">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BarberShop", "name": "Athos Barber", "url": "https://agendamento.farias.app.br/barber/", "telephone": "+55-94-98124-8772", "priceRange": "R$ 15 – R$ 200", "address": {"@type": "PostalAddress", "streetAddress": "Av. Bom Jardim", "addressLocality": "Parauapebas", "addressRegion": "PA", "addressCountry": "BR"}, "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday"], "opens": "09:00", "closes": "19:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": "Friday", "opens": "09:00", "closes": "20:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "08:00", "closes": "12:00"}]}</script>
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="site.css">
 </head>
@@ -250,8 +260,8 @@
     <h3 id="mtitle">Plano</h3>
     <div class="msum"><span style="color:var(--muted)">Valor mensal</span><b id="mprice">R$ 0</b></div>
     <label class="t">Seus dados</label>
-    <input class="inp" id="sname" placeholder="Nome completo" autocomplete="name">
-    <input class="inp" id="stel" inputmode="numeric" placeholder="WhatsApp — (94) 9 0000-0000">
+    <input class="inp" id="sname" placeholder="Nome completo" aria-label="Nome completo" autocomplete="name">
+    <input class="inp" id="stel" inputmode="numeric" aria-label="WhatsApp com DDD" autocomplete="tel-national" placeholder="WhatsApp — (94) 9 0000-0000">
     <label class="t" style="margin-top:8px">Dia da cobrança</label>
     <div class="opts"><div class="opt on">Dia 01</div><div class="opt">Dia 07</div></div>
     <label class="t">Forma de pagamento</label>

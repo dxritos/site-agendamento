@@ -7,6 +7,7 @@
 <link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="app.css">
 <style>
@@ -14,7 +15,7 @@ header{position:sticky;top:0;z-index:40;background:rgba(0,0,0,.96);border-bottom
 .hd{max-width:1100px;margin:0 auto;padding:0 16px;height:62px;display:flex;align-items:center;justify-content:space-between}
 .me{display:flex;align-items:center;gap:10px}
 .av{width:36px;height:36px;border-radius:50%;background:var(--teal);color:#ffffff;font-weight:700;font-size:13px;display:grid;place-items:center}
-.me button{font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer}
+.me button{font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer;padding:12px 10px;margin:-12px 0}
 .layout{max-width:1100px;margin:0 auto;padding:24px 16px 110px;display:grid;grid-template-columns:210px 1fr;gap:28px}
 .side{position:sticky;top:86px;align-self:start;display:grid;gap:4px}
 .tab{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;color:var(--muted);font-weight:500;font-size:14.5px;cursor:pointer;border:0;background:none;text-align:left;width:100%}
@@ -27,11 +28,11 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1}
 .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
 .alert{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-radius:16px;padding:16px 18px;margin-bottom:16px;background:var(--bad-bg);border:1px solid rgba(228,109,109,.35)}
 .alert b{display:block;color:var(--bad)}
-.alert span{font-size:13.5px;color:#e6c3c3}
+.alert span{font-size:13.5px;color:var(--txt);opacity:.85}
 .alert.info{background:var(--teal-bg);border-color:var(--teal-d)}
 .alert.info b{color:var(--teal-2)}.alert.info span{color:var(--muted)}
 .alert.warn{background:var(--warn-bg);border-color:rgba(227,165,79,.35)}
-.alert.warn b{color:var(--warn)}.alert.warn span{color:#e9d3b2}
+.alert.warn b{color:var(--warn)}
 .plan{padding:22px;background:linear-gradient(140deg,#141638,var(--card) 70%);border-color:var(--teal-d)}
 .plan.susp{background:var(--card);border-color:rgba(228,109,109,.35)}
 .plan.none{background:var(--card);border-color:var(--line)}
@@ -86,7 +87,7 @@ td.r,th.r{text-align:right}
 .slot.on{background:var(--teal);color:#ffffff;border-color:var(--teal)}
 .offer{background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:12px;padding:14px;margin-top:16px;font-size:13.5px}
 .offer b{color:var(--teal-2)}
-.pix-head{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;font-weight:600;color:#9ee6dd}
+.pix-head{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;font-weight:600;color:var(--teal-2)}
 .pix-head .pay-ic{width:30px;height:30px}
 .pix{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px;word-break:break-all;color:var(--muted);margin:14px 0}
 .empty{color:var(--muted);font-size:14px}

@@ -3,9 +3,9 @@
 @font-face{font-family:Inter;font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/inter.woff2) format("woff2")}
 :root{
   --bg:#000000; --bg-2:#05050b; --card:#08091a; --card-2:#0c0d24; --line:#17193a; --line-2:#23265a;
-  --txt:#f4f4f5; --muted:#a6a9cc; --dim:#70749f;
+  --txt:#f4f4f5; --muted:#a6a9cc; --dim:#7c80ad;
   --teal:#7b76f0; --teal-2:#bdbaff; --teal-d:#2f2c79; --teal-bg:rgba(123,118,240,.14);
-  --warn:#e3a54f; --warn-bg:rgba(227,165,79,.1); --bad:#e46d6d; --bad-bg:rgba(228,109,109,.1); --info:#7aa7e6; --info-bg:rgba(122,167,230,.1);
+  --warn:#f2c94c; --warn-bg:rgba(242,201,76,.1); --bad:#e46d6d; --bad-bg:rgba(228,109,109,.1); --info:#7aa7e6; --info-bg:rgba(122,167,230,.1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -21,7 +21,7 @@ button,input,select,textarea{font-family:inherit}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;padding:10px 18px;border-radius:11px;border:1px solid transparent;cursor:pointer;transition:.15s;white-space:nowrap}
 .btn svg{width:16px;height:16px}
-.btn-primary{background:linear-gradient(160deg,#8d89f0 0%,#4b47b8 30%,#2f2c79 66%,#171a4a 100%);color:#ffffff}
+.btn-primary{background:linear-gradient(160deg,#6c67e0 0%,#4b47b8 30%,#2f2c79 66%,#171a4a 100%);color:#ffffff}
 .btn-primary:hover{filter:brightness(1.08)}
 .btn-primary{box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 8px 28px rgba(123,118,240,.35)}
 .btn-ghost{border-color:var(--line-2);color:var(--txt);background:transparent}
@@ -73,7 +73,7 @@ label.t{display:block;font-size:11px;font-weight:600;letter-spacing:.2em;text-tr
 .bar i{transition:width .8s cubic-bezier(.2,.7,.2,1)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-/* ===== vinho neon ===== */
+/* ===== botão principal com brilho ===== */
 .btn-primary{color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.25);box-shadow:0 0 0 1px rgba(190,188,255,.28) inset,0 8px 26px rgba(123,118,240,.38),0 0 22px rgba(141,137,240,.18)}
 .btn-primary:hover{box-shadow:0 0 0 1px rgba(200,198,255,.4) inset,0 10px 34px rgba(123,118,240,.5),0 0 32px rgba(141,137,240,.3)}
 .chip.c-ok{color:#bdbaff;background:rgba(123,118,240,.14)}
@@ -105,3 +105,21 @@ label.t{display:block;font-size:11px;font-weight:600;letter-spacing:.2em;text-tr
 .btn-pay::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.42),transparent);transform:skewX(-20deg);animation:payShine 3s ease-in-out infinite;pointer-events:none}
 @keyframes payShine{0%,50%{left:-70%}78%,100%{left:130%}}
 @media (prefers-reduced-motion:reduce){.pay-ic svg,.btn-pay::after{animation:none!important}}
+
+/* ===== acessibilidade e correções da auditoria ===== */
+:root{color-scheme:dark}
+:focus-visible{outline:2px solid #bdbaff;outline-offset:2px}
+.inp:focus-visible{box-shadow:0 0 0 3px rgba(123,118,240,.35)}
+.inp{border-color:#565aa0}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;filter:none;box-shadow:none}
+.badge,.slot.on,.book-steps div.on i{background:#5b56d6!important;color:#fff!important}
+.av{background:#5b56d6!important;color:#fff!important}
+.btn-pay::after{animation:none}
+.btn-pay:hover::after{animation:payShine 1.2s ease-in-out 1}
+.mbox .x{width:40px;height:40px;display:grid;place-items:center;margin:-8px -8px 0 0}
+.mbox .btn-sm{min-height:36px}
+.tw,.cal-wrap{background:linear-gradient(to right,var(--card) 30%,rgba(0,0,0,0)),linear-gradient(to left,var(--card) 30%,rgba(0,0,0,0)) 100% 0,radial-gradient(farthest-side at 0 50%,rgba(0,0,0,.55),rgba(0,0,0,0)),radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.55),rgba(0,0,0,0)) 100% 0;background-repeat:no-repeat;background-size:40px 100%,40px 100%,14px 100%,14px 100%;background-attachment:local,local,scroll,scroll}
+
+.layout>*{min-width:0}
+.fix{grid-template-columns:minmax(0,1fr) auto}.fix .inp{min-width:0}
+.tw{overflow-x:auto}
