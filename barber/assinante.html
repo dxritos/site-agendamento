@@ -12,7 +12,7 @@
 header{position:sticky;top:0;z-index:40;background:rgba(9,9,11,.96);border-bottom:1px solid var(--line)}
 .hd{max-width:1100px;margin:0 auto;padding:0 16px;height:62px;display:flex;align-items:center;justify-content:space-between}
 .me{display:flex;align-items:center;gap:10px}
-.av{width:36px;height:36px;border-radius:50%;background:var(--teal);color:#111113;font-weight:700;font-size:13px;display:grid;place-items:center}
+.av{width:36px;height:36px;border-radius:50%;background:var(--teal);color:#ffffff;font-weight:700;font-size:13px;display:grid;place-items:center}
 .me button{font-size:13px;color:var(--muted);background:none;border:0;cursor:pointer}
 .layout{max-width:1100px;margin:0 auto;padding:24px 16px 110px;display:grid;grid-template-columns:210px 1fr;gap:28px}
 .side{position:sticky;top:86px;align-self:start;display:grid;gap:4px}
@@ -31,7 +31,7 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1}
 .alert.info b{color:var(--teal-2)}.alert.info span{color:var(--muted)}
 .alert.warn{background:var(--warn-bg);border-color:rgba(227,165,79,.35)}
 .alert.warn b{color:var(--warn)}.alert.warn span{color:#e9d3b2}
-.plan{padding:22px;background:linear-gradient(140deg,#1a1a1e,var(--card) 70%);border-color:var(--teal-d)}
+.plan{padding:22px;background:linear-gradient(140deg,#2c0f1b,var(--card) 70%);border-color:var(--teal-d)}
 .plan.susp{background:var(--card);border-color:rgba(228,109,109,.35)}
 .plan.none{background:var(--card);border-color:var(--line)}
 .plan .top{display:flex;justify-content:space-between;align-items:center}
@@ -82,9 +82,11 @@ td.r,th.r{text-align:right}
 .day:disabled{opacity:.35;cursor:not-allowed}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:10px;max-height:200px;overflow:auto}
 .slot{border:1px solid var(--line-2);background:none;color:var(--teal-2);border-radius:10px;padding:8px 0;font-size:14px;cursor:pointer;font-family:inherit}
-.slot.on{background:var(--teal);color:#111113;border-color:var(--teal)}
+.slot.on{background:var(--teal);color:#ffffff;border-color:var(--teal)}
 .offer{background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:12px;padding:14px;margin-top:16px;font-size:13.5px}
 .offer b{color:var(--teal-2)}
+.pix-head{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;font-weight:600;color:#9ee6dd}
+.pix-head .pay-ic{width:30px;height:30px}
 .pix{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px;word-break:break-all;color:var(--muted);margin:14px 0}
 .empty{color:var(--muted);font-size:14px}
 .demo{position:fixed;right:16px;bottom:16px;z-index:60;background:var(--card-2);border:1px solid var(--line-2);border-radius:14px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:300px}
@@ -124,6 +126,7 @@ td.r,th.r{text-align:right}
 <div class="toast" id="toast"></div>
 
 <script src="store.js"></script>
+<script src="pay.js"></script>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const db=DB.data;
@@ -184,7 +187,7 @@ function vInicio(){
     card=`<div class="card plan none"><div class="top"><span class="eyebrow">Seu plano</span><span class="chip c-dim">${s?'Cancelado':'Sem plano'}</span></div><h2>${s?'Assinatura cancelada':'Você ainda não assina'}</h2><div class="meta">Assine e corte o mês inteiro pagando menos que o avulso.</div><button class="btn btn-primary" data-go="plano">Ver planos</button></div>`;
   }else{
     const u=usage(s),late=s.status==='late',paused=s.status==='paused';
-    if(late)alert=`<div class="alert"><div><b>Pagamento não identificado</b><span>A cobrança do ${esc(p.n)} não foi paga. Pague para liberar os horários do plano.</span></div><button class="btn btn-primary btn-sm" data-pix>Pagar com Pix · ${brl(p.p)}</button></div>`;
+    if(late)alert=`<div class="alert"><div><b>Pagamento não identificado</b><span>A cobrança do ${esc(p.n)} não foi paga. Pague para liberar os horários do plano.</span></div><button class="btn btn-primary btn-sm btn-pay" data-pix>${payIcon('pix')}Pagar com Pix · ${brl(p.p)}</button></div>`;
     else if(paused)alert=`<div class="alert warn"><div><b>Assinatura pausada</b><span>Volta automaticamente em ${fmtD(s.pausedUntil)}. Nenhuma cobrança até lá.</span></div></div>`;
     else if(s.courtesyUntil&&s.courtesyUntil>=TODAY)alert=`<div class="alert info"><div><b>Você ganhou uma cortesia</b><span>Seu plano está garantido sem cobrança até ${fmtD(s.courtesyUntil)}.</span></div></div>`;
     else if(s.exempt)alert=`<div class="alert info"><div><b>Próxima cobrança isenta</b><span>O Athos isentou sua cobrança de ${fmtD(nextBill(s))}.</span></div></div>`;
@@ -208,15 +211,15 @@ function vAgenda(){
 }
 function vPagamentos(){
   const s=mySub(),p=s&&plan(s.plan),tx=db.tx.filter(t=>t.cid===ME).sort((a,b)=>b.date.localeCompare(a.date));const TS={ok:['Pago','c-ok'],failed:['Em aberto','c-bad'],refunded:['Estornado','c-warn']};
-  const next=!s||s.status==='off'?'<p class="empty">Sem assinatura ativa.</p>':s.status==='late'?`<div class="kv"><div><span>Fatura em aberto</span><b style="color:var(--bad)">${brl(p.p)}</b></div><div><span>Ação</span><button class="btn btn-primary btn-sm" data-pix>Pagar agora</button></div></div>`
+  const next=!s||s.status==='off'?'<p class="empty">Sem assinatura ativa.</p>':s.status==='late'?`<div class="kv"><div><span>Fatura em aberto</span><b style="color:var(--bad)">${brl(p.p)}</b></div><div><span>Ação</span><button class="btn btn-primary btn-sm btn-pay" data-pix>${payIcon('pix')}Pagar agora</button></div></div>`
     :`<div class="kv"><div><span>Valor</span><b>${s.exempt||(s.courtesyUntil&&s.courtesyUntil>=nextBill(s))?'<s style="color:var(--dim)">'+brl(p.p)+'</s> R$ 0,00':brl(p.p)}</b></div><div><span>Data</span><b>${s.status==='paused'?'após a pausa':dt(nextBill(s)).getDate()+' de '+MOF[dt(nextBill(s)).getMonth()]}</b></div><div><span>Plano</span><b>${esc(p.n)}</b></div></div>`;
   return `<h1>Pagamentos</h1><p class="sub">Cobrança automática. Você não precisa lembrar de nada.</p>
-  <div class="grid2"><div class="card box"><h3>Próxima cobrança</h3>${next}</div><div class="card box"><h3>Forma de pagamento</h3>${s&&s.status!=='off'?`<div class="kv"><div><span>Método</span><b>${esc(s.method)}</b></div><div><span>Dia de cobrança</span><b>Todo dia ${String(s.day).padStart(2,'0')}</b></div></div><button class="btn btn-ghost btn-sm" style="margin-top:16px" data-m="pay">Alterar forma de pagamento</button>`:'<p class="empty">—</p>'}</div></div>
+  <div class="grid2"><div class="card box"><h3>Próxima cobrança</h3>${next}</div><div class="card box"><h3>Forma de pagamento</h3>${s&&s.status!=='off'?`<div class="kv"><div><span>Método</span><b>${payIcon(s.method)} ${esc(s.method)}</b></div><div><span>Dia de cobrança</span><b>Todo dia ${String(s.day).padStart(2,'0')}</b></div></div><button class="btn btn-ghost btn-sm" style="margin-top:16px" data-m="pay">Alterar forma de pagamento</button>`:'<p class="empty">—</p>'}</div></div>
   <div class="card box" style="margin-top:16px"><h3>Recibos</h3><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Status</th><th class="r">Valor</th></tr></thead><tbody>${tx.map(t=>`<tr><td>${fmtD(t.date)}</td><td>${esc(t.desc)}</td><td><span class="chip ${TS[t.status][1]}">${TS[t.status][0]}</span></td><td class="r">${brl(t.value)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">Nenhum pagamento ainda.</td></tr>'}</tbody></table></div></div>`;
 }
 function vPlano(){
   const s=mySub(),p=s&&s.status!=='off'&&plan(s.plan);
-  if(!p)return `<h1>Planos</h1><p class="sub">Escolha um plano. A cobrança é automática e você cancela quando quiser.</p><div class="card box"><div class="plans" style="margin:0">${db.plans.filter(x=>x.on).map((x,i)=>`<div class="popt ${i===1?'on':''}" data-pid="${x.id}"><div><strong>${esc(x.n)}</strong><small>${x.days.map(d=>WD[d]).join(', ')} · ${esc(x.quota)}${x.perks&&x.perks!=='—'?' · '+esc(x.perks):''}</small></div><b>${brl(x.p)}</b></div>`).join('')}</div><div class="opts"><div class="opt on">Pix automático</div><div class="opt">Cartão</div></div><button class="btn btn-primary" style="margin-top:16px" data-subscribe>Assinar agora</button></div>`;
+  if(!p)return `<h1>Planos</h1><p class="sub">Escolha um plano. A cobrança é automática e você cancela quando quiser.</p><div class="card box"><div class="plans" style="margin:0">${db.plans.filter(x=>x.on).map((x,i)=>`<div class="popt ${i===1?'on':''}" data-pid="${x.id}"><div><strong>${esc(x.n)}</strong><small>${x.days.map(d=>WD[d]).join(', ')} · ${esc(x.quota)}${x.perks&&x.perks!=='—'?' · '+esc(x.perks):''}</small></div><b>${brl(x.p)}</b></div>`).join('')}</div><div class="opts"><div class="opt pay on" data-payic="pix">${payIcon('pix')}Pix automático</div><div class="opt pay" data-payic="card">${payIcon('card')}Cartão</div></div><button class="btn btn-primary btn-pay" style="margin-top:16px" data-subscribe data-paybtn>${payIcon('pix')}Assinar agora</button></div>`;
   const rules=[['Dias válidos',p.days.map(d=>WD[d]).join(', ')],['Cota',p.quota],['Intervalo mínimo',p.gap?p.gap+' dias':'Sem intervalo'],['Brindes',p.perks==='—'?'Nenhum':p.perks],['Saldo','Renova todo mês, não acumula']];
   return `<h1>Meu plano</h1><p class="sub">Troque ou cancele quando quiser, sem fidelidade.</p>
   <div class="grid2"><div class="card box"><h3>Detalhes</h3><div class="kv"><div><span>Plano</span><b>${esc(p.n)}</b></div><div><span>Valor</span><b>${brl(p.p)}/mês</b></div><div><span>Status</span><span class="chip ${s.status==='late'?'c-bad':s.status==='paused'?'c-warn':'c-ok'}">${{ok:'Ativo',late:'Suspenso',paused:'Pausado'}[s.status]}</span></div><div><span>Assinante desde</span><b>${esc(s.since)}</b></div></div></div>
@@ -232,7 +235,7 @@ document.addEventListener('click',e=>{
     $('#ok').onclick=()=>{closeModal();act('appts',L=>{L.find(x=>x.id===a.id).status='cancel'},`${me().name}: horário de ${fmtD(a.date)} ${a.start} cancelado pelo cliente`,'Agenda')}}
   const mv=t.closest('[data-move]');if(mv)moveAppt(mv.dataset.move);
   if(t.closest('[data-pix]')){const s=mySub(),p=plan(s.plan);
-    modal(`<h3>Pagar com Pix</h3><p>Copie o código e pague no app do banco. A assinatura volta na hora.</p><div class="pix">00020126580014BR.GOV.BCB.PIX0136athosbarber-${s.id}520400005303986540${p.p.toFixed(2)}5802BR5913ATHOS BARBER6011PARAUAPEBAS6304ABCD</div><div class="mact"><button class="btn btn-ghost" id="copy">Copiar código</button><button class="btn btn-primary" id="paid">Já paguei</button></div>`);
+    modal(`<h3>Pagar com Pix</h3><p>Copie o código e pague no app do banco. A assinatura volta na hora.</p><div class="pix-head">${payIcon('pix')}<span>Pix copia e cola</span></div><div class="pix">00020126580014BR.GOV.BCB.PIX0136athosbarber-${s.id}520400005303986540${p.p.toFixed(2)}5802BR5913ATHOS BARBER6011PARAUAPEBAS6304ABCD</div><div class="mact"><button class="btn btn-ghost" id="copy">Copiar código</button><button class="btn btn-primary btn-pay" id="paid">${payIcon('pix')}Já paguei</button></div>`);
     $('#copy').onclick=()=>{try{navigator.clipboard.writeText($('.pix').textContent)}catch(e){}toast('Código Pix copiado')};
     $('#paid').onclick=()=>{closeModal();DB.mutate('tx',L=>{const x=L.find(y=>y.cid===ME&&y.status==='failed');if(x){x.status='ok';x.method='Pix'}else L.unshift({id:DB.uid(),date:TODAY,cid:ME,desc:'Plano '+p.n,method:'Pix',value:p.p,kind:'plano',status:'ok'})},`${me().name}: pagou ${brl(p.p)} via Pix`,'Financeiro',me().name+' (cliente)');
       act('subs',L=>{L.find(x=>x.id===s.id).status='ok'},`${me().name}: assinatura reativada após pagamento`,'Assinaturas')}}
@@ -246,7 +249,7 @@ const M={
     $('#ok').onclick=()=>{const np=$('.popt.on').dataset.pid;closeModal();if(np===s.plan)return;act('subs',L=>{L.find(x=>x.id===s.id).plan=np},`${me().name}: trocou de ${plan(s.plan).n} para ${plan(np).n}`,'Assinaturas')}},
   day(){const s=mySub();modal(`<h3>Dia de cobrança</h3><p>Escolha o dia do mês em que a cobrança cai.</p><div class="opts"><div class="opt ${s.day===1?'on':''}" data-d="1">Dia 01</div><div class="opt ${s.day===7?'on':''}" data-d="7">Dia 07</div></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Salvar</button></div>`);
     $('#ok').onclick=()=>{const d=+$('.opt.on').dataset.d;closeModal();act('subs',L=>{L.find(x=>x.id===s.id).day=d},`${me().name}: dia de cobrança alterado para ${String(d).padStart(2,'0')}`,'Assinaturas')}},
-  pay(){const s=mySub();modal(`<h3>Forma de pagamento</h3><p>Cobrança automática no dia escolhido.</p><div class="opts"><div class="opt ${s.method==='Pix automático'?'on':''}">Pix automático</div><div class="opt ${s.method==='Cartão'?'on':''}">Cartão</div></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Salvar</button></div>`);
+  pay(){const s=mySub();modal(`<h3>Forma de pagamento</h3><p>Cobrança automática no dia escolhido.</p><div class="opts"><div class="opt pay ${s.method==='Pix automático'?'on':''}" data-payic="pix">${payIcon('pix')}Pix automático</div><div class="opt pay ${s.method==='Cartão'?'on':''}" data-payic="card">${payIcon('card')}Cartão</div></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Salvar</button></div>`);
     $('#ok').onclick=()=>{const v=$('.opt.on').textContent;closeModal();act('subs',L=>{L.find(x=>x.id===s.id).method=v},`${me().name}: forma de pagamento alterada para ${v}`,'Assinaturas')}},
   cancel(){const s=mySub(),alt=db.plans.filter(x=>x.on&&x.p<plan(s.plan).p).sort((a,b)=>a.p-b.p)[0];
     modal(`<h3>Cancelar assinatura?</h3><p>Seus benefícios continuam até ${fmtD(nextBill(s))}. Depois disso, nenhuma nova cobrança é feita.</p>${alt?`<div class="offer">Antes de ir: que tal o <b>${esc(alt.n)} por ${brl(alt.p)}/mês</b>? Você continua com preço de assinante.</div>`:''}<div class="mact">${alt?'<button class="btn btn-ghost" id="alt">Trocar de plano</button>':'<button class="btn btn-ghost" data-close>Voltar</button>'}<button class="btn btn-danger" id="ok">Cancelar mesmo</button></div>`);

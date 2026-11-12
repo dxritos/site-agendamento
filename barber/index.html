@@ -255,8 +255,8 @@
     <label class="t" style="margin-top:8px">Dia da cobrança</label>
     <div class="opts"><div class="opt on">Dia 01</div><div class="opt">Dia 07</div></div>
     <label class="t">Forma de pagamento</label>
-    <div class="opts"><div class="opt on">Pix automático<small>débito no dia</small></div><div class="opt">Cartão<small>recorrente</small></div></div>
-    <button class="btn btn-primary" id="mconfirm">Confirmar assinatura</button>
+    <div class="opts"><div class="opt pay on" data-payic="pix">Pix automático<small>débito no dia</small></div><div class="opt pay" data-payic="card">Cartão<small>recorrente</small></div></div>
+    <button class="btn btn-primary btn-pay" id="mconfirm" data-paybtn data-payic="pix">Confirmar assinatura</button>
   </div>
   <div class="mbox done" id="m2" style="display:none">
     <div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div>
@@ -266,6 +266,7 @@
   </div>
 </div>
 <script src="store.js"></script>
+<script src="pay.js"></script>
 <script src="site.js"></script>
 </body>
 </html>
