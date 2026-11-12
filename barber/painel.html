@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel | Athos Barber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+.app{display:grid;grid-template-columns:232px 1fr;min-height:calc(100vh - 26px);background:linear-gradient(90deg,var(--bg-2) 231px,var(--line) 231px 232px,transparent 232px)}
+.side{background:var(--bg-2);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh}
+.nav{display:grid;gap:3px}
+.tab{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;color:var(--muted);font-weight:500;font-size:14px;cursor:pointer;border:0;background:none;text-align:left;width:100%;white-space:nowrap}
+.tab svg{width:18px;height:18px;flex:0 0 18px}
+.tab:hover{color:var(--txt);background:var(--card)}
+.tab.on{color:var(--teal-2);background:var(--teal-bg)}
+.tab .cnt{margin-left:auto;font-size:11px;font-weight:700;background:var(--bad-bg);color:var(--bad);border-radius:999px;padding:1px 7px}
+.side .foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--teal);color:#062019;font-weight:700;font-size:13px;display:grid;place-items:center;flex:0 0 34px}
+.side .foot small{display:block;color:var(--dim);font-size:12px}
+.side .foot b{font-size:14px}
+main{padding:28px 32px 60px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+h1{font-family:"Bebas Neue";font-weight:400;font-size:42px;line-height:1}
+.top p{color:var(--muted);font-size:14px;margin-top:4px}
+.top .acts{display:flex;gap:8px;flex-wrap:wrap}
+.view{display:none}.view.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.kpi{padding:16px}
+.kpi small{display:block;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.kpi b{display:block;font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1.1;margin-top:6px}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.kpi span.up{color:var(--teal-2)}
+.kpi span.dn{color:var(--bad)}
+.g21{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+.g11{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{padding:20px}
+.box h3{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.box h3 small{font-size:12.5px;color:var(--muted);font-weight:400}
+/* hoje */
+.tl{display:grid}
+.ti{display:grid;grid-template-columns:58px 1fr auto;gap:14px;align-items:center;padding:12px 4px;border-top:1px solid var(--line)}
+.ti:first-child{border:0}
+.ti .h{font-family:"Bebas Neue";font-size:22px;line-height:1;color:var(--muted)}
+.ti .h small{display:block;font-family:Inter;font-size:11px;color:var(--dim)}
+.ti strong{font-size:14.5px;display:block}
+.ti .inf span{font-size:12.5px;color:var(--muted)}
+.ti .r{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.ti.done .h,.ti.done strong{color:var(--dim)}
+.ti.now{background:var(--teal-bg);border-radius:12px;border-color:transparent}
+.ti.free strong{color:var(--dim);font-weight:500}
+.al{display:flex;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg-2);align-items:flex-start}
+.al+.al{margin-top:10px}
+.al .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:0 0 32px}
+.al .ic svg{width:16px;height:16px}
+.al b{font-size:14px;display:block}
+.al span{font-size:12.5px;color:var(--muted)}
+.al .btn{margin-top:8px}
+/* agenda */
+.cal-wrap{overflow-x:auto}
+.cal{display:grid;grid-template-columns:52px repeat(6,minmax(130px,1fr));min-width:850px}
+.cal .hd{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.cal .hd b{display:block;font-family:"Bebas Neue";font-size:24px;font-weight:400;color:var(--txt);line-height:1}
+.cal .hd.today b{color:var(--teal)}
+.hcol{position:relative}
+.hcol div{height:56px;font-size:11px;color:var(--dim);text-align:right;padding-right:8px;transform:translateY(-7px)}
+.dcol{position:relative;border-left:1px solid var(--line);background:repeating-linear-gradient(180deg,transparent 0 55px,var(--line) 55px 56px)}
+.ev{position:absolute;left:4px;right:4px;border-radius:8px;padding:5px 7px;font-size:11.5px;line-height:1.3;overflow:hidden;border-left:3px solid}
+.ev b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.plan{background:rgba(69,196,166,.14);border-color:var(--teal);color:#d5efe8}
+.ev.avl{background:rgba(122,167,230,.13);border-color:var(--info);color:#d8e4f6}
+.ev.blk{background:repeating-linear-gradient(45deg,#151b19 0 6px,#111614 6px 12px);border-color:var(--dim);color:var(--muted)}
+.ev.closed{background:transparent;border:0;display:grid;place-items:center;color:var(--dim);font-size:12px}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+/* tabelas */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:0 12px 10px;white-space:nowrap}
+td{padding:12px;border-top:1px solid var(--line);white-space:nowrap}
+td small{display:block;color:var(--dim);font-size:12px}
+.r{text-align:right}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.fbtn{border:1px solid var(--line-2);background:none;color:var(--muted);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;cursor:pointer}
+.fbtn.on{border-color:var(--teal);color:var(--teal-2);background:var(--teal-bg)}
+.search{margin-left:auto;max-width:240px;padding:8px 12px;font-size:14px}
+.mini-bar{width:90px;height:6px;border-radius:6px;background:#1e2a27;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+.mini-bar i{display:block;height:100%;background:var(--teal)}
+.pcards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.pc{padding:16px}
+.pc small{font-size:12.5px;color:var(--muted)}
+.pc b{display:block;font-family:"Bebas Neue";font-weight:400;font-size:30px;line-height:1.1}
+.pc span{font-size:12px;color:var(--dim)}
+/* financeiro */
+.chart{display:flex;align-items:flex-end;gap:18px;height:230px;padding:10px 4px 0;border-bottom:1px solid var(--line)}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.stack{width:100%;max-width:56px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 0 0;overflow:hidden}
+.stack i{display:block}
+.stack .s1{background:var(--teal)}
+.stack .s2{background:#3b5c86}
+.col .v{font-size:11.5px;color:var(--muted)}
+.xl{display:flex;gap:18px;padding:8px 4px 0}
+.xl span{flex:1;text-align:center;font-size:12px;color:var(--dim);text-transform:capitalize}
+.hb{display:grid;gap:12px}
+.hb .lbl{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:5px}
+.hb .lbl span{color:var(--muted)}
+/* configs */
+.form{display:grid;gap:14px}
+.frow{display:grid;grid-template-columns:140px 1fr 1fr 90px;gap:10px;align-items:center;font-size:14px}
+.frow .inp{padding:9px 12px;font-size:14px}
+.sw{position:relative;width:40px;height:22px;flex:0 0 40px}
+.sw input{display:none}
+.sw span{position:absolute;inset:0;border-radius:22px;background:#24302c;cursor:pointer;transition:.2s}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#9aa6a2;transition:.2s}
+.sw input:checked+span{background:var(--teal-d)}
+.sw input:checked+span::after{left:21px;background:var(--teal-2)}
+.set{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+.set:first-of-type{border:0}
+.set small{display:block;color:var(--dim);font-size:12.5px}
+.set select{background:var(--bg-2);border:1px solid var(--line-2);color:var(--txt);border-radius:10px;padding:8px 10px;font-size:14px}
+.days-pick{display:flex;gap:6px;flex-wrap:wrap}
+.days-pick span{border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;color:var(--muted)}
+.days-pick span.on{border-color:var(--teal);color:var(--teal-2);background:var(--teal-bg)}
+.mform{display:grid;gap:12px;margin-top:16px}
+.mform .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mtop{display:none}
+@media(max-width:1180px){.kpis{grid-template-columns:repeat(3,1fr)}.pcards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:960px){
+  .app{grid-template-columns:1fr;background:none}
+  .side{display:none}
+  .mtop{display:block;position:sticky;top:0;z-index:40;background:rgba(11,14,13,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .mtop .row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
+  .mtop .nav{display:flex;overflow-x:auto;gap:4px;padding:0 10px 10px}
+  .mtop .tab{width:auto;padding:8px 12px;font-size:13px}
+  main{padding:20px 16px 50px}
+  .g21,.g11{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .frow{grid-template-columns:1fr 1fr;}
+  .frow>span:first-child{grid-column:1/-1;font-weight:600}
+  .search{margin-left:0;max-width:none;width:100%}
+}
+@media(max-width:560px){.ti{grid-template-columns:48px 1fr}.ti .r{grid-column:2;justify-content:flex-start}.pcards{grid-template-columns:1fr 1fr}.chart{gap:8px}.xl{gap:8px}}
+</style>
+</head>
+<body>
+<div class="proto">PROTÓTIPO — painel do barbeiro com dados fictícios</div>
+<div class="mtop"><div class="row"><a href="index.html" class="logo"><div class="mono">AB</div><b>Athos <span>Barber</span></b></a><div class="av">AT</div></div><nav class="nav" id="mnav"></nav></div>
+<div class="app">
+  <aside class="side">
+    <a href="index.html" class="logo"><div class="mono">AB</div><b>Athos <span>Barber</span></b></a>
+    <nav class="nav" id="snav"></nav>
+    <div class="foot"><div class="av">AT</div><div><b>Athos</b><small>Administrador</small></div></div>
+  </aside>
+  <main>
+    <!-- HOJE -->
+    <section class="view on" id="v-hoje">
+      <div class="top"><div><h1 class="bebas">Bom dia, Athos</h1><p id="today-lbl"></p></div>
+        <div class="acts"><button class="btn btn-ghost" data-modal="m-block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>Bloquear horário</button><button class="btn btn-primary" data-modal="m-walkin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Encaixe</button></div></div>
+      <div class="kpis">
+        <div class="card kpi"><small>Atendimentos hoje</small><b id="k-today">9</b><span id="k-today-s"></span></div>
+        <div class="card kpi"><small>Faturamento avulso hoje</small><b>R$ 215</b><span class="up">+R$ 45 vs. quinta passada</span></div>
+        <div class="card kpi"><small>Assinantes ativos</small><b>24</b><span class="up">+3 este mês</span></div>
+        <div class="card kpi"><small>Receita recorrente</small><b>R$ 3.560</b><span>por mês</span></div>
+        <div class="card kpi"><small>Pagamentos pendentes</small><b style="color:var(--bad)">2</b><span class="dn">R$ 330 em aberto</span></div>
+      </div>
+      <div class="g21">
+        <div class="card box"><h3>Agenda de hoje <small id="slots-free"></small></h3><div class="tl" id="tl"></div></div>
+        <div style="display:grid;gap:16px;align-content:start">
+          <div class="card box"><h3>Precisa da sua atenção</h3>
+            <div class="al"><div class="ic" style="background:var(--bad-bg);color:var(--bad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div><b>2 assinantes com pagamento pendente</b><span>Diego Ramos e Caio Mendes · planos suspensos automaticamente</span><br><button class="btn btn-ghost btn-sm" data-go="assinantes" data-filter="late">Ver e cobrar</button></div></div>
+            <div class="al"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>1 horário aguardando confirmação</b><span>Renan Dias · 17:00 · lembrete enviado às 15:00</span></div></div>
+            <div class="al"><div class="ic" style="background:var(--teal-bg);color:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"/></svg></div><div><b>Novo assinante</b><span>Vinícius Araújo assinou o 2 Cortes + 2 Barbas ontem</span></div></div>
+          </div>
+          <div class="card box"><h3>Esta semana</h3>
+            <div class="hb">
+              <div><div class="lbl"><span>Ocupação da agenda</span><b>78%</b></div><div class="bar"><i style="width:78%"></i></div></div>
+              <div><div class="lbl"><span>Atendimentos do plano</span><b>31 de 47</b></div><div class="bar"><i style="width:66%"></i></div></div>
+              <div><div class="lbl"><span>Faltas</span><b>1</b></div><div class="bar"><i style="width:4%;background:var(--bad)"></i></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGENDA -->
+    <section class="view" id="v-agenda">
+      <div class="top"><div><h1 class="bebas">Agenda da semana</h1><p id="week-lbl"></p></div>
+        <div class="acts"><button class="btn btn-ghost btn-sm">‹ Anterior</button><button class="btn btn-ghost btn-sm">Próxima ›</button><button class="btn btn-ghost btn-sm" data-modal="m-block">Bloquear horário</button><button class="btn btn-primary btn-sm" data-modal="m-walkin">+ Encaixe</button></div></div>
+      <div class="card box">
+        <div class="legend" style="margin-bottom:14px"><span><i style="background:var(--teal)"></i>Assinante</span><span><i style="background:var(--info)"></i>Avulso</span><span><i style="background:var(--dim)"></i>Bloqueado</span></div>
+        <div class="cal-wrap"><div class="cal" id="cal"></div></div>
+      </div>
+    </section>
+
+    <!-- ASSINANTES -->
+    <section class="view" id="v-assinantes">
+      <div class="top"><div><h1 class="bebas">Assinantes</h1><p>Cobrança e suspensão automáticas. Você só acompanha.</p></div>
+        <div class="acts"><button class="btn btn-ghost btn-sm">Exportar planilha</button></div></div>
+      <div class="pcards">
+        <div class="card pc"><small>Corte + Barba Ilimitado</small><b>9</b><span>R$ 1.800/mês</span></div>
+        <div class="card pc"><small>Corte Ilimitado</small><b>7</b><span>R$ 840/mês</span></div>
+        <div class="card pc"><small>2 Cortes + 2 Barbas</small><b>5</b><span>R$ 650/mês</span></div>
+        <div class="card pc"><small>2 Cortes</small><b>3</b><span>R$ 240/mês</span></div>
+      </div>
+      <div class="card box">
+        <div class="filters" id="filters">
+          <button class="fbtn on" data-f="all">Todos</button><button class="fbtn" data-f="ok">Ativos</button><button class="fbtn" data-f="late">Pendentes</button><button class="fbtn" data-f="off">Cancelados</button>
+          <input class="inp search" id="q" placeholder="Buscar cliente...">
+        </div>
+        <div class="tw"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th><th>Uso no mês</th><th>Próx. cobrança</th><th>Desde</th><th class="r">Ações</th></tr></thead><tbody id="subs"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- FINANCEIRO -->
+    <section class="view" id="v-financeiro">
+      <div class="top"><div><h1 class="bebas">Financeiro</h1><p>Valores líquidos, já descontadas as taxas de pagamento.</p></div>
+        <div class="acts"><button class="btn btn-ghost btn-sm">Este mês ▾</button></div></div>
+      <div class="kpis">
+        <div class="card kpi"><small>Receita do mês</small><b>R$ 6.840</b><span class="up">+9% vs. mês anterior</span></div>
+        <div class="card kpi"><small>Recorrente (planos)</small><b>R$ 3.560</b><span>52% da receita</span></div>
+        <div class="card kpi"><small>Avulso</small><b>R$ 3.280</b><span>148 atendimentos</span></div>
+        <div class="card kpi"><small>Ticket médio</small><b>R$ 148</b><span>por assinante</span></div>
+        <div class="card kpi"><small>Cancelamentos</small><b>1</b><span>4% dos assinantes</span></div>
+      </div>
+      <div class="g21">
+        <div class="card box"><h3>Receita por mês <small><span style="color:var(--teal)">■</span> Planos &nbsp;<span style="color:#3b5c86">■</span> Avulso</small></h3>
+          <div class="chart" id="chart"></div><div class="xl" id="xl"></div>
+          <p style="font-size:12.5px;color:var(--muted);margin-top:14px">A parte recorrente cresceu de R$ 1.200 para R$ 3.560 em 6 meses: receita que entra antes do mês começar.</p>
+        </div>
+        <div class="card box"><h3>Últimos recebimentos</h3><div class="tw"><table><tbody id="tx"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <!-- SERVIÇOS E PLANOS -->
+    <section class="view" id="v-servicos">
+      <div class="top"><div><h1 class="bebas">Serviços e planos</h1><p>Altere preços e regras; o site atualiza na hora.</p></div>
+        <div class="acts"><button class="btn btn-ghost btn-sm" data-modal="m-plan">+ Novo plano</button><button class="btn btn-primary btn-sm" data-modal="m-svc">+ Novo serviço</button></div></div>
+      <div class="card box" style="margin-bottom:16px"><h3>Planos</h3><div class="tw"><table><thead><tr><th>Plano</th><th>Preço</th><th>Dias válidos</th><th>Cota</th><th>Brindes</th><th>Assinantes</th><th>Ativo</th><th></th></tr></thead><tbody id="plans"></tbody></table></div></div>
+      <div class="card box"><h3>Serviços</h3><div class="tw"><table><thead><tr><th>Serviço</th><th>Duração</th><th>Preço</th><th>Assinante</th><th>Ativo</th><th></th></tr></thead><tbody id="svcs"></tbody></table></div></div>
+    </section>
+
+    <!-- CONFIG -->
+    <section class="view" id="v-config">
+      <div class="top"><div><h1 class="bebas">Configurações</h1><p>Regras da agenda e avisos automáticos.</p></div>
+        <div class="acts"><button class="btn btn-primary btn-sm" data-ok="Configurações salvas">Salvar alterações</button></div></div>
+      <div class="g11">
+        <div class="card box"><h3>Horário de funcionamento</h3><div class="form" id="hours"></div></div>
+        <div style="display:grid;gap:16px;align-content:start">
+          <div class="card box"><h3>Regras da agenda</h3>
+            <div class="set"><div>Intervalo entre horários<small>Grade exibida ao cliente</small></div><select><option>15 min</option><option selected>30 min</option></select></div>
+            <div class="set"><div>Antecedência mínima<small>Para o cliente agendar</small></div><select><option>30 min</option><option selected>1 hora</option><option>2 horas</option></select></div>
+            <div class="set"><div>Cancelar ou remarcar até<small>Antes do horário</small></div><select><option selected>2 horas</option><option>4 horas</option><option>24 horas</option></select></div>
+            <div class="set"><div>Tolerância de atraso</div><select><option>10 min</option><option selected>15 min</option></select></div>
+            <div class="set"><div>Faltas sem aviso<small>Bloqueia agendamento online após</small></div><select><option>2 faltas</option><option selected>3 faltas</option></select></div>
+          </div>
+          <div class="card box"><h3>Avisos no WhatsApp</h3>
+            <div class="set"><div>Confirmação ao agendar</div><label class="sw"><input type="checkbox" checked><span></span></label></div>
+            <div class="set"><div>Lembrete 24 h antes</div><label class="sw"><input type="checkbox" checked><span></span></label></div>
+            <div class="set"><div>Lembrete 2 h antes</div><label class="sw"><input type="checkbox" checked><span></span></label></div>
+            <div class="set"><div>Aviso de cobrança (2 dias antes)</div><label class="sw"><input type="checkbox" checked><span></span></label></div>
+            <div class="set"><div>Aviso de pagamento recusado</div><label class="sw"><input type="checkbox" checked><span></span></label></div>
+            <div class="set"><div>Resumo diário para o Athos (08:00)</div><label class="sw"><input type="checkbox"><span></span></label></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAIS -->
+<div class="modal" id="m-walkin"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Encaixe</h3><p>Cliente que ligou ou chegou sem horário.</p>
+  <div class="mform">
+    <input class="inp" placeholder="Nome do cliente"><input class="inp" placeholder="WhatsApp (opcional)">
+    <div class="two"><select class="inp"><option>Corte · R$ 50</option><option>Barba · R$ 45</option><option>Corte + Barba (plano)</option><option>Combo Especial · R$ 99</option></select><select class="inp"><option>Agora</option><option>11:00</option><option>13:30</option><option>15:00</option></select></div>
+  </div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" data-ok="Encaixe adicionado à agenda">Adicionar</button></div>
+</div></div>
+<div class="modal" id="m-block"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Bloquear horário</h3><p>Some da agenda online. Use para almoço, compromisso ou folga.</p>
+  <div class="mform">
+    <input class="inp" type="date" id="blk-date">
+    <div class="two"><select class="inp"><option>12:00</option><option>13:00</option><option>Dia inteiro</option></select><select class="inp"><option>13:00</option><option>14:00</option></select></div>
+    <input class="inp" placeholder="Motivo (só você vê)">
+  </div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" data-ok="Horário bloqueado">Bloquear</button></div>
+</div></div>
+<div class="modal" id="m-plan"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3 id="mp-title">Editar plano</h3><p>Mudança de preço vale para novos assinantes e, com aviso, para os atuais.</p>
+  <div class="mform">
+    <input class="inp" id="mp-name" placeholder="Nome do plano">
+    <div class="two"><input class="inp" id="mp-price" placeholder="Preço/mês"><select class="inp" id="mp-quota"><option>Ilimitado</option><option>2 por mês</option><option>4 por mês</option></select></div>
+    <label class="t" style="margin:4px 0 0">Dias válidos</label>
+    <div class="days-pick"><span>Dom</span><span class="on">Seg</span><span class="on">Ter</span><span class="on">Qua</span><span class="on">Qui</span><span>Sex</span><span>Sáb</span></div>
+    <div class="two"><select class="inp"><option>Intervalo mínimo: 7 dias</option><option>Sem intervalo</option><option>14 dias</option></select><select class="inp"><option>Saldo não acumula</option><option>Acumula 1 mês</option></select></div>
+    <input class="inp" placeholder="Brindes (ex.: 1 hidratação + 1 sobrancelha/mês)">
+  </div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" data-ok="Plano salvo">Salvar</button></div>
+</div></div>
+<div class="modal" id="m-svc"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Serviço</h3><p>Aparece na hora no site e no agendamento.</p>
+  <div class="mform"><input class="inp" placeholder="Nome do serviço"><div class="two"><input class="inp" placeholder="Duração (min)"><input class="inp" placeholder="Preço"></div><input class="inp" placeholder="Preço para assinante (opcional)"></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" data-ok="Serviço salvo">Salvar</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
+const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],WDF=['domingo','segunda','terça','quarta','quinta','sexta','sábado'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],MOF=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const today=new Date();today.setHours(0,0,0,0);
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const fmt=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+const brl=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:0});
+
+// navegação
+const TABS=[['hoje','Hoje','<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'],['agenda','Agenda','<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>'],['assinantes','Assinantes','<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/>','2'],['financeiro','Financeiro','<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>'],['servicos','Serviços e planos','<path d="M6 3l12 9-5 1 3 6-2 1-3-6-4 4z"/>'],['config','Configurações','<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>']];
+const navHtml=TABS.map(([k,n,ic,c])=>`<button class="tab" data-go="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg>${n}${c?`<span class="cnt">${c}</span>`:''}</button>`).join('');
+$('#snav').innerHTML=navHtml;$('#mnav').innerHTML=navHtml;
+function go(k){$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+k));$$('.tab').forEach(b=>b.classList.toggle('on',b.dataset.go===k));scrollTo(0,0)}
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);if(g.dataset.filter)setFilter(g.dataset.filter)}
+  const m=e.target.closest('[data-modal]');if(m){$$('.modal').forEach(x=>x.classList.remove('open'));$('#'+m.dataset.modal).classList.add('open')}
+  if(e.target.closest('[data-close]')||e.target.classList.contains('modal'))$$('.modal').forEach(x=>x.classList.remove('open'));
+  const ok=e.target.closest('[data-ok]');if(ok){$$('.modal').forEach(x=>x.classList.remove('open'));toast(ok.dataset.ok)}
+  const dp=e.target.closest('.days-pick span');if(dp)dp.classList.toggle('on');
+});
+$('#blk-date').valueAsDate=new Date();
+
+// ===== HOJE =====
+$('#today-lbl').textContent=`${WDF[today.getDay()][0].toUpperCase()+WDF[today.getDay()].slice(1)}, ${today.getDate()} de ${MOF[today.getMonth()]}`;
+const TODAY=[
+ ['09:00','Lucas Martins','Corte + Barba','plan','done'],
+ ['09:45','Pedro Henrique','Corte','plan','done'],
+ ['10:30','Marcos Vieira','Corte + Pigmentação','av:75','done'],
+ ['11:30','Gabriel Souza','Corte + Barba','plan','now'],
+ ['12:15',null],
+ ['13:30','João Vitor','Barba','av:45','conf'],
+ ['14:15','Rafael Costa','Corte','plan','conf'],
+ ['15:00','Thiago Nunes','Combo Especial','av:99','conf'],
+ ['16:00',null],
+ ['17:00','Renan Dias','Corte','av:50','pend'],
+ ['18:00','Bruno Alves','Corte + Barba + Hidratação','plan','conf']
+];
+const ST={done:['Concluído','c-dim'],now:['Em atendimento','c-ok'],conf:['Confirmado','c-info'],pend:['Aguardando','c-warn'],miss:['Faltou','c-bad']};
+function renderToday(){
+  $('#tl').innerHTML=TODAY.map((r,i)=>{
+    if(!r[1])return `<div class="ti free"><div class="h">${r[0]}</div><div class="inf"><strong>Horário livre</strong><span>disponível no site</span></div><div class="r"><button class="btn btn-ghost btn-sm" data-modal="m-walkin">Encaixar</button></div></div>`;
+    const [h,n,s,t,st]=r, plan=t==='plan', val=plan?'Plano':'R$ '+t.split(':')[1];
+    return `<div class="ti ${st==='done'||st==='miss'?'done':''} ${st==='now'?'now':''}"><div class="h">${h}</div>
+      <div class="inf"><strong>${n}</strong><span>${s} · ${plan?'<span style="color:var(--teal-2)">Assinante</span>':val}</span></div>
+      <div class="r"><span class="chip ${ST[st][1]}">${ST[st][0]}</span>${st==='conf'||st==='now'||st==='pend'?`<button class="btn btn-ghost btn-sm" data-act="done" data-i="${i}">Concluir</button>${st!=='now'?`<button class="btn btn-danger btn-sm" data-act="miss" data-i="${i}">Faltou</button>`:''}`:''}</div></div>`;
+  }).join('');
+  const busy=TODAY.filter(r=>r[1]);
+  $('#k-today').textContent=busy.length;
+  $('#k-today-s').textContent=`${busy.filter(r=>r[4]==='done').length} concluídos · ${busy.filter(r=>r[3]==='plan').length} de assinantes`;
+  $('#slots-free').textContent=`${TODAY.filter(r=>!r[1]).length} horários livres`;
+  $$('[data-act]').forEach(b=>b.onclick=()=>{const r=TODAY[b.dataset.i];r[4]=b.dataset.act;
+    if(b.dataset.act==='done'){const nx=TODAY.find(x=>x[1]&&x[4]==='conf');if(nx&&!TODAY.some(x=>x[4]==='now'))nx[4]='now'}
+    renderToday();toast(b.dataset.act==='done'?`${r[1]}: atendimento concluído`:`${r[1]}: falta registrada`)});
+}
+renderToday();
+
+// ===== AGENDA SEMANAL =====
+const monday=addD(today,-((today.getDay()+6)%7));
+const wdays=Array.from({length:6},(_,i)=>addD(monday,i));
+$('#week-lbl').textContent=`${wdays[0].getDate()} a ${wdays[5].getDate()} de ${MOF[wdays[5].getMonth()]}`;
+const H0=8,H1=20,PX=56;
+const NAMES=['Lucas M.','Pedro H.','João V.','Gabriel S.','Matheus L.','Rafael C.','Bruno A.','Felipe R.','Thiago N.','André S.','Vinícius A.','Renan D.','Marcos V.','Igor P.'];
+const SV=[['Corte',45,'plan'],['Corte + Barba',60,'plan'],['Corte',45,'av'],['Barba',30,'av'],['Combo Especial',60,'av'],['Corte + Barba',60,'plan']];
+const HOURS={1:[9,19],2:[9,19],3:[9,19],4:[9,19],5:[9,20],6:[8,12]};
+let cal='<div></div>'+wdays.map(d=>`<div class="hd ${d.getTime()===today.getTime()?'today':''}">${WD[d.getDay()]}<b>${d.getDate()}</b></div>`).join('');
+cal+='<div class="hcol">'+Array.from({length:H1-H0},(_,i)=>`<div>${String(H0+i).padStart(2,'0')}:00</div>`).join('')+'</div>';
+wdays.forEach((d,di)=>{
+  const [a,b]=HOURS[d.getDay()];let evs='';let seed=d.getDate()*13+di;
+  if(a>H0)evs+=`<div class="ev closed" style="top:0;height:${(a-H0)*PX}px"></div>`;
+  if(b<H1)evs+=`<div class="ev closed" style="top:${(b-H0)*PX}px;height:${(H1-b)*PX}px">Fechado</div>`;
+  for(let m=a*60;m<b*60;){
+    seed=(seed*9301+49297)%233280;const r=seed/233280;
+    if(d.getDay()<=5&&m===12*60){evs+=`<div class="ev blk" style="top:${(m/60-H0)*PX+1}px;height:${PX-3}px"><b>Almoço</b>bloqueado</div>`;m+=60;continue}
+    if(r<.72){const s=SV[Math.floor(r*100)%SV.length];if(m+s[1]>b*60){m+=30;continue}const plan=s[2]==='plan'&&d.getDay()<=4;const top=(m/60-H0)*PX+1,h=s[1]/60*PX-3;
+      evs+=`<div class="ev ${plan?'plan':'avl'}" style="top:${top}px;height:${h}px"><b>${String(m/60|0).padStart(2,'0')}:${String(m%60).padStart(2,'0')} ${NAMES[Math.floor(r*1000)%NAMES.length]}</b>${s[0]}</div>`;m+=Math.ceil(s[1]/15)*15}
+    else m+=30;
+  }
+  cal+=`<div class="dcol" style="height:${(H1-H0)*PX}px">${evs}</div>`;
+});
+$('#cal').innerHTML=cal;
+
+// ===== ASSINANTES =====
+const nb=new Date(today.getFullYear(),today.getMonth()+(today.getDate()>=7?1:0),7), nb1=new Date(today.getFullYear(),today.getMonth()+1,1), ref=new Date(today.getFullYear(),today.getMonth(),7);
+const SUBS=[
+ ['Lucas Martins','(94) 9 8112-3344','Corte + Barba Ilimitado','ok','4 cortes',100,nb,'mar/26'],
+ ['Pedro Henrique','(94) 9 9201-7788','Corte Ilimitado','ok','3 cortes',100,nb,'jan/26'],
+ ['Gabriel Souza','(94) 9 8155-0021','Corte + Barba Ilimitado','ok','2 cortes',100,nb1,'mai/26'],
+ ['Rafael Costa','(94) 9 9133-4510','2 Cortes','ok','1 de 2',50,nb,'jul/26'],
+ ['Bruno Alves','(94) 9 8177-6203','Corte + Barba Ilimitado','ok','3 cortes',100,nb1,'fev/26'],
+ ['Diego Ramos','(94) 9 9188-2290','Corte Ilimitado','late','—',0,ref,'abr/26'],
+ ['Caio Mendes','(94) 9 8120-9934','2 Cortes + 2 Barbas','late','—',0,ref,'ago/26'],
+ ['Matheus Lima','(94) 9 9174-1188','2 Cortes + 2 Barbas','ok','2 de 4',50,nb,'jun/26'],
+ ['Vinícius Araújo','(94) 9 8166-5521','2 Cortes + 2 Barbas','ok','0 de 4',0,nb,'nov/26'],
+ ['Felipe Rocha','(94) 9 9145-3302','Corte Ilimitado','ok','2 cortes',100,nb1,'set/26'],
+ ['André Silva','(94) 9 8199-7745','2 Cortes','ok','2 de 2',100,nb,'out/26'],
+ ['Igor Pereira','(94) 9 9110-6634','Corte Ilimitado','off','—',0,null,'mai/26']
+];
+const SS={ok:['Ativo','c-ok'],late:['Pendente','c-bad'],off:['Cancelado','c-dim']};
+let filt='all';
+function renderSubs(){
+  const q=$('#q').value.toLowerCase();
+  $('#subs').innerHTML=SUBS.filter(s=>(filt==='all'||s[3]===filt)&&s[0].toLowerCase().includes(q)).map(s=>`<tr>
+    <td><b>${s[0]}</b><small>${s[1]}</small></td><td>${s[2]}</td><td><span class="chip ${SS[s[3]][1]}">${SS[s[3]][0]}</span></td>
+    <td>${s[3]==='ok'?`<span class="mini-bar"><i style="width:${s[5]}%"></i></span>${s[4]}`:'<span style="color:var(--dim)">—</span>'}</td>
+    <td>${s[6]?(s[3]==='late'?`<span style="color:var(--bad)">venceu ${fmt(s[6])}</span>`:fmt(s[6])):'—'}</td><td>${s[7]}</td>
+    <td class="r">${s[3]==='late'?`<button class="btn btn-primary btn-sm" data-ok="Link de pagamento enviado para ${s[0]} no WhatsApp">Cobrar no WhatsApp</button>`:`<button class="btn btn-ghost btn-sm" data-ok="Abrindo conversa com ${s[0]}">WhatsApp</button>`}</td></tr>`).join('')||'<tr><td colspan="7" style="color:var(--muted)">Nenhum assinante encontrado.</td></tr>';
+}
+function setFilter(f){filt=f;$$('.fbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===f));renderSubs()}
+$$('.fbtn').forEach(b=>b.onclick=()=>setFilter(b.dataset.f));
+$('#q').oninput=renderSubs;renderSubs();
+
+// ===== FINANCEIRO =====
+const REC=[1200,1640,2080,2560,3120,3560],AV=[4100,3900,3700,3500,3400,3280];
+const max=Math.max(...REC.map((r,i)=>r+AV[i]));
+$('#chart').innerHTML=REC.map((r,i)=>`<div class="col"><span class="v">${brl(r+AV[i])}</span><div class="stack" style="height:${(r+AV[i])/max*190}px"><i class="s1" style="height:${r/(r+AV[i])*100}%"></i><i class="s2" style="height:${AV[i]/(r+AV[i])*100}%"></i></div></div>`).join('');
+$('#xl').innerHTML=REC.map((_,i)=>{const d=new Date(today.getFullYear(),today.getMonth()-5+i,1);return `<span>${MO[d.getMonth()]}</span>`}).join('');
+const TX=[['Lucas Martins','Plano · Pix automático',196.02,addD(today,-5)],['Thiago Nunes','Combo Especial · Pix',97.10,today],['Marcos Vieira','Corte + Pigmentação · cartão',72.26,today],['Matheus Lima','Plano · cartão',125.62,addD(today,-5)],['Pedro Henrique','Plano · Pix automático',118.02,addD(today,-5)],['João Vitor','Barba · dinheiro',45,addD(today,-1)],['Rafael Costa','Plano · Pix automático',78.02,addD(today,-5)]];
+$('#tx').innerHTML=TX.map(t=>`<tr><td><b>${t[0]}</b><small>${t[1]}</small></td><td class="r">R$ ${t[2].toFixed(2).replace('.',',')}<small>${fmt(t[3])}</small></td></tr>`).join('');
+
+// ===== SERVIÇOS E PLANOS =====
+const PL=[['Corte + Barba Ilimitado',200,'Seg–Qui','Ilimitado','1 hidratação + 1 sobrancelha',9],['Corte Ilimitado',120,'Seg–Qui','Ilimitado','—',7],['2 Cortes + 2 Barbas',130,'Seg–Qui','2 + 2 / mês','—',5],['2 Cortes',80,'Seg–Qui','2 / mês','—',3]];
+const sw=(on=true)=>`<label class="sw"><input type="checkbox" ${on?'checked':''}><span></span></label>`;
+$('#plans').innerHTML=PL.map((p,i)=>`<tr><td><b>${p[0]}</b></td><td>R$ ${p[1]}/mês</td><td>${p[2]}</td><td>${p[3]}</td><td>${p[4]}</td><td>${p[5]}</td><td>${sw()}</td><td class="r"><button class="btn btn-ghost btn-sm" data-edit="${i}">Editar</button></td></tr>`).join('');
+$$('[data-edit]').forEach(b=>b.onclick=()=>{const p=PL[b.dataset.edit];$('#mp-title').textContent='Editar plano';$('#mp-name').value=p[0];$('#mp-price').value='R$ '+p[1];$('#m-plan').classList.add('open')});
+const SVS=[['Corte',45,'R$ 50','Plano'],['Barba',30,'R$ 45','Plano*'],['Cavanhaque',15,'R$ 20','R$ 10'],['Sobrancelha',5,'R$ 15','R$ 5'],['Combo Especial',60,'R$ 99','—'],['Corte + Pigmentação',60,'R$ 75','—'],['Selagem',60,'a partir de R$ 119,90','—'],['Hidratação',15,'R$ 30','1 grátis*'],['Lavagem + Escova',10,'R$ 20','Inclusa'],['Acabamento',5,'R$ 15','—']];
+$('#svcs').innerHTML=SVS.map(s=>`<tr><td><b>${s[0]}</b></td><td>${s[1]} min</td><td>${s[2]}</td><td>${s[3]}</td><td>${sw()}</td><td class="r"><button class="btn btn-ghost btn-sm" data-modal="m-svc">Editar</button></td></tr>`).join('')+'<tr><td colspan="6" style="color:var(--dim);font-size:12.5px">*Conforme o plano do cliente.</td></tr>';
+
+// ===== CONFIG =====
+const HR=[['Segunda','09:00','19:00',1],['Terça','09:00','19:00',1],['Quarta','09:00','19:00',1],['Quinta','09:00','19:00',1],['Sexta','09:00','20:00',1],['Sábado','08:00','12:00',1],['Domingo','—','—',0]];
+$('#hours').innerHTML=HR.map(h=>`<div class="frow"><span>${h[0]}</span><input class="inp" value="${h[1]}" ${h[3]?'':'disabled'}><input class="inp" value="${h[2]}" ${h[3]?'':'disabled'}><span style="display:flex;gap:8px;align-items:center;justify-content:flex-end">${sw(h[3])}</span></div>`).join('')+
+ `<div class="set" style="border-top:1px solid var(--line);margin-top:4px"><div>Almoço<small>Bloqueado todos os dias úteis</small></div><span style="color:var(--muted)">12:00 – 13:00</span></div>`;
+
+go('hoje');
+</script>
+</body>
+</html>

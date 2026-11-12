@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minha área | Athos Barber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+header{position:sticky;top:0;z-index:40;background:rgba(7,9,8,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hd{max-width:1100px;margin:0 auto;padding:0 16px;height:62px;display:flex;align-items:center;justify-content:space-between}
+.me{display:flex;align-items:center;gap:10px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--teal);color:#062019;font-weight:700;font-size:13px;display:grid;place-items:center}
+.me a{font-size:13px;color:var(--muted)}
+.layout{max-width:1100px;margin:0 auto;padding:24px 16px 110px;display:grid;grid-template-columns:210px 1fr;gap:28px}
+.side{position:sticky;top:86px;align-self:start;display:grid;gap:4px}
+.tab{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;color:var(--muted);font-weight:500;font-size:14.5px;cursor:pointer;border:0;background:none;text-align:left;width:100%}
+.tab svg{width:19px;height:19px}
+.tab:hover{color:var(--txt);background:var(--card)}
+.tab.on{color:var(--teal-2);background:var(--teal-bg)}
+.view{display:none}.view.on{display:block}
+h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1}
+.sub{color:var(--muted);font-size:14.5px;margin:4px 0 22px}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.alert{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--bad-bg);border:1px solid rgba(228,109,109,.35);border-radius:16px;padding:16px 18px;margin-bottom:16px}
+.alert b{display:block;color:var(--bad)}
+.alert span{font-size:13.5px;color:#e6c3c3}
+.plan{padding:22px;background:linear-gradient(140deg,#11211d,var(--card) 70%);border-color:var(--teal-d)}
+.plan.susp{background:var(--card);border-color:rgba(228,109,109,.35)}
+.plan .top{display:flex;justify-content:space-between;align-items:center}
+.plan h2{font-family:"Bebas Neue";font-weight:400;font-size:32px;margin:12px 0 2px}
+.plan .meta{font-size:13px;color:var(--muted);margin-bottom:18px}
+.meters{display:grid;gap:14px}
+.box{padding:20px}
+.box h3{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.box h3 a{font-size:13px;color:var(--teal-2);font-weight:500}
+.appt{display:flex;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg-2)}
+.appt+.appt{margin-top:10px}
+.dbox{flex:0 0 56px;text-align:center;border-right:1px solid var(--line);padding-right:12px}
+.dbox small{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.dbox b{display:block;font-family:"Bebas Neue";font-weight:400;font-size:28px;line-height:1.05}
+.appt .inf{flex:1;min-width:0}
+.appt strong{display:block;font-size:14.5px}
+.appt .inf span{font-size:12.5px;color:var(--muted)}
+.appt .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.quick a{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);font-size:14px;font-weight:600}
+.quick a svg{width:20px;height:20px;color:var(--teal)}
+.quick a:hover{border-color:var(--teal-d)}
+.quick a.dis{opacity:.4;pointer-events:none}
+.perks{list-style:none;display:grid;gap:9px}
+.perks li{display:flex;justify-content:space-between;font-size:14px;color:#cfd8d5;padding-bottom:9px;border-bottom:1px dashed var(--line)}
+.perks li:last-child{border:0;padding:0}
+.perks li b{color:var(--teal-2);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 10px 10px}
+td{padding:13px 10px;border-top:1px solid var(--line)}
+td.r,th.r{text-align:right}
+.kv{display:grid;gap:12px}
+.kv div{display:flex;justify-content:space-between;align-items:center;font-size:14.5px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+.kv div:last-child{border:0;padding:0}
+.kv span{color:var(--muted)}
+.plans{display:grid;gap:10px}
+.popt{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid var(--line-2);border-radius:13px;cursor:pointer;background:var(--bg-2)}
+.popt.on{border-color:var(--teal);background:var(--teal-bg)}
+.popt strong{display:block;font-size:14.5px}
+.popt small{color:var(--muted);font-size:12.5px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.opt{border:1px solid var(--line-2);border-radius:12px;padding:12px;text-align:center;cursor:pointer;background:var(--bg-2);font-size:14px}
+.opt.on{border-color:var(--teal);background:var(--teal-bg);color:var(--teal-2)}
+.offer{background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:12px;padding:14px;margin-top:16px;font-size:13.5px}
+.offer b{color:var(--teal-2)}
+.pix{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg-2);border:1px dashed var(--line-2);border-radius:10px;padding:12px;word-break:break-all;color:var(--muted);margin:14px 0}
+.demo{position:fixed;right:16px;bottom:16px;z-index:60;background:var(--card-2);border:1px solid var(--line-2);border-radius:14px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.demo small{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 6px 4px}
+.demo div{display:flex;gap:6px}
+.demo button{border:1px solid var(--line-2);background:none;color:var(--muted);border-radius:8px;padding:6px 9px;font-size:12px;cursor:pointer}
+.demo button.on{border-color:var(--teal);color:var(--teal-2);background:var(--teal-bg)}
+.bnav{display:none}
+@media(max-width:860px){
+  .layout{grid-template-columns:1fr;padding-top:18px}
+  .side{display:none}
+  .grid2{grid-template-columns:1fr}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(11,14,13,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bnav .tab{flex-direction:column;gap:3px;font-size:11px;padding:7px 2px;justify-content:center;text-align:center;align-items:center}
+  .demo{bottom:78px;right:10px;left:10px}
+  .demo div{flex-wrap:wrap}
+  .appt{flex-wrap:wrap}
+  .appt .acts{width:100%;justify-content:flex-start;padding-left:70px}
+  .me a{display:none}
+}
+</style>
+</head>
+<body>
+<div class="proto">PROTÓTIPO — dados fictícios</div>
+<header><div class="hd">
+  <a href="index.html" class="logo"><div class="mono">AB</div><b>Athos <span>Barber</span></b></a>
+  <div class="me"><a href="entrar.html">Sair</a><div class="av">LM</div></div>
+</div></header>
+
+<div class="layout">
+  <nav class="side" id="side"></nav>
+  <main>
+    <!-- INICIO -->
+    <section class="view on" id="v-inicio">
+      <h1 class="bebas">Fala, Lucas!</h1>
+      <p class="sub" id="greet-sub"></p>
+      <div id="alert"></div>
+      <div class="grid2">
+        <div>
+          <div class="card plan" id="plancard"></div>
+          <div class="quick">
+            <a href="index.html#agendar" id="q-book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg>Novo agendamento</a>
+            <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com o Athos</a>
+          </div>
+        </div>
+        <div style="display:grid;gap:16px;align-content:start">
+          <div class="card box"><h3>Próximos horários <a href="#" data-go="agenda">Ver todos</a></h3><div id="next-list"></div></div>
+          <div class="card box"><h3>Seus benefícios</h3><ul class="perks" id="perks"></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGENDA -->
+    <section class="view" id="v-agenda">
+      <h1 class="bebas">Minha agenda</h1>
+      <p class="sub">Remarque ou cancele com até 2 horas de antecedência.</p>
+      <div class="card box" style="margin-bottom:16px"><h3>Próximos <a href="index.html#agendar">+ Agendar</a></h3><div id="agenda-next"></div></div>
+      <div class="card box"><h3>Histórico</h3>
+        <div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>Serviço</th><th class="r">Valor</th></tr></thead><tbody id="hist"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- PAGAMENTOS -->
+    <section class="view" id="v-pagamentos">
+      <h1 class="bebas">Pagamentos</h1>
+      <p class="sub">Cobrança automática. Você não precisa lembrar de nada.</p>
+      <div class="grid2">
+        <div class="card box"><h3>Próxima cobrança</h3><div class="kv" id="nextbill"></div></div>
+        <div class="card box"><h3>Forma de pagamento</h3><div class="kv" id="paymethod"></div><button class="btn btn-ghost btn-sm" style="margin-top:16px" data-modal="m-pay">Alterar forma de pagamento</button></div>
+      </div>
+      <div class="card box" style="margin-top:16px"><h3>Faturas</h3>
+        <div style="overflow-x:auto"><table><thead><tr><th>Referência</th><th>Vencimento</th><th>Status</th><th class="r">Valor</th></tr></thead><tbody id="bills"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- PLANO -->
+    <section class="view" id="v-plano">
+      <h1 class="bebas">Meu plano</h1>
+      <p class="sub">Troque ou cancele quando quiser, sem fidelidade.</p>
+      <div class="grid2">
+        <div class="card box"><h3>Detalhes</h3><div class="kv" id="plandetail"></div></div>
+        <div class="card box"><h3>Gerenciar</h3>
+          <div style="display:grid;gap:10px">
+            <button class="btn btn-ghost" data-modal="m-change">Trocar de plano</button>
+            <button class="btn btn-ghost" data-modal="m-day">Alterar dia de cobrança</button>
+            <button class="btn btn-ghost" data-modal="m-pay">Alterar forma de pagamento</button>
+            <button class="btn btn-danger" data-modal="m-cancel">Cancelar assinatura</button>
+          </div>
+        </div>
+      </div>
+      <div class="card box" style="margin-top:16px"><h3>Regras do plano</h3><ul class="perks" id="rules"></ul></div>
+    </section>
+  </main>
+</div>
+<nav class="bnav" id="bnav"></nav>
+
+<!-- demo switcher -->
+<div class="demo"><small>Simular cenário</small><div id="demo">
+  <button class="on" data-s="ilim">Ilimitado ativo</button><button data-s="pack">Pacote 2x</button><button data-s="late">Pagamento pendente</button>
+</div></div>
+
+<!-- MODAIS -->
+<div class="modal" id="m-change"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Trocar de plano</h3><p>A troca vale a partir da próxima cobrança.</p>
+  <div class="plans" id="plan-opts" style="margin-top:18px"></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Troca agendada para a próxima cobrança">Confirmar troca</button></div>
+</div></div>
+<div class="modal" id="m-day"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Dia de cobrança</h3><p>Escolha o dia do mês em que a cobrança cai.</p>
+  <div class="opts"><div class="opt">Dia 01</div><div class="opt on">Dia 07</div></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Dia de cobrança atualizado">Salvar</button></div>
+</div></div>
+<div class="modal" id="m-pay"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Forma de pagamento</h3><p>Cobrança automática no dia escolhido.</p>
+  <div class="opts"><div class="opt on">Pix automático</div><div class="opt">Cartão de crédito</div></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Forma de pagamento atualizada">Salvar</button></div>
+</div></div>
+<div class="modal" id="m-cancel"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Cancelar assinatura?</h3><p id="cancel-txt"></p>
+  <div class="offer">Antes de ir: que tal o <b>2 Cortes por R$ 80/mês</b>? Você continua com preço de assinante.</div>
+  <div class="mact"><button class="btn btn-ghost" data-modal="m-change">Trocar plano</button><button class="btn btn-danger" data-ok="Assinatura cancelada. Vale até o fim do ciclo.">Cancelar mesmo</button></div>
+</div></div>
+<div class="modal" id="m-pix"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Pagar com Pix</h3><p>Copie o código e pague no app do seu banco. A assinatura volta na hora.</p>
+  <div class="pix">00020126580014BR.GOV.BCB.PIX0136athosbarber-demo-0000-0000-000000000000520400005303986540520.005802BR5913ATHOS BARBER6011PARAUAPEBAS62070503***6304ABCD</div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Fechar</button><button class="btn btn-primary" id="pixpaid">Copiar código</button></div>
+</div></div>
+<div class="modal" id="m-move"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Remarcar horário</h3><p>Escolha um novo horário livre.</p>
+  <div class="opts" style="grid-template-columns:repeat(3,1fr)"><div class="opt">09:30</div><div class="opt on">11:00</div><div class="opt">14:30</div><div class="opt">15:00</div><div class="opt">16:30</div><div class="opt">17:00</div></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" data-ok="Horário remarcado. Confirmação enviada no WhatsApp.">Confirmar</button></div>
+</div></div>
+<div class="modal" id="m-del"><div class="mbox"><button class="x" data-close>&times;</button>
+  <h3>Cancelar horário?</h3><p>O horário fica livre para outro cliente. Se for do plano, o uso não é descontado.</p>
+  <div class="mact"><button class="btn btn-ghost" data-close>Manter</button><button class="btn btn-danger" data-ok="Horário cancelado">Cancelar horário</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
+const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],MOF=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const today=new Date();today.setHours(0,0,0,0);
+const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const nextWeekday=(from,wds)=>{let d=addD(from,1);while(!wds.includes(d.getDay()))d=addD(d,1);return d};
+const fmt=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+const nextBill=(()=>{let d=new Date(today.getFullYear(),today.getMonth(),7);if(d<=today)d=new Date(today.getFullYear(),today.getMonth()+1,7);return d})();
+const curRef=new Date(today.getFullYear(),today.getMonth(),7);
+const a1=nextWeekday(today,[1,2,3,4]), a2=nextWeekday(addD(a1,5),[1,2,3,4]);
+
+const PLANS=[{k:'ci',n:'Corte Ilimitado',p:120},{k:'cbi',n:'Corte + Barba Ilimitado',p:200},{k:'c2',n:'2 Cortes',p:80},{k:'cb2',n:'2 Cortes + 2 Barbas',p:130}];
+const S={
+  ilim:{plan:'Corte + Barba Ilimitado',price:200,status:'ok',
+    meters:[['Cortes no mês','Ilimitado',100,'ilim'],['Hidratação grátis','0 de 1',0],['Sobrancelha grátis','1 de 1',100]],
+    perks:[['Corte + barba (seg a qui)','Incluso'],['Lavagem','Inclusa'],['Sobrancelha extra','R$ 5'],['Cavanhaque','R$ 10']],
+    rules:[['Dias válidos','Segunda a quinta'],['Intervalo mínimo entre cortes','7 dias'],['Brindes do mês','1 hidratação + 1 sobrancelha'],['Saldo','Renova todo mês, não acumula']],
+    next:[[a1,'15:30','Corte + Barba','45 min','Incluso'],[a2,'16:00','Corte + Hidratação','1h','Incluso']]},
+  pack:{plan:'2 Cortes',price:80,status:'ok',
+    meters:[['Cortes no mês','1 de 2',50]],
+    perks:[['Corte (seg a qui)','2 por mês'],['Lavagem','Inclusa'],['Sobrancelha','R$ 5'],['Cavanhaque','R$ 10']],
+    rules:[['Dias válidos','Segunda a quinta'],['Cota','2 cortes por mês'],['Saldo','Renova todo mês, não acumula']],
+    next:[[a1,'15:30','Corte','45 min','Plano · 2º de 2']]},
+  late:{plan:'Corte + Barba Ilimitado',price:200,status:'late',
+    meters:[['Cortes no mês','Suspenso',0],['Hidratação grátis','0 de 1',0],['Sobrancelha grátis','0 de 1',0]],
+    perks:[['Corte + barba (seg a qui)','Suspenso'],['Lavagem','Suspensa'],['Sobrancelha extra','R$ 15'],['Cavanhaque','R$ 20']],
+    rules:[['Dias válidos','Segunda a quinta'],['Intervalo mínimo entre cortes','7 dias'],['Brindes do mês','1 hidratação + 1 sobrancelha'],['Saldo','Renova todo mês, não acumula']],
+    next:[]}
+};
+const HIST=[[addD(today,-6),'Corte + Barba','Plano'],[addD(today,-13),'Corte + Barba + Sobrancelha','Plano'],[addD(today,-20),'Corte + Barba','Plano'],[addD(today,-28),'Corte + Barba + Hidratação','Plano'],[addD(today,-34),'Cavanhaque','R$ 10,00']];
+
+// navegação
+const TABS=[['inicio','Início','<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],['agenda','Agenda','<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>'],['pagamentos','Pagamentos','<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>'],['plano','Meu plano','<path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"/>']];
+const tabHtml=TABS.map(([k,n,ic])=>`<button class="tab" data-go="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ic}</svg>${n}</button>`).join('');
+$('#side').innerHTML=tabHtml;$('#bnav').innerHTML=tabHtml;
+function go(k){$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+k));$$('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===k&&b.classList.contains('tab')));scrollTo(0,0)}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){e.preventDefault();go(g.dataset.go)}});
+
+// modais
+document.addEventListener('click',e=>{
+  const m=e.target.closest('[data-modal]');if(m){$$('.modal').forEach(x=>x.classList.remove('open'));$('#'+m.dataset.modal).classList.add('open')}
+  if(e.target.closest('[data-close]')||e.target.classList.contains('modal'))$$('.modal').forEach(x=>x.classList.remove('open'));
+  const ok=e.target.closest('[data-ok]');if(ok){$$('.modal').forEach(x=>x.classList.remove('open'));toast(ok.dataset.ok)}
+  const o=e.target.closest('.opt,.popt');if(o){[...o.parentNode.children].forEach(x=>x.classList.toggle('on',x===o))}
+});
+$('#pixpaid').onclick=()=>{$$('.modal').forEach(x=>x.classList.remove('open'));toast('Código Pix copiado')};
+
+function apptHtml([d,h,s,t,tag],full){
+  return `<div class="appt"><div class="dbox"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></div>
+  <div class="inf"><strong>${s}</strong><span>${h} · ${t} · com Athos</span></div>
+  <div class="acts"><span class="chip c-ok">${tag}</span>${full?'<button class="btn btn-ghost btn-sm" data-modal="m-move">Remarcar</button><button class="btn btn-danger btn-sm" data-modal="m-del">Cancelar</button>':''}</div></div>`;
+}
+const empty=t=>`<p style="color:var(--muted);font-size:14px">${t}</p>`;
+
+function render(k){
+  const s=S[k], late=s.status==='late';
+  $('#greet-sub').textContent=late?'Sua assinatura está suspensa até o pagamento.':`Seu próximo horário é ${s.next.length?`${WD[s.next[0][0].getDay()].toLowerCase()}, ${fmt(s.next[0][0])} às ${s.next[0][1]}`:'—'}.`;
+  $('#alert').innerHTML=late?`<div class="alert"><div><b>Pagamento não identificado</b><span>A cobrança de ${fmt(curRef)} não foi paga. Pague para liberar seus horários do plano.</span></div><button class="btn btn-primary btn-sm" data-modal="m-pix">Pagar com Pix · R$ ${s.price},00</button></div>`:'';
+  $('#plancard').className='card plan'+(late?' susp':'');
+  $('#plancard').innerHTML=`<div class="top"><span class="eyebrow">Seu plano</span><span class="chip ${late?'c-bad':'c-ok'}">${late?'Suspenso':'Ativo'}</span></div>
+    <h2>${s.plan}</h2><div class="meta">R$ ${s.price},00/mês · ${late?'vencida em '+fmt(curRef):'próxima cobrança '+fmt(nextBill)+' · Pix automático'}</div>
+    <div class="meters">${s.meters.map(([l,v,p])=>`<div class="meter"><div class="lbl"><span>${l}</span><b>${v}</b></div><div class="bar"><i style="width:${p}%;${late?'background:var(--bad)':''}"></i></div></div>`).join('')}</div>`;
+  $('#q-book').classList.toggle('dis',false);
+  $('#next-list').innerHTML=s.next.length?s.next.slice(0,2).map(a=>apptHtml(a,false)).join(''):empty(late?'Horários do plano bloqueados até o pagamento. Você ainda pode agendar avulso.':'Nenhum horário marcado.');
+  $('#agenda-next').innerHTML=s.next.length?s.next.map(a=>apptHtml(a,true)).join(''):empty('Nenhum horário marcado.');
+  $('#perks').innerHTML=s.perks.map(([a,b])=>`<li>${a}<b style="${late?'color:var(--muted)':''}">${b}</b></li>`).join('');
+  $('#rules').innerHTML=s.rules.map(([a,b])=>`<li>${a}<b>${b}</b></li>`).join('');
+  $('#hist').innerHTML=HIST.map(([d,sv,v])=>`<tr><td>${fmt(d)}</td><td>${sv}</td><td class="r">${v==='Plano'?'<span class="chip c-ok">Plano</span>':v}</td></tr>`).join('');
+  $('#nextbill').innerHTML=late?`<div><span>Fatura em aberto</span><b style="color:var(--bad)">R$ ${s.price},00</b></div><div><span>Venceu em</span><b>${fmt(curRef)}</b></div><div><span>Ação</span><button class="btn btn-primary btn-sm" data-modal="m-pix">Pagar agora</button></div>`
+    :`<div><span>Valor</span><b>R$ ${s.price},00</b></div><div><span>Data</span><b>${nextBill.getDate()} de ${MOF[nextBill.getMonth()]}</b></div><div><span>Plano</span><b>${s.plan}</b></div>`;
+  $('#paymethod').innerHTML=`<div><span>Método</span><b>Pix automático</b></div><div><span>Dia de cobrança</span><b>Todo dia 07</b></div><div><span>Banco autorizado</span><b>Nubank</b></div>`;
+  const bills=[0,1,2,3].map(i=>new Date(curRef.getFullYear(),curRef.getMonth()-i,7));
+  $('#bills').innerHTML=bills.map((d,i)=>`<tr><td style="text-transform:capitalize">${MOF[d.getMonth()]}</td><td>${fmt(d)}</td><td>${i===0&&late?'<span class="chip c-bad">Em aberto</span>':'<span class="chip c-ok">Pago</span>'}</td><td class="r">R$ ${s.price},00</td></tr>`).join('');
+  $('#plandetail').innerHTML=`<div><span>Plano</span><b>${s.plan}</b></div><div><span>Valor</span><b>R$ ${s.price},00/mês</b></div><div><span>Status</span><span class="chip ${late?'c-bad':'c-ok'}">${late?'Suspenso':'Ativo'}</span></div><div><span>Assinante desde</span><b>março de 2026</b></div>`;
+  $('#plan-opts').innerHTML=PLANS.map(p=>`<div class="popt ${p.n===s.plan?'on':''}"><div><strong>${p.n}</strong><small>${p.n===s.plan?'Plano atual':'seg a qui'}</small></div><b>R$ ${p.p}</b></div>`).join('');
+  $('#cancel-txt').textContent=`Seus benefícios continuam até ${fmt(late?curRef:nextBill)}. Depois disso, nenhuma nova cobrança é feita.`;
+}
+$$('#demo button').forEach(b=>b.onclick=()=>{$$('#demo button').forEach(x=>x.classList.toggle('on',x===b));render(b.dataset.s)});
+render('ilim');go('inicio');
+</script>
+</body>
+</html>

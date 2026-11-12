@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar | Athos Barber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+body{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(700px 380px at 50% 0,rgba(69,196,166,.09),transparent 70%),var(--bg)}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px}
+.box{width:100%;max-width:420px}
+.back{display:inline-flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;margin-bottom:16px}
+.back:hover{color:var(--txt)}
+.panel{background:var(--card);border:1px solid var(--line-2);border-radius:24px;overflow:hidden}
+.top{text-align:center;padding:28px 24px 22px;border-bottom:1px solid var(--line)}
+.top .mono{width:64px;height:64px;font-size:30px;margin:0 auto 14px}
+.body{padding:26px 24px}
+h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-bottom:6px}
+.body>div>p{color:var(--muted);font-size:14px;margin-bottom:22px}
+.phone{display:flex;gap:8px}
+.phone .ddi{flex:0 0 74px;text-align:center}
+.code{display:flex;gap:8px;justify-content:space-between;margin-bottom:14px}
+.code input{width:100%;max-width:52px;height:58px;text-align:center;font-size:24px;font-weight:600;background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;color:var(--txt)}
+.code input:focus{outline:none;border-color:var(--teal)}
+.code.err input{border-color:var(--bad)}
+.row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:14px}
+.row button{background:none;border:0;color:var(--teal-2);font-weight:600;cursor:pointer;font-size:13px}
+.row button:disabled{color:var(--dim);cursor:default}
+.err-msg{color:var(--bad);font-size:13px;min-height:18px}
+.sent{display:flex;gap:10px;align-items:center;background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:12px;padding:12px;font-size:13.5px;margin-bottom:20px}
+.sent svg{flex:0 0 20px;color:var(--teal)}
+.demo{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line-2);font-size:12.5px;color:var(--dim);text-align:center}
+.demo a{color:var(--teal-2);font-weight:600}
+.step{display:none}.step.on{display:block}
+</style>
+</head>
+<body>
+<div class="proto">PROTÓTIPO — nenhum código é enviado de verdade</div>
+<main>
+  <div class="box">
+    <a href="index.html" class="back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Voltar ao site</a>
+    <div class="panel">
+      <div class="top"><div class="mono">AB</div><div class="eyebrow">Área do cliente</div></div>
+      <div class="body">
+        <!-- passo 1: telefone -->
+        <div class="step on" id="s1">
+          <h1>Entrar</h1>
+          <p>Digite seu WhatsApp. Enviaremos um código de acesso — sem senha.</p>
+          <label class="t">WhatsApp</label>
+          <div class="phone"><input class="inp ddi" value="+55" disabled><input class="inp" id="tel" inputmode="numeric" placeholder="(94) 9 0000-0000" maxlength="16"></div>
+          <div class="err-msg" id="e1"></div>
+          <button class="btn btn-primary btn-block" id="send" style="margin-top:6px;padding:13px">Receber código no WhatsApp</button>
+          <div class="row" style="justify-content:center">Primeira vez? A conta é criada automaticamente.</div>
+        </div>
+        <!-- passo 2: código -->
+        <div class="step" id="s2">
+          <h1>Digite o código</h1>
+          <div class="sent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Enviamos um código de 6 dígitos para <b id="telshow"></b></span></div>
+          <div class="code" id="code"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div>
+          <div class="err-msg" id="e2"></div>
+          <button class="btn btn-primary btn-block" id="verify" style="padding:13px">Entrar</button>
+          <div class="row"><button id="change">Alterar número</button><button id="resend" disabled>Reenviar em 30s</button></div>
+          <div class="row" style="justify-content:center"><button id="sms">Não chegou? Receber por SMS</button></div>
+        </div>
+        <div class="demo">Demonstração: qualquer código de 6 dígitos funciona.<br>Ver como <a href="assinante.html">assinante</a> · <a href="painel.html">barbeiro (Athos)</a></div>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
+// máscara (94) 9 0000-0000
+$('#tel').oninput=e=>{let d=e.target.value.replace(/\D/g,'').slice(0,11),o='';
+  if(d.length>0)o='('+d.slice(0,2);if(d.length>=2)o+=') ';if(d.length>2)o+=d.slice(2,3)+' ';if(d.length>3)o+=d.slice(3,7);if(d.length>7)o+='-'+d.slice(7);e.target.value=o;$('#e1').textContent=''};
+let timer;
+function startTimer(){let s=30;const b=$('#resend');b.disabled=true;clearInterval(timer);
+  timer=setInterval(()=>{s--;b.textContent=s>0?`Reenviar em ${s}s`:'Reenviar código';if(s<=0){b.disabled=false;clearInterval(timer)}},1000)}
+$('#send').onclick=()=>{const d=$('#tel').value.replace(/\D/g,'');
+  if(d.length!==11){$('#e1').textContent='Número inválido. Use DDD + 9 dígitos.';return}
+  $('#telshow').textContent=$('#tel').value;$('#s1').classList.remove('on');$('#s2').classList.add('on');
+  ins[0].focus();startTimer();toast('Código enviado no WhatsApp')};
+const ins=[...document.querySelectorAll('#code input')];
+ins.forEach((el,i)=>{
+  el.oninput=()=>{el.value=el.value.replace(/\D/g,'');$('#code').classList.remove('err');$('#e2').textContent='';if(el.value&&i<5)ins[i+1].focus();if(ins.every(x=>x.value))$('#verify').click()};
+  el.onkeydown=e=>{if(e.key==='Backspace'&&!el.value&&i>0)ins[i-1].focus()};
+  el.onpaste=e=>{const v=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(v){e.preventDefault();v.split('').forEach((c,j)=>ins[j].value=c);ins[Math.min(v.length,5)].focus();if(v.length===6)$('#verify').click()}};
+});
+$('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('err');$('#e2').textContent='Digite os 6 dígitos.';return}
+  $('#verify').textContent='Entrando...';setTimeout(()=>location.href='assinante.html',600)};
+$('#change').onclick=()=>{$('#s2').classList.remove('on');$('#s1').classList.add('on');ins.forEach(x=>x.value='')};
+$('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};
+$('#sms').onclick=()=>{startTimer();toast('Código enviado por SMS')};
+</script>
+</body>
+</html>
