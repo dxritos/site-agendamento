@@ -14,24 +14,48 @@ const prefetch=href=>{const u=href.split('#')[0];if(!u||pre.has(u))return;pre.ad
 /* depois que a página carrega, pré-carrega as páginas do menu em segundo plano */
 addEventListener('load',()=>(window.requestIdleCallback||setTimeout)(()=>$$('#menu a').forEach(a=>prefetch(a.getAttribute('href')))));
 
-/* ===== dados (mock) ===== */
-const SVC={
-  cab:[{n:'Corte',d:'Lavagem inclusa',p:50,t:45},{n:'Barba',d:'Alinhamento e desenho',p:45,t:30},{n:'Cavanhaque',d:'Assinante R$ 10',p:20,t:15},{n:'Sobrancelha',d:'Assinante R$ 5',p:15,t:5}],
-  com:[{n:'Combo Especial',d:'Corte, barba, sobrancelha, lavagem e escova',p:99,t:60},{n:'Corte + Pigmentação',d:'Mais definição',p:75,t:60}],
-  ext:[{n:'Selagem',d:'A partir de',p:119.9,t:60},{n:'Hidratação',d:'Lavagem + escova',p:30,t:15},{n:'Lavagem + Escova',d:'Curto e médio',p:20,t:10},{n:'Acabamento',d:'Pezinho e contorno',p:15,t:5}],
-  ass:[{n:'Corte (plano)',d:'Incluso no seu plano · seg a qui',p:0,t:45,plan:1},{n:'Corte + Barba (plano)',d:'Incluso no seu plano · seg a qui',p:0,t:60,plan:1}]
-};
-const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-const HOURS={1:[9,19],2:[9,19],3:[9,19],4:[9,19],5:[9,20],6:[8,12]};
+/* ===== dados: vêm do painel (store.js) ===== */
+const db=DB.data, C=db.content;
+const brl0=v=>'R$ '+Math.round(v);
+const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],WDF=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const SVC={cab:[],com:[],ext:[],ass:[{n:'Corte (plano)',base:'Corte',d:'Incluso no seu plano',p:0,t:45,plan:1},{n:'Corte + Barba (plano)',base:'Corte + Barba',d:'Incluso no seu plano',p:0,t:60,plan:1}]};
+db.services.filter(s=>s.on).forEach(s=>{if(SVC[s.cat])SVC[s.cat].push({n:s.n,d:s.d+(s.mp!=null?' · assinante '+brl(s.mp):''),p:s.p,t:s.t})});
+const PLAN_DAYS=[...new Set(db.plans.filter(p=>p.on).flatMap(p=>p.days))];
 const today=new Date();today.setHours(0,0,0,0);
 const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i);return d});
-function slotsFor(d){
-  const h=HOURS[d.getDay()];if(!h)return[];
-  const out=[];let seed=d.getDate()*7+d.getMonth();
-  for(let m=h[0]*60;m<h[1]*60;m+=30){seed=(seed*9301+49297)%233280;if(seed/233280>.55)out.push(`${String(m/60|0).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`)}
-  if(d.getTime()===today.getTime()){const now=new Date();return out.filter(s=>+s.slice(0,2)*60+ +s.slice(3)>now.getHours()*60+now.getMinutes()+30)}
-  return out;
+const holiday=d=>db.holidays.find(h=>h.date===DB.iso(d));
+const openDay=d=>!!db.hours[d.getDay()]&&!holiday(d);
+const slotsFor=(d,dur=45)=>DB.freeSlots(DB.iso(d),dur);
+
+/* ===== conteúdo editável pelo painel ===== */
+$$('[data-k]').forEach(el=>{const v=C[el.dataset.k];if(v!=null&&v!=='')el.textContent=v});
+$$('[data-at]').forEach(el=>el.textContent='@'+C.instagram);
+$$('a[href^="https://wa.me/"]').forEach(a=>a.href=a.href.replace(/wa\.me\/\d+/,'wa.me/'+C.wa));
+$$('a[href^="https://instagram.com/"]').forEach(a=>a.href='https://instagram.com/'+C.instagram);
+$$('a[href^="https://maps.google.com/?q="]').forEach(a=>a.href='https://maps.google.com/?q='+encodeURIComponent(C.address));
+function hoursHTML(){
+  const order=[1,2,3,4,5,6,0],key=d=>JSON.stringify(db.hours[d]),out=[];
+  for(let i=0;i<order.length;){let j=i;while(j+1<order.length&&order[j+1]!==0&&key(order[j+1])===key(order[i]))j++;
+    const h=db.hours[order[i]],lbl=i===j?WDF[order[i]]:`${WDF[order[i]]} a ${WDF[order[j]]}`;
+    out.push(`<li>${lbl}<b>${h?h[0]+' – '+h[1]:'Fechado'}</b></li>`);i=j+1}
+  return out.join('');
 }
+$$('ul.hours').forEach(ul=>ul.innerHTML=hoursHTML());
+if(C.notice_on&&C.notice){const n=document.createElement('div');n.className='notice';n.textContent=C.notice;document.body.prepend(n)}
+// planos da home
+$$('.plan[data-pid]').forEach(card=>{const p=db.plans.find(x=>x.id===card.dataset.pid);if(!p||!p.on){card.style.display='none';return}
+  card.querySelector('h3').textContent=p.n;card.querySelector('.price b').textContent='R$ '+p.p;
+  const b=card.querySelector('[data-plan]');b.dataset.plan=p.n;b.dataset.price=p.p;
+  const sv=k=>(db.services.find(s=>s.id===k)||{p:0}).p,base={ci:4*sv('corte'),cbi:4*(sv('corte')+sv('barba')),c2:2*sv('corte'),cb2:2*(sv('corte')+sv('barba'))}[p.id],el=card.querySelector('.save');
+  if(el&&base){const e=base-p.p;el.style.display=e>0?'':'none';el.textContent=(p.quota==='Ilimitado'?'Economize até ':'Economize ')+brl0(e)+'/mês'+(p.quota==='Ilimitado'?'*':'')}});
+$$('.stats>div').forEach(el=>{const sp=el.querySelector('span'),b=el.querySelector('b');if(!sp||!b)return;
+  if(/corte ilimitado/i.test(sp.textContent)){const p=db.plans.find(x=>x.id==='ci');if(p)b.textContent='R$ '+p.p}
+  if(/planos/i.test(sp.textContent))b.textContent=db.plans.filter(p=>p.on).length});
+// FAQ, avaliações e galeria
+if($('.faq'))$('.faq').innerHTML=db.faq.map(f=>`<div class="faq-i"><button class="faq-q">${esc(f.q)}<i></i></button><div class="faq-a"><p>${esc(f.a)}</p></div></div>`).join('');
+if($('.reviews'))$('.reviews').innerHTML=db.reviews.map(r=>`<div class="rev"><div class="stars">★★★★★</div><p>“${esc(r.text)}”</p><div class="who"><span>${esc((r.name||'?')[0])}</span><div><b>${esc(r.name)}</b><small>${esc(r.info)}</small></div></div></div>`).join('');
+if($('#gal'))$('#gal').innerHTML=db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);return `<button class="gi" data-cat="${g.cat}"${im?` style="background:url(${im}) center/cover" data-img="${g.img}"`:''}>${im?'':'<span class="ph">Foto</span>'}<div class="cap"><b>${esc(g.t)}</b>${esc(g.s)}</div><i class="zoom"></i></button>`}).join('');
+function esc(x){return String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
 /* ===== planos (home) ===== */
 if($('.switch')){
@@ -62,9 +86,9 @@ $$('.faq-q').forEach(q=>q.onclick=()=>{const it=q.parentNode,open=it.classList.c
 /* ===== horários (semana) ===== */
 if($('#week')){
   $('#week').innerHTML=days.map((d,i)=>{
-    const s=slotsFor(d),wd=d.getDay(),closed=!HOURS[wd],member=wd>=1&&wd<=4;
+    const s=slotsFor(d),wd=d.getDay(),hol=holiday(d),closed=!openDay(d),member=PLAN_DAYS.includes(wd);
     const tag=closed?'':`<span class="wtag ${member?'':'x'}">${member?'Válido para assinantes':'Somente avulso'}</span>`;
-    const body=closed?'<span class="none">Fechado</span>':s.length?s.slice(0,6).map(t=>`<a class="slot" href="agendar.html?d=${i}&t=${t}">${t}</a>`).join('')+(s.length>6?`<a class="more" href="agendar.html?d=${i}">+${s.length-6} horários</a>`:''):'<span class="none">Sem horários livres</span>';
+    const body=closed?`<span class="none">${hol?'Fechado · '+esc(hol.name):'Fechado'}</span>`:s.length?s.slice(0,6).map(t=>`<a class="slot" href="agendar.html?d=${i}&t=${t}">${t}</a>`).join('')+(s.length>6?`<a class="more" href="agendar.html?d=${i}">+${s.length-6} horários</a>`:''):'<span class="none">Sem horários livres</span>';
     return `<div class="wrow"><div class="dbox"><small>${i===0?'Hoje':WD[wd]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></div><div class="wslots">${tag}${body}</div></div>`;
   }).join('');
 }
@@ -72,7 +96,7 @@ if($('#week')){
 /* ===== agendamento ===== */
 if($('#svclist')){
   const st={cat:'cab',svc:null,day:null,time:null,step:1};
-  const validDay=d=>HOURS[d.getDay()]&&(!st.svc||!st.svc.plan||(d.getDay()>=1&&d.getDay()<=4));
+  const validDay=d=>openDay(d)&&(!st.svc||!st.svc.plan||PLAN_DAYS.includes(d.getDay()));
   const dayLabel=i=>{const d=days[i];return `${i===0?'Hoje':WD[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`};
   const codeIns=$$('#code input');
   function renderSvc(){
@@ -81,15 +105,16 @@ if($('#svclist')){
   }
   $$('#svctabs button').forEach(b=>b.onclick=()=>{st.cat=b.dataset.c;$$('#svctabs button').forEach(x=>x.classList.toggle('on',x===b));renderSvc()});
   function renderDays(){
-    if(st.day===null){const f=days.findIndex(validDay);if(f>-1)st.day=f}
-    $('#days').innerHTML=days.map((d,i)=>`<button class="day ${st.day===i?'on':''}" data-i="${i}" ${validDay(d)?'':'disabled'}><small>${i===0?'Hoje':WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`).join('');
+    const dur=st.svc?st.svc.t:45,has=d=>validDay(d)&&slotsFor(d,dur).length>0;
+    if(st.day===null||!has(days[st.day])&&!st.time){const f=days.findIndex(has);st.day=f>-1?f:null}
+    $('#days').innerHTML=days.map((d,i)=>`<button class="day ${st.day===i?'on':''}" data-i="${i}" ${has(d)?'':'disabled'} title="${!openDay(d)?(holiday(d)?esc(holiday(d).name):'Fechado'):has(d)?'':'Lotado'}"><small>${i===0?'Hoje':WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`).join('');
     $$('#days .day').forEach(b=>b.onclick=()=>{st.day=+b.dataset.i;st.time=null;renderDays();update()});
     $('#hint').style.display=st.svc&&st.svc.plan?'flex':'none';
     renderSlots();
   }
   function renderSlots(){
     if(st.day===null){$('#slots').innerHTML='';return}
-    const s=slotsFor(days[st.day]);
+    const s=slotsFor(days[st.day],st.svc?st.svc.t:45);
     $('#slots').innerHTML=s.length?s.map(t=>`<button class="slot ${st.time===t?'on':''}" data-t="${t}">${t}</button>`).join(''):'<span style="color:var(--dim);font-size:14px">Sem horários livres neste dia.</span>';
     $$('#slots .slot').forEach((b,i)=>{b.style.animationDelay=Math.min(i,20)*0.015+'s';b.onclick=()=>{st.time=b.dataset.t;renderSlots();update()}});
   }
@@ -110,14 +135,23 @@ if($('#svclist')){
     if(st.step===4)$('#otptel').textContent=$('#btel').value;
     if(st.step===5)$('#donetxt').textContent=`${st.svc.n} · ${dayLabel(st.day)} às ${st.time}. A confirmação chega no seu WhatsApp.`;
   }
-  $('#next').onclick=()=>{if(st.step===1)renderDays();st.step++;if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
+  function saveBooking(){
+    const phone=$('#btel').value.replace(/\D/g,''),name=($('#bname').value||'').trim()||'Cliente';
+    let c=db.clients.find(x=>x.phone===phone);
+    if(!c){c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)};DB.mutate('clients',L=>L.push(c),'Cliente '+name+' cadastrado pelo site','Clientes','Site')}
+    const svc=st.svc.base||st.svc.n,ds=DB.iso(days[st.day]);
+    DB.mutate('appts',L=>L.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:st.svc.p,plan:!!st.svc.plan,status:'conf',note:'',origin:'site'}),`Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
+  }
+  $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';if(st.step===3){const c=db.clients.find(x=>x.phone===$('#btel').value.replace(/\D/g,''));if(c&&c.blocked){$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';return}}
+    if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
+    if(st.step===1)renderDays();st.step++;if(st.step===5)saveBooking();if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
   $('#back').onclick=()=>{st.step--;update()};
   codeIns.forEach((el,i)=>{el.oninput=()=>{el.value=el.value.replace(/\D/g,'');if(el.value&&i<5)codeIns[i+1].focus();update()};
     el.onkeydown=e=>{if(e.key==='Backspace'&&!el.value&&i>0)codeIns[i-1].focus()}});
   $('#btel').oninput=e=>{let d=e.target.value.replace(/\D/g,'').slice(0,11),o='';if(d.length>0)o='('+d.slice(0,2);if(d.length>=2)o+=') ';if(d.length>2)o+=d.slice(2,3)+' ';if(d.length>3)o+=d.slice(3,7);if(d.length>7)o+='-'+d.slice(7);e.target.value=o;update()};
   // vindo da página de horários: ?d=índice&t=HH:MM
   const q=new URLSearchParams(location.search);
-  if(q.has('d')){const d=+q.get('d');if(days[d]&&HOURS[days[d].getDay()]){st.svc=SVC.cab[0];st.day=d;st.time=q.get('t');st.step=2;renderSvc();renderDays()}}
+  if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0];st.day=d;st.time=q.get('t');st.step=2;renderSvc();renderDays()}}
   if(q.get('cat')==='ass'){st.cat='ass';$$('#svctabs button').forEach(x=>x.classList.toggle('on',x.dataset.c==='ass'))}
   renderSvc();update();
 }
@@ -133,7 +167,7 @@ if($('#gal')){
   const vis=()=>items.filter(i=>!i.classList.contains('hide'));
   const show=i=>{const v=vis();cur=(i+v.length)%v.length;const it=v[cur];
     $('#lb-title').textContent=it.querySelector('b').textContent;$('#lb-sub').textContent=it.querySelector('.cap').lastChild.textContent;
-    $('#lb-count').textContent=`${cur+1} / ${v.length}`;const f=$('#lb-frame');f.classList.remove('in');void f.offsetWidth;f.classList.add('in')};
+    $('#lb-count').textContent=`${cur+1} / ${v.length}`;const im=it.dataset.img&&DB.img.get(it.dataset.img),li=$('.lb-img');li.style.background=im?`url(${im}) center/contain no-repeat #000`:'';li.textContent=im?'':'Foto';const f=$('#lb-frame');f.classList.remove('in');void f.offsetWidth;f.classList.add('in')};
   items.forEach(it=>it.onclick=()=>{show(vis().indexOf(it));lb.classList.add('open')});
   $('#lb-prev').onclick=()=>show(cur-1);$('#lb-next').onclick=()=>show(cur+1);
   $('#lb-close').onclick=()=>lb.classList.remove('open');
@@ -142,7 +176,7 @@ if($('#gal')){
 }
 
 /* ===== contato: mapa sob demanda ===== */
-if($('#map-load'))$('#map-load').onclick=()=>{$('#map').innerHTML='<iframe title="Mapa" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=Av.%20Bom%20Jardim%2C%20Parauapebas%20-%20PA&z=15&output=embed"></iframe>'};
+if($('#map-load'))$('#map-load').onclick=()=>{$('#map').innerHTML='<iframe title="Mapa" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q='+encodeURIComponent(C.address)+'&z=15&output=embed"></iframe>'};
 
 /* ===== contato: mensagem pelo WhatsApp ===== */
 if($('#cform')){
@@ -150,7 +184,7 @@ if($('#cform')){
     const n=$('#cname').value.trim(),m=$('#cmsg').value.trim(),a=$('#csub').value;
     if(!n||!m){$('#cerr').textContent='Preencha nome e mensagem.';return}
     const txt=`Olá, Athos! Sou ${n}. Assunto: ${a}.\n${m}`;
-    window.open('https://wa.me/5594981248772?text='+encodeURIComponent(txt),'_blank');
+    window.open('https://wa.me/'+C.wa+'?text='+encodeURIComponent(txt),'_blank');
   };
   ['#cname','#cmsg'].forEach(s=>$(s).oninput=()=>$('#cerr').textContent='');
 }
