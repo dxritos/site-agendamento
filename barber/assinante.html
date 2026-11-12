@@ -197,12 +197,18 @@ function vInicio(){
     card=`<div class="card plan ${late?'susp':''}"><div class="top"><span class="eyebrow">Seu plano</span><span class="chip ${late?'c-bad':paused?'c-warn':'c-ok'}">${late?'Suspenso':paused?'Pausado':'Ativo'}</span></div>
       <h2>${esc(p.n)}</h2><div class="meta">${brl(p.p)}/mês · ${late?'cobrança em aberto':paused?'pausado até '+fmtD(s.pausedUntil):'próxima cobrança '+fmtD(nextBill(s))+' · '+esc(s.method)}</div><div class="meters">${meters.join('')}</div></div>`;
   }
-  const perks=[];if(s&&s.status!=='off'&&p){perks.push([`Válido em`,p.days.map(d=>WD[d]).join(', ')]);if(p.perks&&p.perks!=='—')perks.push(['Brindes do mês',p.perks]);if(p.gap)perks.push(['Intervalo entre cortes',p.gap+' dias'])}
-  db.services.filter(x=>x.on&&x.mp!=null).forEach(x=>perks.push([x.n+(s&&s.status==='ok'?'':' (assinante)'),brl(x.mp)]));
+  // benefícios: só aparecem como "seus" para assinatura ativa; suspensa/pausada mostra aviso; sem plano vira oferta
+  const active=s&&s.status==='ok',hasSub=s&&s.status!=='off';let perksBox;
+  if(active){const perks=[[`Válido em`,p.days.map(d=>WD[d]).join(', ')]];if(p.perks&&p.perks!=='—')perks.push(['Brindes do mês',p.perks]);if(p.gap)perks.push(['Intervalo entre cortes',p.gap+' dias']);
+    db.services.filter(x=>x.on&&x.mp!=null).forEach(x=>perks.push([x.n,brl(x.mp)]));
+    perksBox=`<h3>Seus benefícios</h3><ul class="perks">${perks.map(([a,b])=>`<li>${esc(a)}<b>${esc(b)}</b></li>`).join('')}</ul>`}
+  else if(hasSub){perksBox=`<h3>Seus benefícios</h3><p class="empty">${s.status==='late'?'Benefícios suspensos até o pagamento. Depois de pagar, tudo volta na hora.':'Benefícios pausados até '+fmtD(s.pausedUntil)+'.'}</p>`}
+  else{const on=db.plans.filter(x=>x.on).sort((a,b)=>a.p-b.p),mp=db.services.filter(x=>x.on&&x.mp!=null);
+    perksBox=`<h3>Por que assinar?</h3><ul class="perks">${on.length?`<li>Planos a partir de<b>${brl(on[0].p)}/mês</b></li>`:''}<li>Cobrança automática<b>sem fidelidade</b></li>${mp.map(x=>`<li>${esc(x.n)} para assinante<b>${brl(x.mp)} <s style="color:var(--dim);font-weight:400">${brl(x.p)}</s></b></li>`).join('')}</ul><button class="btn btn-primary btn-sm" style="margin-top:14px" data-go="plano">Ver planos</button>`}
   return `<h1>Fala, ${esc((c.name||'').split(' ')[0])}!</h1><p class="sub">${up.length?`Seu próximo horário é ${WD[dt(up[0].date).getDay()].toLowerCase()}, ${fmtD(up[0].date)} às ${up[0].start}.`:'Você não tem horários marcados.'}</p>${alert}
   <div class="grid2"><div>${card}<div class="quick"><a href="agendar.html${s&&s.status==='ok'?'?cat=ass':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg>Novo agendamento</a><a href="https://wa.me/${db.content.wa}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com o Athos</a></div></div>
   <div style="display:grid;gap:16px;align-content:start"><div class="card box"><h3>Próximos horários <a href="#" data-go="agenda">Ver todos</a></h3>${up.slice(0,2).map(a=>apptHtml(a,false)).join('')||'<p class="empty">Nenhum horário marcado.</p>'}</div>
-  <div class="card box"><h3>${s&&s.status==='ok'?'Seus benefícios':'Benefícios de assinante'}</h3><ul class="perks">${perks.map(([a,b])=>`<li>${esc(a)}<b>${esc(b)}</b></li>`).join('')}</ul></div></div></div>`;
+  <div class="card box">${perksBox}</div></div></div>`;
 }
 function vAgenda(){
   const up=upcoming(),hist=history();const ST={done:['Concluído','c-dim'],miss:['Faltou','c-bad'],cancel:['Cancelado','c-dim']};
@@ -280,6 +286,9 @@ $('#logout').onclick=()=>{try{localStorage.removeItem('athos_me')}catch(e){}loca
 if(q.has('demo')){$('#demobox').hidden=false;$('#demosel').innerHTML=db.clients.map(c=>{const s=db.subs.find(x=>x.cid===c.id);return `<option value="${c.id}" ${c.id===ME?'selected':''}>${esc(c.name)}${s?' · '+({ok:'ativo',late:'pendente',paused:'pausado',off:'cancelado'})[s.status]:' · sem plano'}</option>`}).join('');
   $('#demosel').onchange=e=>{ME=e.target.value;try{localStorage.setItem('athos_me',ME)}catch(x){}VIEW='inicio';render()}}
 render();
+// cliente sem nome (cadastro antigo/incompleto): pede o nome uma vez
+if(!me().name||/^novo cliente$/i.test(me().name)){modal(`<h3>Como podemos te chamar?</h3><p>Seu nome aparece para o Athos na agenda.</p><input class="inp" id="nm" placeholder="Seu nome" style="margin-top:14px"><div class="mact"><button class="btn btn-primary" id="nm-ok">Salvar</button></div>`);
+  $('#nm-ok').onclick=()=>{const v=$('#nm').value.trim();if(v.length<2)return toast('Digite seu nome');closeModal();act('clients',L=>{L.find(x=>x.id===ME).name=v},`${v}: nome cadastrado`,'Clientes')}}
 </script>
 </body>
 </html>

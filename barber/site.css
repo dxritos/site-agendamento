@@ -491,3 +491,11 @@ input,select,textarea{font-family:inherit}
 .bebas{line-height:1.04}
 .grad,.hero h1 em,.hrs h2 em,.big-mono span,.brand-in h3{padding-top:.14em;margin-top:-.14em;padding-bottom:.04em}
 .hero h1 em,.hrs h2 em{display:block}
+
+/* página legal */
+.legal{max-width:760px}
+.legal .upd{color:var(--dim);font-size:13px;margin-bottom:10px}
+.legal h2{font-family:"Bebas Neue";font-weight:400;font-size:28px;letter-spacing:.02em;margin:28px 0 8px}
+.legal p,.legal li{color:var(--muted);font-size:15.5px;line-height:1.7}
+.legal ul{padding-left:20px;display:grid;gap:6px}
+.legal b{color:var(--txt);font-weight:600}

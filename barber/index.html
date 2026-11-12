@@ -221,7 +221,7 @@
       </div>
       <div>
         <h5>Navegação</h5>
-        <ul><li><a href="agendar.html">Agendar horário</a></li><li><a href="horarios.html">Horários disponíveis</a></li><li><a href="index.html#planos">Planos</a></li><li><a href="galeria.html">Galeria</a></li><li><a href="contato.html">Contato</a></li><li><a href="entrar.html">Entrar no portal</a></li><li><a href="#">Política de Privacidade</a></li></ul>
+        <ul><li><a href="agendar.html">Agendar horário</a></li><li><a href="horarios.html">Horários disponíveis</a></li><li><a href="index.html#planos">Planos</a></li><li><a href="galeria.html">Galeria</a></li><li><a href="contato.html">Contato</a></li><li><a href="entrar.html">Entrar no portal</a></li><li><a href="privacidade.html">Política de Privacidade</a></li></ul>
       </div>
       <div>
         <h5><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Horário de funcionamento</h5>
@@ -250,19 +250,21 @@
     <h3 id="mtitle">Plano</h3>
     <div class="msum"><span style="color:var(--muted)">Valor mensal</span><b id="mprice">R$ 0</b></div>
     <label class="t">Seus dados</label>
-    <input class="inp" placeholder="Nome completo">
-    <input class="inp" placeholder="WhatsApp — (94) 9 0000-0000">
+    <input class="inp" id="sname" placeholder="Nome completo" autocomplete="name">
+    <input class="inp" id="stel" inputmode="numeric" placeholder="WhatsApp — (94) 9 0000-0000">
     <label class="t" style="margin-top:8px">Dia da cobrança</label>
     <div class="opts"><div class="opt on">Dia 01</div><div class="opt">Dia 07</div></div>
     <label class="t">Forma de pagamento</label>
     <div class="opts"><div class="opt pay on" data-payic="pix">Pix automático<small>débito no dia</small></div><div class="opt pay" data-payic="card">Cartão<small>recorrente</small></div></div>
+    <p style="font-size:12px;color:var(--dim);margin:2px 0 10px">Ao assinar, você concorda com a <a href="privacidade.html" style="color:var(--teal-2)">Política de Privacidade</a>.</p>
+    <p class="berr" id="serr"></p>
     <button class="btn btn-primary btn-pay" id="mconfirm" data-paybtn data-payic="pix">Confirmar assinatura</button>
   </div>
   <div class="mbox done" id="m2" style="display:none">
     <div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div>
     <h3 class="bebas">Bem-vindo ao Clube!</h3>
     <p>Confirmação enviada no WhatsApp. Já pode agendar seu primeiro horário.</p>
-    <a href="agendar.html" class="btn btn-primary" data-close style="margin-top:20px">Agendar primeiro corte</a>
+    <a href="agendar.html?cat=ass" class="btn btn-primary" style="margin-top:20px">Agendar primeiro corte</a><a href="assinante.html" class="btn btn-ghost" style="margin-top:10px">Ir para minha área</a>
   </div>
 </div>
 <script src="store.js"></script>

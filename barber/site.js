@@ -19,7 +19,7 @@ const db=DB.data, C=db.content;
 const brl0=v=>'R$ '+Math.round(v);
 const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],WDF=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const SVC={cab:[],com:[],ext:[],ass:[{n:'Corte (plano)',base:'Corte',d:'Incluso no seu plano',p:0,t:45,plan:1},{n:'Corte + Barba (plano)',base:'Corte + Barba',d:'Incluso no seu plano',p:0,t:60,plan:1}]};
-db.services.filter(s=>s.on).forEach(s=>{if(SVC[s.cat])SVC[s.cat].push({n:s.n,d:s.d+(s.mp!=null?' · assinante '+brl(s.mp):''),p:s.p,t:s.t})});
+db.services.filter(s=>s.on).forEach(s=>{if(SVC[s.cat])SVC[s.cat].push({n:s.n,d:s.d+(s.mp!=null?' · assinante '+brl(s.mp):''),p:s.p,t:s.t,mp:s.mp})});
 const PLAN_DAYS=[...new Set(db.plans.filter(p=>p.on).flatMap(p=>p.days))];
 const today=new Date();today.setHours(0,0,0,0);
 const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i);return d});
@@ -74,7 +74,25 @@ if(modal){
   });
   $$('[data-close]').forEach(b=>b.addEventListener('click',()=>modal.classList.remove('open')));
   modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
-  $('#mconfirm').onclick=()=>{$('#m1').style.display='none';$('#m2').style.display=''};
+  let curPlan=null;$$('[data-plan]').forEach(b=>b.addEventListener('click',()=>{curPlan=db.plans.find(p=>p.n===b.dataset.plan)||null;$('#serr').textContent=''}));
+  $('#stel').oninput=e=>{let d=e.target.value.replace(/\D/g,'').slice(0,11),o='';if(d.length>0)o='('+d.slice(0,2);if(d.length>=2)o+=') ';if(d.length>2)o+=d.slice(2,3)+' ';if(d.length>3)o+=d.slice(3,7);if(d.length>7)o+='-'+d.slice(7);e.target.value=o};
+  $('#mconfirm').onclick=()=>{
+    const name=$('#sname').value.trim(),phone=$('#stel').value.replace(/\D/g,'');
+    if(name.length<2)return $('#serr').textContent='Digite seu nome.';
+    if(phone.length!==11)return $('#serr').textContent='WhatsApp inválido. Use DDD + 9 dígitos.';
+    if(!curPlan)return $('#serr').textContent='Plano indisponível. Atualize a página.';
+    let c=db.clients.find(x=>x.phone===phone);
+    if(c&&c.blocked)return $('#serr').textContent='Não foi possível assinar por este número. Fale com o Athos pelo WhatsApp.';
+    const cur=c&&db.subs.find(x=>x.cid===c.id&&x.status!=='off');
+    if(cur)return $('#serr').innerHTML='Este número já tem assinatura. <a href="entrar.html" style="color:var(--teal-2)">Entre na sua área</a> para trocar de plano.';
+    const days=$$('#m1 .opts')[0].querySelector('.opt.on').textContent.includes('07')?7:1,met=$$('#m1 .opts')[1].querySelector('.opt.on').dataset.payic==='pix'?'Pix automático':'Cartão';
+    const mo=MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2);
+    if(!c){c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:mo};DB.mutate('clients',L=>L.push(c),`${name} cadastrado pela assinatura no site`,'Clientes','Site')}
+    DB.mutate('subs',L=>{const old=L.find(x=>x.cid===c.id);const v={plan:curPlan.id,status:'ok',used:0,credit:0,day:days,method:met,pausedUntil:null,courtesyUntil:null,exempt:false};if(old)Object.assign(old,v);else L.push({id:'a'+DB.uid(),cid:c.id,since:mo,...v})},`Nova assinatura pelo site: ${c.name} · ${curPlan.n}`,'Assinaturas','Site');
+    DB.mutate('tx',L=>L.unshift({id:DB.uid(),date:DB.iso(today),cid:c.id,desc:'Plano '+curPlan.n,method:met,value:curPlan.p,kind:'plano',status:'ok'}),`Primeira cobrança de ${c.name}: ${brl(curPlan.p)}`,'Financeiro','Site');
+    try{localStorage.setItem('athos_me',c.id)}catch(e){}
+    $('#m1').style.display='none';$('#m2').style.display='';
+  };
 }
 $$('.opts').forEach(g=>g.querySelectorAll('.opt').forEach(o=>o.onclick=()=>g.querySelectorAll('.opt').forEach(x=>x.classList.toggle('on',x===o))));
 
@@ -118,6 +136,9 @@ if($('#svclist')){
     $('#slots').innerHTML=s.length?s.map(t=>`<button class="slot ${st.time===t?'on':''}" data-t="${t}">${t}</button>`).join(''):'<span style="color:var(--dim);font-size:14px">Sem horários livres neste dia.</span>';
     $$('#slots .slot').forEach((b,i)=>{b.style.animationDelay=Math.min(i,20)*0.015+'s';b.onclick=()=>{st.time=b.dataset.t;renderSlots();update()}});
   }
+  // preço final: assinante ativo paga o preço especial (mp) nos serviços que têm
+  function isMember(){const ph=($('#btel')||{value:''}).value.replace(/\D/g,''),c=ph&&db.clients.find(x=>x.phone===ph);return !!(c&&db.subs.some(x=>x.cid===c.id&&x.status==='ok'))}
+  function priceNow(){if(!st.svc)return 0;if(st.svc.plan)return 0;return st.svc.mp!=null&&isMember()?st.svc.mp:st.svc.p}
   function update(){
     const ok=(st.step===1&&st.svc)||(st.step===2&&st.time)||(st.step===3&&$('#btel').value.replace(/\D/g,'').length>=10)||(st.step===4&&codeIns.every(x=>x.value));
     const nx=$('#next');nx.disabled=!ok;nx.style.opacity=ok?1:.5;
@@ -127,11 +148,11 @@ if($('#svclist')){
     const vs=Math.min(st.step,3);
     $$('#bsteps div').forEach((el,i)=>{el.classList.toggle('on',i+1===vs&&st.step<5);el.classList.toggle('ok',i+1<vs||st.step===5)});
     [1,2,3,4,5].forEach(n=>$('#p'+n).classList.toggle('on',n===st.step));
-    $('#sel').innerHTML=st.svc?`<b>${st.svc.n}</b> · ${st.svc.plan?'Incluso no plano':brl(st.svc.p)}${st.time?` · ${dayLabel(st.day)} às ${st.time}`:''}`:'Nenhum serviço selecionado';
+    $('#sel').innerHTML=st.svc?`<b>${st.svc.n}</b> · ${st.svc.plan?'Incluso no plano':brl(priceNow())}${st.time?` · ${dayLabel(st.day)} às ${st.time}`:''}`:'Nenhum serviço selecionado';
     if(st.step===3)$('#sum').innerHTML=`<label class="t">Resumo</label>
       <div class="row"><span>Serviço</span><b>${st.svc.n}</b></div><div class="row"><span>Barbeiro</span><b>Athos</b></div>
       <div class="row"><span>Quando</span><b>${dayLabel(st.day)} · ${st.time}</b></div><div class="row"><span>Duração</span><b>${st.svc.t} min</b></div>
-      <div class="row"><span>Valor</span><b>${st.svc.plan?'R$ 0,00 (plano)':brl(st.svc.p)}</b></div>`;
+      <div class="row"><span>Valor</span><b>${st.svc.plan?'R$ 0,00 (plano)':brl(priceNow())+(priceNow()<st.svc.p?' <small style="color:var(--teal-2);font-weight:500">preço de assinante</small>':'')}</b></div>`;
     if(st.step===4)$('#otptel').textContent=$('#btel').value;
     if(st.step===5)$('#donetxt').textContent=`${st.svc.n} · ${dayLabel(st.day)} às ${st.time}. A confirmação chega no seu WhatsApp.`;
   }
@@ -140,7 +161,7 @@ if($('#svclist')){
     let c=db.clients.find(x=>x.phone===phone);
     if(!c){c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)};DB.mutate('clients',L=>L.push(c),'Cliente '+name+' cadastrado pelo site','Clientes','Site')}
     const svc=st.svc.base||st.svc.n,ds=DB.iso(days[st.day]);
-    DB.mutate('appts',L=>L.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:st.svc.p,plan:!!st.svc.plan,status:'conf',note:'',origin:'site'}),`Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
+    DB.mutate('appts',L=>L.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:!!st.svc.plan,status:'conf',note:'',origin:'site'}),`Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
   }
   /* regras do plano: só agenda pelo plano quem tem assinatura ativa e dentro das regras */
   const fmtDM=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
