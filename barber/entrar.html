@@ -9,17 +9,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css">
 <style>
-body{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(700px 380px at 50% 0,rgba(69,196,166,.09),transparent 70%),var(--bg)}
+body{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(700px 380px at 50% 0,rgba(177,76,255,.12),transparent 70%),var(--bg)}
 main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px}
 .box{width:100%;max-width:420px}
 .back{display:inline-flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;margin-bottom:16px}
 .back:hover{color:var(--txt)}
 .panel{background:var(--card);border:1px solid var(--line-2);border-radius:24px;overflow:hidden}
-.top{text-align:center;padding:28px 24px 22px;border-bottom:1px solid var(--line)}
+.top{text-align:center;padding:26px 24px 20px;border-bottom:1px solid var(--line)}
 .top .mono{width:64px;height:64px;font-size:30px;margin:0 auto 14px}
-.body{padding:26px 24px}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:18px 24px 0}
+.role{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;border:1px solid var(--line-2);border-radius:14px;background:none;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:.2s}
+.role svg{width:20px;height:20px}
+.role.on{border-color:var(--teal);color:var(--teal-2);background:var(--teal-bg);box-shadow:0 0 24px rgba(177,76,255,.18)}
+.body{padding:22px 24px 26px}
 h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-bottom:6px}
-.body>div>p{color:var(--muted);font-size:14px;margin-bottom:22px}
+.body p.lead{color:var(--muted);font-size:14px;margin-bottom:20px}
 .phone{display:flex;gap:8px}
 .phone .ddi{flex:0 0 74px;text-align:center}
 .code{display:flex;gap:8px;justify-content:space-between;margin-bottom:14px}
@@ -27,45 +31,59 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-
 .code input:focus{outline:none;border-color:var(--teal)}
 .code.err input{border-color:var(--bad)}
 .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:14px}
-.row button{background:none;border:0;color:var(--teal-2);font-weight:600;cursor:pointer;font-size:13px}
+.row button,.link{background:none;border:0;color:var(--teal-2);font-weight:600;cursor:pointer;font-size:13px}
 .row button:disabled{color:var(--dim);cursor:default}
-.err-msg{color:var(--bad);font-size:13px;min-height:18px}
+.err-msg{color:var(--bad);font-size:13px;min-height:18px;margin-top:4px}
 .sent{display:flex;gap:10px;align-items:center;background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:12px;padding:12px;font-size:13.5px;margin-bottom:20px}
 .sent svg{flex:0 0 20px;color:var(--teal)}
-.demo{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line-2);font-size:12.5px;color:var(--dim);text-align:center}
-.demo a{color:var(--teal-2);font-weight:600}
+.pw{position:relative}
+.pw button{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);cursor:pointer}
+.field{margin-bottom:12px}
 .step{display:none}.step.on{display:block}
+.mode{display:none}.mode.on{display:block}
 </style>
 </head>
 <body>
-<div class="proto">PROTÓTIPO — nenhum código é enviado de verdade</div>
 <main>
   <div class="box">
     <a href="index.html" class="back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Voltar ao site</a>
     <div class="panel">
-      <div class="top"><div class="mono">AB</div><div class="eyebrow">Área do cliente</div></div>
+      <div class="top"><div class="mono">AB</div><div class="eyebrow">Área de acesso</div></div>
+      <div class="roles">
+        <button class="role on" data-r="cli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Cliente</button>
+        <button class="role" data-r="adm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Equipe</button>
+      </div>
       <div class="body">
-        <!-- passo 1: telefone -->
-        <div class="step on" id="s1">
-          <h1>Entrar</h1>
-          <p>Digite seu WhatsApp. Enviaremos um código de acesso — sem senha.</p>
-          <label class="t">WhatsApp</label>
-          <div class="phone"><input class="inp ddi" value="+55" disabled><input class="inp" id="tel" inputmode="numeric" placeholder="(94) 9 0000-0000" maxlength="16"></div>
-          <div class="err-msg" id="e1"></div>
-          <button class="btn btn-primary btn-block" id="send" style="margin-top:6px;padding:13px">Receber código no WhatsApp</button>
-          <div class="row" style="justify-content:center">Primeira vez? A conta é criada automaticamente.</div>
+        <!-- CLIENTE -->
+        <div class="mode on" id="mode-cli">
+          <div class="step on" id="s1">
+            <h1>Entrar</h1>
+            <p class="lead">Digite seu WhatsApp. Enviamos um código de acesso, sem senha.</p>
+            <label class="t">WhatsApp</label>
+            <div class="phone"><input class="inp ddi" value="+55" disabled><input class="inp" id="tel" inputmode="numeric" placeholder="(94) 9 0000-0000" maxlength="16"></div>
+            <div class="err-msg" id="e1"></div>
+            <button class="btn btn-primary btn-block" id="send" style="margin-top:6px;padding:13px">Receber código no WhatsApp</button>
+            <div class="row" style="justify-content:center">Primeira vez? A conta é criada automaticamente.</div>
+          </div>
+          <div class="step" id="s2">
+            <h1>Digite o código</h1>
+            <div class="sent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Código enviado para <b id="telshow"></b></span></div>
+            <div class="code" id="code"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div>
+            <div class="err-msg" id="e2"></div>
+            <button class="btn btn-primary btn-block" id="verify" style="padding:13px">Entrar</button>
+            <div class="row"><button id="change">Alterar número</button><button id="resend" disabled>Reenviar em 30s</button></div>
+          </div>
         </div>
-        <!-- passo 2: código -->
-        <div class="step" id="s2">
-          <h1>Digite o código</h1>
-          <div class="sent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Enviamos um código de 6 dígitos para <b id="telshow"></b></span></div>
-          <div class="code" id="code"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div>
-          <div class="err-msg" id="e2"></div>
-          <button class="btn btn-primary btn-block" id="verify" style="padding:13px">Entrar</button>
-          <div class="row"><button id="change">Alterar número</button><button id="resend" disabled>Reenviar em 30s</button></div>
-          <div class="row" style="justify-content:center"><button id="sms">Não chegou? Receber por SMS</button></div>
+        <!-- EQUIPE / ADMIN -->
+        <div class="mode" id="mode-adm">
+          <h1>Painel da barbearia</h1>
+          <p class="lead">Acesso restrito ao barbeiro e à equipe.</p>
+          <div class="field"><label class="t">E-mail</label><input class="inp" id="em" type="email" placeholder="voce@athosbarber.com.br"></div>
+          <div class="field"><label class="t">Senha</label><div class="pw"><input class="inp" id="pw" type="password" placeholder="Digite sua senha"><button id="eye" aria-label="Mostrar senha"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="err-msg" id="e3"></div>
+          <button class="btn btn-primary btn-block" id="admin" style="padding:13px">Acessar painel</button>
+          <div class="row"><button class="link">Esqueci minha senha</button></div>
         </div>
-        <div class="demo">Demonstração: qualquer código de 6 dígitos funciona.<br>Ver como <a href="assinante.html">assinante</a> · <a href="painel.html">barbeiro (Athos)</a></div>
       </div>
     </div>
   </div>
@@ -74,27 +92,34 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-
 <script>
 const $=s=>document.querySelector(s);
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
-// máscara (94) 9 0000-0000
+// alterna cliente / equipe
+document.querySelectorAll('.role').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x===b));
+  $('#mode-cli').classList.toggle('on',b.dataset.r==='cli');$('#mode-adm').classList.toggle('on',b.dataset.r==='adm');
+});
+if(location.hash==='#equipe')document.querySelector('[data-r=adm]').click();
+// cliente: telefone + código
 $('#tel').oninput=e=>{let d=e.target.value.replace(/\D/g,'').slice(0,11),o='';
   if(d.length>0)o='('+d.slice(0,2);if(d.length>=2)o+=') ';if(d.length>2)o+=d.slice(2,3)+' ';if(d.length>3)o+=d.slice(3,7);if(d.length>7)o+='-'+d.slice(7);e.target.value=o;$('#e1').textContent=''};
 let timer;
 function startTimer(){let s=30;const b=$('#resend');b.disabled=true;clearInterval(timer);
   timer=setInterval(()=>{s--;b.textContent=s>0?`Reenviar em ${s}s`:'Reenviar código';if(s<=0){b.disabled=false;clearInterval(timer)}},1000)}
-$('#send').onclick=()=>{const d=$('#tel').value.replace(/\D/g,'');
-  if(d.length!==11){$('#e1').textContent='Número inválido. Use DDD + 9 dígitos.';return}
-  $('#telshow').textContent=$('#tel').value;$('#s1').classList.remove('on');$('#s2').classList.add('on');
-  ins[0].focus();startTimer();toast('Código enviado no WhatsApp')};
+$('#send').onclick=()=>{if($('#tel').value.replace(/\D/g,'').length!==11){$('#e1').textContent='Número inválido. Use DDD + 9 dígitos.';return}
+  $('#telshow').textContent=$('#tel').value;$('#s1').classList.remove('on');$('#s2').classList.add('on');ins[0].focus();startTimer();toast('Código enviado no WhatsApp')};
 const ins=[...document.querySelectorAll('#code input')];
 ins.forEach((el,i)=>{
   el.oninput=()=>{el.value=el.value.replace(/\D/g,'');$('#code').classList.remove('err');$('#e2').textContent='';if(el.value&&i<5)ins[i+1].focus();if(ins.every(x=>x.value))$('#verify').click()};
   el.onkeydown=e=>{if(e.key==='Backspace'&&!el.value&&i>0)ins[i-1].focus()};
-  el.onpaste=e=>{const v=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(v){e.preventDefault();v.split('').forEach((c,j)=>ins[j].value=c);ins[Math.min(v.length,5)].focus();if(v.length===6)$('#verify').click()}};
+  el.onpaste=e=>{const v=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(v){e.preventDefault();v.split('').forEach((c,j)=>ins[j].value=c);if(v.length===6)$('#verify').click()}};
 });
 $('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('err');$('#e2').textContent='Digite os 6 dígitos.';return}
-  $('#verify').textContent='Entrando...';setTimeout(()=>location.href='assinante.html',600)};
+  $('#verify').textContent='Entrando...';setTimeout(()=>location.href='assinante.html',500)};
 $('#change').onclick=()=>{$('#s2').classList.remove('on');$('#s1').classList.add('on');ins.forEach(x=>x.value='')};
 $('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};
-$('#sms').onclick=()=>{startTimer();toast('Código enviado por SMS')};
+// equipe: e-mail + senha
+$('#eye').onclick=()=>{const p=$('#pw');p.type=p.type==='password'?'text':'password'};
+$('#admin').onclick=()=>{if(!/\S+@\S+\.\S+/.test($('#em').value)||$('#pw').value.length<4){$('#e3').textContent='Informe e-mail e senha.';return}
+  $('#admin').textContent='Entrando...';setTimeout(()=>location.href='painel.html',500)};
 </script>
 </body>
 </html>
