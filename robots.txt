@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /barber/painel
+Disallow: /barber/entrar
+Disallow: /barber/assinante

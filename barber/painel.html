@@ -6,6 +6,7 @@
 <title>Painel | Athos Barber</title>
 <link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000020">
 <link rel="stylesheet" href="app.css">
 <style>
@@ -358,9 +359,14 @@ function editAppt(id){
    <div class="mact"><button class="btn btn-danger" id="f-cancel">Cancelar horário</button><button class="btn btn-ghost" id="f-wa">Avisar no WhatsApp</button><button class="btn btn-primary" id="f-save">Salvar</button></div>`);
   $('#f-svc').onchange=()=>{const s=svcInfo($('#f-svc').value);if(!$('#f-plan').checked)$('#f-price').value=s.p};
   $('#f-plan').onchange=()=>{$('#f-price').value=$('#f-plan').checked?0:svcInfo($('#f-svc').value).p};
-  $('#f-save').onclick=()=>{const nd=$('#f-date').value,ns=$('#f-start').value,moved=nd!==a.date||ns!==a.start;closeModal();
+  $('#f-save').onclick=()=>{const nd=$('#f-date').value,ns=$('#f-start').value,moved=nd!==a.date||ns!==a.start,dur=svcInfo($('#f-svc').value).t;
+    const clash=db.appts.find(x=>x.id!==id&&x.date===nd&&!['cancel'].includes(x.status)&&DB.toMin(x.start)<DB.toMin(ns)+dur&&DB.toMin(x.start)+x.dur>DB.toMin(ns));
+    const hol=db.holidays.find(h=>h.date===nd),open=db.hours[new Date(nd+'T00:00').getDay()];
+    const warn=clash?`Já existe ${clash.status==='block'?'um bloqueio':'o horário de '+esc(cname(clash.cid))} às ${clash.start} nesse dia.`:hol?`${fmtD(nd)} está fechado (${esc(hol.name)}).`:!open?'A barbearia não abre nesse dia.':(DB.toMin(ns)<DB.toMin(open[0])||DB.toMin(ns)+dur>DB.toMin(open[1]))?`Fora do horário de funcionamento (${open[0]} – ${open[1]}).`:'';
+    const doSave=()=>{closeModal();
     change('appts',L=>{const x=L.find(y=>y.id===id);Object.assign(x,{svc:$('#f-svc').value,status:$('#f-st').value,date:nd,start:ns,price:+$('#f-price').value,plan:$('#f-plan').checked,note:$('#f-note').value,dur:svcInfo($('#f-svc').value).t})},
       moved?`${c.name}: remarcado de ${fmtD(a.date)} ${a.start} para ${fmtD(nd)} ${ns}`:`${c.name}: agendamento de ${fmtD(a.date)} ${a.start} editado`,'Agenda')};
+    if(warn&&moved)confirmBox('Atenção',warn+' Salvar mesmo assim?','Salvar assim mesmo',doSave,false);else doSave()};
   $('#f-cancel').onclick=()=>confirmBox('Cancelar horário?',`${esc(c.name)} · ${fmtD(a.date)} às ${a.start}. O horário volta a ficar livre no site.`,'Cancelar horário',()=>change('appts',L=>{L.find(y=>y.id===id).status='cancel'},`${c.name}: horário de ${fmtD(a.date)} ${a.start} cancelado`,'Agenda'));
   $('#f-wa').onclick=()=>window.open(`https://wa.me/55${String(c.phone).replace(/\D/g,'')}?text=${encodeURIComponent(`Oi, ${c.name}! Sobre seu horário de ${fmtD(a.date)} às ${a.start}:`)}`,'_blank');
 }
