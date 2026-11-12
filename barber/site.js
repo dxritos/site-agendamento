@@ -54,8 +54,8 @@ $$('.stats>div').forEach(el=>{const sp=el.querySelector('span'),b=el.querySelect
 // FAQ, avaliações e galeria
 if($('.faq'))$('.faq').innerHTML=db.faq.map(f=>`<div class="faq-i"><button class="faq-q">${esc(f.q)}<i></i></button><div class="faq-a"><p>${esc(f.a)}</p></div></div>`).join('');
 if($('.reviews'))$('.reviews').innerHTML=db.reviews.map(r=>`<div class="rev"><div class="stars">★★★★★</div><p>“${esc(r.text)}”</p><div class="who"><span>${esc((r.name||'?')[0])}</span><div><b>${esc(r.name)}</b><small>${esc(r.info)}</small></div></div></div>`).join('');
-if($('#gal'))$('#gal').innerHTML=db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);return `<button class="gi" data-cat="${g.cat}"${im?` style="background:url(${im}) center/cover" data-img="${g.img}"`:''}>${im?'':'<span class="ph">Foto</span>'}<div class="cap"><b>${esc(g.t)}</b>${esc(g.s)}</div><i class="zoom"></i></button>`}).join('');
-function esc(x){return String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+if($('#gal'))$('#gal').innerHTML=db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);const okIm=im&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(im)?im:null;return `<button class="gi" data-cat="${esc(g.cat)}"${okIm?` style="background:url(${okIm}) center/cover" data-img="${esc(g.img)}"`:''}>${okIm?'':'<span class="ph">Foto</span>'}<div class="cap"><b>${esc(g.t)}</b>${esc(g.s)}</div><i class="zoom"></i></button>`}).join('');
+function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 /* ===== planos (home) ===== */
 if($('.switch')){
@@ -118,7 +118,7 @@ if($('#svclist')){
   const dayLabel=i=>{const d=days[i];return `${i===0?'Hoje':WD[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`};
   const codeIns=$$('#code input');
   function renderSvc(){
-    $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.svc&&st.svc.n===s.n?'on':''}" data-i="${i}"><div><strong>${s.n}</strong><small>${s.d} · ${s.t} min</small></div><div class="pr"><b>${s.plan?'Incluso':brl(s.p)}</b>${s.plan?'<small class="mem">R$ 0,00</small>':''}</div></button>`).join('');
+    $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.svc&&st.svc.n===s.n?'on':''}" data-i="${i}"><div><strong>${esc(s.n)}</strong><small>${esc(s.d)} · ${s.t} min</small></div><div class="pr"><b>${s.plan?'Incluso':brl(s.p)}</b>${s.plan?'<small class="mem">R$ 0,00</small>':''}</div></button>`).join('');
     $$('#svclist .svc').forEach(b=>b.onclick=()=>{st.svc=SVC[st.cat][b.dataset.i];if(st.day!==null&&!validDay(days[st.day])){st.day=null;st.time=null}renderSvc();update()});
   }
   $$('#svctabs button').forEach(b=>b.onclick=()=>{st.cat=b.dataset.c;$$('#svctabs button').forEach(x=>x.classList.toggle('on',x===b));renderSvc()});
@@ -148,10 +148,10 @@ if($('#svclist')){
     const vs=Math.min(st.step,3);
     $$('#bsteps div').forEach((el,i)=>{el.classList.toggle('on',i+1===vs&&st.step<5);el.classList.toggle('ok',i+1<vs||st.step===5)});
     [1,2,3,4,5].forEach(n=>$('#p'+n).classList.toggle('on',n===st.step));
-    $('#sel').innerHTML=st.svc?`<b>${st.svc.n}</b> · ${st.svc.plan?'Incluso no plano':brl(priceNow())}${st.time?` · ${dayLabel(st.day)} às ${st.time}`:''}`:'Nenhum serviço selecionado';
+    $('#sel').innerHTML=st.svc?`<b>${esc(st.svc.n)}</b> · ${st.svc.plan?'Incluso no plano':brl(priceNow())}${st.time?` · ${dayLabel(st.day)} às ${esc(st.time)}`:''}`:'Nenhum serviço selecionado';
     if(st.step===3)$('#sum').innerHTML=`<label class="t">Resumo</label>
-      <div class="row"><span>Serviço</span><b>${st.svc.n}</b></div><div class="row"><span>Barbeiro</span><b>Athos</b></div>
-      <div class="row"><span>Quando</span><b>${dayLabel(st.day)} · ${st.time}</b></div><div class="row"><span>Duração</span><b>${st.svc.t} min</b></div>
+      <div class="row"><span>Serviço</span><b>${esc(st.svc.n)}</b></div><div class="row"><span>Barbeiro</span><b>Athos</b></div>
+      <div class="row"><span>Quando</span><b>${dayLabel(st.day)} · ${esc(st.time)}</b></div><div class="row"><span>Duração</span><b>${st.svc.t} min</b></div>
       <div class="row"><span>Valor</span><b>${st.svc.plan?'R$ 0,00 (plano)':brl(priceNow())+(priceNow()<st.svc.p?' <small style="color:var(--teal-2);font-weight:500">preço de assinante</small>':'')}</b></div>`;
     if(st.step===4)$('#otptel').textContent=$('#btel').value;
     if(st.step===5)$('#donetxt').textContent=`${st.svc.n} · ${dayLabel(st.day)} às ${st.time}. A confirmação chega no seu WhatsApp.`;
@@ -161,7 +161,7 @@ if($('#svclist')){
     let c=db.clients.find(x=>x.phone===phone);
     if(!c){c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)};DB.mutate('clients',L=>L.push(c),'Cliente '+name+' cadastrado pelo site','Clientes','Site')}
     const svc=st.svc.base||st.svc.n,ds=DB.iso(days[st.day]);
-    DB.mutate('appts',L=>L.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:!!st.svc.plan,status:'conf',note:'',origin:'site'}),`Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
+    return DB.mutate('appts',L=>L.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:!!st.svc.plan,status:'conf',note:'',origin:'site'}),`Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
   }
   /* regras do plano: só agenda pelo plano quem tem assinatura ativa e dentro das regras */
   const fmtDM=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
@@ -196,14 +196,14 @@ if($('#svclist')){
       if(c&&c.blocked){if(st.step===4){st.step=3;update()}$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';return}
       if(st.svc.plan){const err=planCheck(phone);if(err){if(st.step===4){st.step=3;update()}planFail(err);return}}}
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
-    if(st.step===1)renderDays();st.step++;if(st.step===5)saveBooking();if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
+    if(st.step===1)renderDays();if(st.step===4&&!saveBooking()){$('#bblock2').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Athos.';return}st.step++;if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
   $('#back').onclick=()=>{st.step--;update()};
   codeIns.forEach((el,i)=>{el.oninput=()=>{el.value=el.value.replace(/\D/g,'');if(el.value&&i<5)codeIns[i+1].focus();update()};
     el.onkeydown=e=>{if(e.key==='Backspace'&&!el.value&&i>0)codeIns[i-1].focus()}});
   $('#btel').oninput=e=>{let d=e.target.value.replace(/\D/g,'').slice(0,11),o='';if(d.length>0)o='('+d.slice(0,2);if(d.length>=2)o+=') ';if(d.length>2)o+=d.slice(2,3)+' ';if(d.length>3)o+=d.slice(3,7);if(d.length>7)o+='-'+d.slice(7);e.target.value=o;update()};
   // vindo da página de horários: ?d=índice&t=HH:MM
   const q=new URLSearchParams(location.search);
-  if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0];st.day=d;st.time=q.get('t');st.step=2;renderSvc();renderDays()}}
+  if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0];st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}
   if(q.get('cat')==='ass'){st.cat='ass';$$('#svctabs button').forEach(x=>x.classList.toggle('on',x.dataset.c==='ass'))}
   try{const me=DB.data.clients.find(c=>c.id===localStorage.getItem('athos_me'));if(me&&$('#btel')){$('#bname').value=me.name;$('#btel').value=me.phone.replace(/(\d{2})(\d)(\d{4})(\d{4})/,'($1) $2 $3-$4')}}catch(e){}
   renderSvc();update();
@@ -237,7 +237,7 @@ if($('#cform')){
     const n=$('#cname').value.trim(),m=$('#cmsg').value.trim(),a=$('#csub').value;
     if(!n||!m){$('#cerr').textContent='Preencha nome e mensagem.';return}
     const txt=`Olá, Athos! Sou ${n}. Assunto: ${a}.\n${m}`;
-    window.open('https://wa.me/'+C.wa+'?text='+encodeURIComponent(txt),'_blank');
+    window.open('https://wa.me/'+C.wa+'?text='+encodeURIComponent(txt),'_blank','noopener');
   };
   ['#cname','#cmsg'].forEach(s=>$(s).oninput=()=>$('#cerr').textContent='');
 }

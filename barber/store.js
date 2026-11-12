@@ -66,10 +66,10 @@ function defaults(){
     clients:[],subs:[],appts:[],tx:[],log:[]
   };
   // clientes
-  const CL=[['Lucas Martins','94981123344','Prefere máquina 1 na lateral.'],['Pedro Henrique','94992017788',''],['Gabriel Souza','94981550021','Alergia a pós-barba com álcool.'],['Rafael Costa','94991334510',''],
-    ['Bruno Alves','94981776203',''],['Diego Ramos','94991882290',''],['Caio Mendes','94981209934',''],['Matheus Lima','94991741188',''],['Vinícius Araújo','94981665521','Novo assinante.'],
-    ['Felipe Rocha','94991453302',''],['André Silva','94981997745',''],['Igor Pereira','94991106634',''],['João Vitor','94981302211',''],['Thiago Nunes','94991887765',''],
-    ['Marcos Vieira','94981445566',''],['Renan Dias','94991223344',''],['Lucas M.','94981123344','Cadastro feito pelo site — parece duplicado.']];
+  const CL=[['Lucas Martins','94900000001','Prefere máquina 1 na lateral.'],['Pedro Henrique','94900000002',''],['Gabriel Souza','94900000003','Prefere tesoura no topo.'],['Rafael Costa','94900000004',''],
+    ['Bruno Alves','94900000005',''],['Diego Ramos','94900000006',''],['Caio Mendes','94900000007',''],['Matheus Lima','94900000008',''],['Vinícius Araújo','94900000009','Novo assinante.'],
+    ['Felipe Rocha','94900000010',''],['André Silva','94900000011',''],['Igor Pereira','94900000012',''],['João Vitor','94900000013',''],['Thiago Nunes','94900000014',''],
+    ['Marcos Vieira','94900000015',''],['Renan Dias','94900000016',''],['Lucas M.','94900000001','Cadastro feito pelo site — parece duplicado.']];
   const since=['jan/26','fev/26','mar/26','abr/26','mai/26','jun/26','jul/26','ago/26','set/26','out/26','nov/26'];
   d.clients=CL.map(([name,phone,notes],i)=>({id:'c'+(i+1),name,phone,notes,blocked:false,misses:i===15?2:0,since:since[i%since.length]}));
   // assinaturas
@@ -139,7 +139,19 @@ window.DB={
   laterSameKey(id){const i=this.data.log.findIndex(x=>x.id===id),e=this.data.log[i];return e?this.data.log.slice(i+1).filter(x=>x.key===e.key).length:0},
   reset(){try{localStorage.removeItem(KEY);localStorage.removeItem(IMGKEY)}catch(e){}},
   exportAll(){return JSON.stringify({db:this.data,images:imgs},null,1)},
-  importAll(txt){const o=JSON.parse(txt);if(!o.db||o.db.v!==1)throw new Error('Arquivo inválido');localStorage.setItem(KEY,JSON.stringify(o.db));localStorage.setItem(IMGKEY,JSON.stringify(o.images||{}))},
+  importAll(txt){const o=JSON.parse(txt);if(!o.db||o.db.v!==1)throw new Error('Arquivo inválido');
+    const d=o.db,arr=['services','plans','faq','reviews','gallery','team','holidays','clients','subs','appts','tx','log'],HM=/^\d{2}:\d{2}$/,DT=/^\d{4}-\d{2}-\d{2}$/,IMG=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+    const bad=m=>{throw new Error('Backup inválido: '+m)};
+    arr.forEach(k=>{if(!Array.isArray(d[k]))bad(k)});['content','hours','messages','roles','settings'].forEach(k=>{if(!d[k]||typeof d[k]!=='object')bad(k)});
+    Object.values(d.hours).forEach(h=>{if(h!==null&&!(Array.isArray(h)&&HM.test(h[0])&&HM.test(h[1])))bad('horários')});
+    if(d.lunch!==null&&!(Array.isArray(d.lunch)&&HM.test(d.lunch[0])&&HM.test(d.lunch[1])))bad('almoço');
+    d.appts.forEach(a=>{if(!DT.test(a.date)||!HM.test(a.start)||typeof a.dur!=='number')bad('agenda')});
+    d.holidays.forEach(h=>{if(!DT.test(h.date))bad('feriados')});
+    d.gallery.forEach(g=>{if(!['cortes','barba','espaco'].includes(g.cat))bad('galeria')});
+    d.subs.forEach(s=>{if(!['ok','late','paused','off'].includes(s.status)||![1,7].includes(s.day)||!['Pix automático','Cartão'].includes(s.method))bad('assinaturas')});
+    d.tx.forEach(t=>{if(!DT.test(t.date)||typeof t.value!=='number'||!['ok','failed','refunded'].includes(t.status))bad('financeiro')});
+    if(!Array.isArray(d.roles.perms))bad('permissões');
+    const im=o.images||{};Object.values(im).forEach(u=>{if(!IMG.test(u))bad('imagens')});localStorage.setItem(KEY,JSON.stringify(o.db));localStorage.setItem(IMGKEY,JSON.stringify(o.images||{}))},
   img:{get:id=>imgs[id]||null,set(id,url){imgs[id]=url;try{localStorage.setItem(IMGKEY,JSON.stringify(imgs));return true}catch(e){delete imgs[id];return false}},del(id){delete imgs[id];try{localStorage.setItem(IMGKEY,JSON.stringify(imgs))}catch(e){}}},
   /* horários livres de um dia, respeitando funcionamento, almoço, feriados, agendamentos e bloqueios */
   freeSlots(date,dur){
