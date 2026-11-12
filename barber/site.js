@@ -142,7 +142,38 @@ if($('#svclist')){
     const svc=st.svc.base||st.svc.n,ds=DB.iso(days[st.day]);
     DB.mutate('appts',L=>L.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:st.svc.p,plan:!!st.svc.plan,status:'conf',note:'',origin:'site'}),`Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
   }
-  $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';if(st.step===3){const c=db.clients.find(x=>x.phone===$('#btel').value.replace(/\D/g,''));if(c&&c.blocked){$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';return}}
+  /* regras do plano: só agenda pelo plano quem tem assinatura ativa e dentro das regras */
+  const fmtDM=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  function planCheck(phone){
+    const c=db.clients.find(x=>x.phone===phone);
+    const s=c&&db.subs.find(x=>x.cid===c.id&&x.status!=='off');
+    if(!s)return 'Este número não tem assinatura ativa.';
+    if(s.status==='late')return 'Sua assinatura está com o pagamento pendente. Regularize na sua área do cliente para usar o plano.';
+    if(s.status==='paused')return `Sua assinatura está pausada${s.pausedUntil?' até '+s.pausedUntil.slice(8)+'/'+s.pausedUntil.slice(5,7):''}.`;
+    const p=db.plans.find(x=>x.id===s.plan);if(!p)return 'Plano não encontrado. Fale com o Athos.';
+    const d=days[st.day],wantsBarba=/barba/i.test(st.svc.base);
+    if(wantsBarba&&!/barba/i.test(p.n))return `Seu plano (${p.n}) não inclui barba.`;
+    if(!p.days.includes(d.getDay()))return `Seu plano vale só ${p.days.map(x=>WD[x]).join(', ')}. ${WDF[d.getDay()]} é atendimento avulso.`;
+    const ym=DB.iso(d).slice(0,7),mine=db.appts.filter(a=>a.cid===c.id&&a.plan&&!['cancel','miss'].includes(a.status));
+    const m=/^(\d+)(?: \+ (\d+))?/.exec(p.quota);
+    if(m){const lim=(wantsBarba&&m[2]?+m[2]:+m[1])+(s.credit||0),used=mine.filter(a=>a.date.slice(0,7)===ym&&(!wantsBarba||/barba/i.test(a.svc))).length;
+      if(used>=lim)return `Você já usou ${lim===1?'o':'os'} ${lim} ${wantsBarba?(lim===1?'serviço de barba':'serviços de barba'):(lim===1?'corte':'cortes')} do plano neste mês. O saldo renova no dia 1º.`}
+    if(p.gap){const t=d.getTime(),near=mine.find(a=>Math.abs(new Date(a.date+'T00:00').getTime()-t)<p.gap*864e5);
+      if(near){const nx=new Date(near.date+'T00:00');nx.setDate(nx.getDate()+p.gap);return `Seu plano pede ${p.gap} dias entre um corte e outro (você tem horário em ${near.date.slice(8)}/${near.date.slice(5,7)}). Pelo plano, o próximo é a partir de ${fmtDM(nx)}.`}}
+    return null;
+  }
+  function avulsoOf(base){const f=k=>(db.services.find(x=>x.id===k)||{p:0,t:0});return base==='Corte + Barba'?{n:'Corte + Barba',d:'Avulso',p:f('corte').p+f('barba').p,t:60}:{...SVC.cab.find(x=>x.n==='Corte')||{n:'Corte',p:f('corte').p,t:45}}}
+  function planFail(msg){
+    const av=avulsoOf(st.svc.base);
+    $('#bblock').innerHTML=`${esc(msg)}<span class="bfix"><button type="button" class="btn btn-primary btn-sm" id="bav">Agendar como avulso · ${brl(av.p)}</button><a class="btn btn-ghost btn-sm" href="index.html#planos">Conhecer os planos</a></span>`;
+    $('#bav').onclick=()=>{st.svc=av;st.cat='cab';$$('#svctabs button').forEach(x=>x.classList.toggle('on',x.dataset.c==='cab'));
+      if(!DB.freeSlots(DB.iso(days[st.day]),av.t).includes(st.time)){st.step=2;st.time=null;renderDays()}
+      $('#bblock').textContent='';renderSvc();update()};
+  }
+  $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';
+    if(st.step===3||st.step===4){const phone=$('#btel').value.replace(/\D/g,''),c=db.clients.find(x=>x.phone===phone);
+      if(c&&c.blocked){if(st.step===4){st.step=3;update()}$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Athos pelo WhatsApp.';return}
+      if(st.svc.plan){const err=planCheck(phone);if(err){if(st.step===4){st.step=3;update()}planFail(err);return}}}
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
     if(st.step===1)renderDays();st.step++;if(st.step===5)saveBooking();if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
   $('#back').onclick=()=>{st.step--;update()};

@@ -485,3 +485,4 @@ input,select,textarea{font-family:inherit}
 .btn-pay::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.42),transparent);transform:skewX(-20deg);animation:payShine 3s ease-in-out infinite;pointer-events:none}
 @keyframes payShine{0%,50%{left:-70%}78%,100%{left:130%}}
 @media (prefers-reduced-motion:reduce){.pay-ic svg,.btn-pay::after{animation:none!important}}
+.berr .bfix{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
