@@ -7,10 +7,10 @@
 <link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#000020">
+<meta name="theme-color" content="#000000">
 <link rel="stylesheet" href="app.css">
 <style>
-header{position:sticky;top:0;z-index:40;background:rgba(0,0,32,.96);border-bottom:1px solid var(--line)}
+header{position:sticky;top:0;z-index:40;background:rgba(0,0,0,.96);border-bottom:1px solid var(--line)}
 .hd{max-width:1100px;margin:0 auto;padding:0 16px;height:62px;display:flex;align-items:center;justify-content:space-between}
 .me{display:flex;align-items:center;gap:10px}
 .av{width:36px;height:36px;border-radius:50%;background:var(--teal);color:#ffffff;font-weight:700;font-size:13px;display:grid;place-items:center}
@@ -32,7 +32,7 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1}
 .alert.info b{color:var(--teal-2)}.alert.info span{color:var(--muted)}
 .alert.warn{background:var(--warn-bg);border-color:rgba(227,165,79,.35)}
 .alert.warn b{color:var(--warn)}.alert.warn span{color:#e9d3b2}
-.plan{padding:22px;background:linear-gradient(140deg,#1b1e55,var(--card) 70%);border-color:var(--teal-d)}
+.plan{padding:22px;background:linear-gradient(140deg,#141638,var(--card) 70%);border-color:var(--teal-d)}
 .plan.susp{background:var(--card);border-color:rgba(228,109,109,.35)}
 .plan.none{background:var(--card);border-color:var(--line)}
 .plan .top{display:flex;justify-content:space-between;align-items:center}
@@ -98,7 +98,7 @@ td.r,th.r{text-align:right}
   .layout{grid-template-columns:1fr;padding-top:18px}
   .side{display:none}
   .grid2{grid-template-columns:1fr}
-  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(3,4,40,.97);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(5,5,11,.97);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
   .bnav .tab{flex-direction:column;gap:3px;font-size:11px;padding:7px 2px;justify-content:center;text-align:center;align-items:center}
   .demo{bottom:78px;right:10px;left:10px;max-width:none}
   .appt{flex-wrap:wrap}

@@ -2,7 +2,7 @@
 @font-face{font-family:"Bebas Neue";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/bebas-neue.woff2) format("woff2")}
 @font-face{font-family:Inter;font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/inter.woff2) format("woff2")}
 :root{
-  --bg:#000020; --bg-2:#030428; --card:#080a33; --card-2:#0d1040; --line:#1b1e54; --line-2:#272b6a;
+  --bg:#000000; --bg-2:#05050b; --card:#08091a; --card-2:#0c0d24; --line:#17193a; --line-2:#23265a;
   --txt:#f4f4f5; --muted:#a6a9cc; --dim:#70749f;
   --teal:#7b76f0; --teal-2:#bdbaff; --teal-d:#2f2c79; --teal-bg:rgba(123,118,240,.14);
   --warn:#e3a54f; --warn-bg:rgba(227,165,79,.1); --bad:#e46d6d; --bad-bg:rgba(228,109,109,.1); --info:#7aa7e6; --info-bg:rgba(122,167,230,.1);
@@ -15,7 +15,7 @@ button,input,select,textarea{font-family:inherit}
 .eyebrow{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
 
 .logo{display:flex;align-items:center;gap:10px}
-.mono{width:38px;height:38px;border-radius:50%;border:1.5px solid #d4d4d8;display:grid;place-items:center;font-family:"Bebas Neue";font-size:19px;color:#e4e4e7;background:radial-gradient(circle at 30% 25%,#1d2058,#030428);flex:0 0 38px}
+.mono{width:38px;height:38px;border-radius:50%;border:1.5px solid #d4d4d8;display:grid;place-items:center;font-family:"Bebas Neue";font-size:19px;color:#e4e4e7;background:radial-gradient(circle at 30% 25%,#191b40,#05050b);flex:0 0 38px}
 .logo b{font-family:"Bebas Neue";font-weight:400;font-size:21px;letter-spacing:.08em;line-height:1}
 .logo b span{color:var(--teal)}
 
@@ -46,7 +46,7 @@ label.t{display:block;font-size:11px;font-weight:600;letter-spacing:.2em;text-tr
 
 .meter .lbl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px}
 .meter .lbl b{color:var(--txt);font-weight:600}
-.bar{height:7px;border-radius:9px;background:#1d2058;overflow:hidden}
+.bar{height:7px;border-radius:9px;background:#191b40;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--teal);border-radius:9px}
 
 .modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.74);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
