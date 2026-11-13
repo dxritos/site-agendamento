@@ -30,7 +30,7 @@ function download(name,content,type){const b=new Blob([content],{type});const a=
 function a11y(root){root.querySelectorAll('.fl').forEach(f=>{const l=f.querySelector('label'),i=f.querySelector('input,select,textarea');if(l&&i){if(!i.id)i.id='f'+DB.uid();l.htmlFor=i.id}});
   root.querySelectorAll('input[placeholder]:not([aria-label]),textarea[placeholder]:not([aria-label])').forEach(i=>{if(!(i.id&&document.querySelector('label[for="'+i.id+'"]')))i.setAttribute('aria-label',i.placeholder)});
   root.querySelectorAll('.rm').forEach(b=>b.setAttribute('aria-label','Remover'));
-  root.querySelectorAll('.sw input').forEach(i=>{if(!i.getAttribute('aria-label')){const t=(i.closest('tr,.set,.msg,h3,label,.hrow')||{}).textContent||'';i.setAttribute('aria-label','Ativar: '+t.trim().replace(/\s+/g,' ').slice(0,40))}});
+  root.querySelectorAll('.sw input').forEach(i=>{if(!i.getAttribute('aria-label')){const t=(i.closest('tr,.set,.msg,h3,.hrow')||{}).textContent||'';i.setAttribute('aria-label','Ativar: '+t.trim().replace(/\s+/g,' ').slice(0,40))}});
   root.querySelectorAll('.opts4 .opt,.days-pick span').forEach(o=>{o.tabIndex=0;if(!o.getAttribute('role'))o.setAttribute('role','button')})}
 let lastFocus=null;
 function modal(html,wide){lastFocus=document.activeElement;$('#mbox').className='mbox'+(wide?' wide':'');$('#mbox').innerHTML='<button class="x" data-close aria-label="Fechar">&times;</button>'+html;const m=$('#modal');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.classList.add('open');a11y($('#mbox'));setTimeout(()=>{const f=$('#mbox input:not([type=hidden]),#mbox select,#mbox textarea,#mbox button:not(.x)');(f||$('#mbox .x')).focus()},30)}
@@ -371,6 +371,11 @@ function vConteudo(){
    <div>
     <div class="card box"><h3>Aviso no topo do site ${sw('k-notice_on',c.notice_on)}</h3><div class="form"><input class="inp" id="k-notice" value="${esc(c.notice)}" placeholder="Ex.: Fechado no feriado"><p class="hint">Faixa que aparece no topo de todas as páginas. Use para feriado, promoção ou mudança de horário.</p></div></div>
     <div class="card box"><h3>Página inicial</h3><div class="form"><div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div><div class="two"><div class="fl"><label>Título (linha 1)</label><input class="inp" id="k-hero_t1" value="${esc(c.hero_t1)}"></div><div class="fl"><label>Título (destaque)</label><input class="inp" id="k-hero_t2" value="${esc(c.hero_t2)}"></div></div><div class="fl"><label>Texto</label><textarea class="inp" id="k-hero_lead">${esc(c.hero_lead)}</textarea></div><div class="fl"><label>Sobre o barbeiro</label><textarea class="inp" id="k-about">${esc(c.about)}</textarea></div></div></div>
+    <div class="card box"><h3>Instagram na galeria ${sw('ig-on',!!c.ig_on)}</h3><div class="form">
+      <p class="hint">Mostra as últimas fotos do perfil na página Galeria, atualizadas sozinhas. Precisa de uma conta profissional (comercial ou criador de conteúdo) e de um token de acesso gerado no painel de desenvolvedor da Meta.</p>
+      <div class="fl"><label>Token de acesso da Meta</label><input class="inp" id="ig-token" type="password" autocomplete="off" value="${esc(c.ig_token||'')}" placeholder="Cole aqui o token (começa com IG...)"></div>
+      <p class="hint">Neste protótipo o token fica salvo só neste navegador. No sistema definitivo ele fica guardado no servidor, nunca no site.</p>
+      <div class="acts"><button class="btn btn-ghost btn-sm" data-act="ig-test">Testar conexão</button><button class="btn btn-primary btn-sm" data-act="ig-save">Salvar</button><span class="hint" id="ig-st"></span></div></div></div>
     <div class="card box"><h3>Contato</h3><div class="form"><div class="two"><div class="fl"><label>WhatsApp (com 55 e DDD)</label><input class="inp" id="k-wa" value="${esc(c.wa)}"></div><div class="fl"><label>Telefone exibido</label><input class="inp" id="k-phone" value="${esc(c.phone)}"></div></div><div class="two"><div class="fl"><label>Endereço</label><input class="inp" id="k-address" value="${esc(c.address)}"></div><div class="fl"><label>Instagram (sem @)</label><input class="inp" id="k-instagram" value="${esc(c.instagram)}"></div></div></div></div>
     <button class="btn btn-primary" data-act="save-content" style="margin-top:16px">Salvar e publicar</button>
    </div>
@@ -386,6 +391,11 @@ function vConteudo(){
 }
 const readList=(sel,key,fields)=>$$(sel).map(el=>{const o={id:el.dataset[key]};fields.forEach(f=>o[f]=el.querySelector(`[data-f="${f}"]`).value);return o});
 Object.assign(ACT,{
+  'ig-test':async()=>{const t=$('#ig-token').value.trim(),st=$('#ig-st');if(!t)return st.textContent='Cole o token primeiro.';st.textContent='Testando...';
+    try{const r=await fetch('https://graph.instagram.com/me?fields=username,media_count&access_token='+encodeURIComponent(t));const j=await r.json();
+      st.textContent=j.username?`Conectado a @${j.username} (${j.media_count||0} publicações).`:'Token inválido ou expirado'+(j.error&&j.error.message?': '+j.error.message:'.')}catch(e){st.textContent='Não foi possível falar com o Instagram agora.'}},
+  'ig-save':()=>{const on=$('#ig-on').checked,t=$('#ig-token').value.trim();if(on&&!t)return toast('Para ligar, cole o token de acesso.');try{sessionStorage.removeItem('farias_ig')}catch(e){}
+    change('content',c=>{c.ig_on=on;c.ig_token=t},on?'Instagram ligado na galeria':'Instagram desligado na galeria','Conteúdo')},
   'save-content':()=>{const keys=['notice','hero_tag','hero_t1','hero_t2','hero_lead','about','wa','phone','address','instagram'];const nv={};keys.forEach(k=>nv[k]=$('#k-'+k).value);nv.notice_on=$('#k-notice_on').checked;nv.wa=nv.wa.replace(/\D/g,'');
     const changed=Object.keys(nv).filter(k=>nv[k]!==db.content[k]);if(!changed.length)return toast('Nada foi alterado');
     const L={notice:'aviso',notice_on:'aviso',hero_tag:'etiqueta',hero_t1:'título',hero_t2:'título',hero_lead:'texto da home',about:'sobre',wa:'WhatsApp',phone:'telefone',address:'endereço',instagram:'Instagram'};

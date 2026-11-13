@@ -267,6 +267,19 @@ if($('#gal')){
   addEventListener('keydown',e=>{if(!lb.classList.contains('open'))return;if(e.key==='ArrowLeft')show(cur-1);if(e.key==='ArrowRight')show(cur+1)});
 }
 
+/* ===== Instagram na galeria (ligado pelo painel) ===== */
+if($('#gal')&&C.ig_on&&C.ig_token){(async()=>{
+  let posts=null;try{const c=JSON.parse(sessionStorage.getItem('farias_ig')||'null');if(c&&Date.now()-c.t<36e5)posts=c.p}catch(e){}
+  if(!posts){try{const r=await fetch('https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink&limit=12&access_token='+encodeURIComponent(C.ig_token));const j=await r.json();
+    posts=(j.data||[]).map(p=>({img:p.media_type==='VIDEO'?p.thumbnail_url:p.media_url,link:p.permalink,cap:(p.caption||'').slice(0,90)})).filter(p=>p.img&&/^https:\/\//.test(p.img)&&/^https:\/\/(www\.)?instagram\.com\//.test(p.link));
+    try{sessionStorage.setItem('farias_ig',JSON.stringify({t:Date.now(),p:posts}))}catch(e){}}catch(e){posts=[]}}
+  if(!posts.length)return;
+  const sec=document.createElement('section');sec.className='ig-sec';sec.setAttribute('aria-labelledby','ig-h');
+  sec.innerHTML=`<div class="wrap"><div class="head"><div class="eyebrow">Instagram</div><h2 class="bebas" id="ig-h">Do nosso Instagram</h2><p>@${esc(C.instagram)} · as publicações mais recentes</p></div>
+    <div class="ig-grid">${posts.map(p=>`<a class="ig-i" href="${esc(p.link)}" target="_blank" rel="noopener" aria-label="Abrir publicação no Instagram${p.cap?': '+esc(p.cap):''}"><img src="${esc(p.img)}" alt="${esc(p.cap||'Publicação do Instagram')}" loading="lazy" referrerpolicy="no-referrer"></a>`).join('')}</div></div>`;
+  $('#gal').closest('section').after(sec);
+})()}
+
 /* ===== contato ===== */
 if($('#map-load'))$('#map-load').onclick=()=>{$('#map').innerHTML='<iframe title="Mapa da barbearia" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q='+encodeURIComponent(C.address)+'&z=15&output=embed"></iframe>'};
 if($('#cform')){

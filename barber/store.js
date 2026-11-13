@@ -16,7 +16,7 @@ function defaults(){
       hero_tag:'Barbearia na sua cidade',hero_t1:'Visual em dia',hero_t2:'o mês inteiro.',
       hero_lead:'Corte, barba e acabamento na navalha. Agende em segundos ou assine o Clube Farias e corte quantas vezes quiser por um valor fixo.',
       about:'Especialista em fade e acabamento na navalha. Agenda individual e em tempo real — você escolhe o horário direto com ele.',
-      wa:'5500900000000',phone:'(00) 90000-0000',address:'Rua das Tesouras, 123 – Centro',instagram:'fariasbarbearia'},
+      wa:'5500900000000',phone:'(00) 90000-0000',address:'Rua das Tesouras, 123 – Centro',instagram:'fariasbarbearia',ig_on:false,ig_token:''},
     hours:{0:null,1:['09:00','19:00'],2:['09:00','19:00'],3:['09:00','19:00'],4:['09:00','19:00'],5:['09:00','20:00'],6:['08:00','12:00']},
     lunch:['12:00','13:00'],
     holidays:[{id:uid(),date:'2026-11-20',name:'Consciência Negra'},{id:uid(),date:'2026-12-25',name:'Natal'}],
