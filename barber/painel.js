@@ -92,7 +92,7 @@ function vHoje(){
     <div class="card kpi"><small>Pagamentos pendentes</small><b class="${late.length?'dn':''}">${late.length}</b><span class="${late.length?'dn':''}">${money0(lateV)} em aberto</span></div>
   </div>
   <div class="g21">
-    <div class="card box"><h3>Agenda de hoje <small>clique para editar</small></h3>${list.length?list.map(apptRow).join(''):`<p class="empty">${hol?'Feriado — barbearia fechada.':'Nenhum horário marcado para hoje.'}</p>`}</div>
+    <div class="card box"><h3>Agenda de hoje</h3>${list.length?list.map(apptRow).join(''):`<p class="empty">${hol?'Feriado — barbearia fechada.':'Nenhum horário marcado para hoje.'}</p>`}</div>
     <div>
       <div class="card box"><h3>Precisa da sua atenção</h3>
         ${late.length?`<div class="al"><div class="ic" style="background:var(--bad-bg);color:var(--bad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div><b>${plural(late.length,'assinante','assinantes')} com pagamento pendente</b><span>${late.map(s=>esc(cname(s.cid))).join(', ')}</span><br><button class="btn btn-ghost btn-sm" data-go="assinantes" data-filter="late">Ver e corrigir</button></div></div>`:''}
@@ -100,7 +100,7 @@ function vHoje(){
         ${db.content.notice_on?`<div class="al"><div class="ic" style="background:var(--teal-bg);color:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18L3 13z"/></svg></div><div><b>Aviso ativo no site</b><span>${esc(db.content.notice)}</span><br><button class="btn btn-ghost btn-sm" data-go="conteudo">Editar</button></div></div>`:''}
         ${!late.length&&!pend.length&&!db.content.notice_on?'<p class="empty">Tudo em dia.</p>':''}
       </div>
-      <div class="card box"><h3>Últimas alterações <small><a href="#historico" data-go="historico" style="color:var(--teal-2)">ver tudo</a></small></h3>
+      <div class="card box"><h3>Últimas alterações <small><a href="#historico" data-go="historico" style="color:var(--teal-2);display:inline-flex;align-items:center;min-height:24px">ver tudo</a></small></h3>
         <div class="hist-mini">${db.log.slice().sort((a,b)=>b.t-a.t).slice(0,5).map(l=>`<div><span>${esc(l.desc)}</span><span>${new Date(l.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')||'<p class="empty">Sem alterações.</p>'}</div>
       </div>
     </div>

@@ -90,7 +90,7 @@ function vInicio(){
     :`<a href="agendar.html${active?'?cat=ass':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg>Novo agendamento</a>`;
   return `<h1>Fala, ${esc((c.name||'').split(' ')[0])}!</h1><p class="sub">${up.length?`Seu próximo horário é ${WD[dt(up[0].date).getDay()].toLowerCase()}, ${fmtD(up[0].date)} às ${esc(up[0].start)}.`:'Você não tem horários marcados.'}</p>${alert}
   <div class="grid2"><div>${card}<div class="quick">${bookBtn}<a href="contato.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>Falar com a barbearia</a></div></div>
-  <div style="display:grid;gap:16px;align-content:start"><div class="card box"><h3>Próximos horários <a href="#" data-go="agenda">Ver todos</a></h3>${up.slice(0,2).map(a=>apptHtml(a,false)).join('')||'<p class="empty">Nenhum horário marcado.</p>'}</div>
+  <div style="display:grid;gap:16px;align-content:start"><div class="card box"><h3>Próximos horários <a href="#" data-go="agenda" style="display:inline-flex;align-items:center;min-height:24px">Ver todos</a></h3>${up.slice(0,2).map(a=>apptHtml(a,false)).join('')||'<p class="empty">Nenhum horário marcado.</p>'}</div>
   <div class="card box">${perksBox}</div></div></div>`;
 }
 function vAgenda(){

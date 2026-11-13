@@ -12,7 +12,7 @@ body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-seri
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font-family:inherit}
 .bebas{font-family:"Bebas Neue",Impact,sans-serif;font-weight:400;letter-spacing:.01em;line-height:1}
-.eyebrow{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
 
 .logo{display:flex;align-items:center;gap:10px}
 .mono{width:38px;height:38px;border-radius:50%;border:1.5px solid #d4d4d8;display:grid;place-items:center;font-family:"Bebas Neue";font-size:19px;color:#e4e4e7;background:radial-gradient(circle at 30% 25%,#191b40,#05050b);flex:0 0 38px}
@@ -32,7 +32,7 @@ button,input,select,textarea{font-family:inherit}
 .btn-block{width:100%}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px}
-.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .c-ok{color:var(--teal-2);background:var(--teal-bg)}
 .c-warn{color:var(--warn);background:var(--warn-bg)}
@@ -41,8 +41,8 @@ button,input,select,textarea{font-family:inherit}
 .c-dim{color:var(--muted);background:rgba(255,255,255,.05)}
 
 .inp{width:100%;background:var(--bg-2);border:1px solid var(--line-2);border-radius:11px;padding:12px 14px;color:var(--txt);font-size:15px}
-.inp:focus{outline:none;border-color:var(--teal)}
-label.t{display:block;font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.inp:focus-visible{outline:none;border-color:var(--teal)}
+label.t{display:block;font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 
 .meter .lbl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px}
 .meter .lbl b{color:var(--txt);font-weight:600}

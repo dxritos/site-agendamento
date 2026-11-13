@@ -15,7 +15,7 @@
 body{min-height:100vh;display:flex;flex-direction:column;background:radial-gradient(700px 380px at 50% 0,rgba(207,213,227,.12),transparent 70%),var(--bg)}
 main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px}
 .box{width:100%;max-width:420px}
-.back{display:inline-flex;gap:8px;align-items:center;color:var(--muted);font-size:14px;margin-bottom:16px}
+.back{display:inline-flex;gap:8px;align-items:center;min-height:24px;color:var(--muted);font-size:14px;margin-bottom:16px}
 .back:hover{color:var(--txt)}
 .panel{background:var(--card);border:1px solid var(--line-2);border-radius:24px;overflow:hidden}
 .top{text-align:center;padding:26px 24px 20px;border-bottom:1px solid var(--line)}
@@ -31,7 +31,7 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .phone .ddi{flex:0 0 74px;text-align:center}
 .code{display:flex;gap:8px;justify-content:space-between;margin-bottom:14px}
 .code input{width:100%;max-width:52px;height:58px;text-align:center;font-size:24px;font-weight:600;background:var(--bg-2);border:1px solid var(--line-2);border-radius:12px;color:var(--txt)}
-.code input:focus{outline:none;border-color:var(--teal)}
+.code input:focus-visible{border-color:var(--teal)}
 .code.err input{border-color:var(--bad)}
 .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:14px}
 .row button,.link{background:none;border:0;color:var(--teal-2);font-weight:600;cursor:pointer;font-size:13px}
