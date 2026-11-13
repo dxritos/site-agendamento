@@ -123,3 +123,10 @@ label.t{display:block;font-size:11px;font-weight:600;letter-spacing:.2em;text-tr
 .layout>*{min-width:0}
 .fix{grid-template-columns:minmax(0,1fr) auto}.fix .inp{min-width:0}
 .tw{overflow-x:auto}
+
+/* logo */
+.logo-img{height:42px;width:auto;display:block}
+.logo-top{width:120px;height:auto;display:block;margin:0 auto 10px}
+@media(max-width:860px){.logo-img{height:36px}}
+.logo-img{height:50px;margin:-4px 0}
+@media(max-width:860px){.logo-img{height:42px}}

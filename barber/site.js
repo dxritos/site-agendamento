@@ -273,7 +273,7 @@ if($('#cform')){
   $('#cform').onsubmit=e=>{e.preventDefault();
     const n=$('#cname').value.trim(),m=$('#cmsg').value.trim(),a=$('#csub').value;
     if(!n||!m){$('#cerr').textContent='Preencha nome e mensagem.';return}
-    window.open('https://wa.me/'+C.wa+'?text='+encodeURIComponent(`Olá, Farias! Sou ${n}. Assunto: ${a}.\n${m}`),'_blank','noopener');
+    DB.refresh();DB._log({id:DB.uid(),t:Date.now(),who:'Site',area:'Contato',desc:`Mensagem de contato de ${n} (${a}): ${m.slice(0,120)}`});DB.save();e.target.reset();$('#cerr').style.color='var(--teal-2)';$('#cerr').textContent='Mensagem enviada! Respondemos em até 1 dia útil.';setTimeout(()=>{$('#cerr').textContent='';$('#cerr').style.color=''},5000);
   };
   ['#cname','#cmsg'].forEach(s=>$(s).oninput=()=>$('#cerr').textContent='');
 }
