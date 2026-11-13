@@ -25,7 +25,7 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
 .role svg{width:20px;height:20px}
 .role.on{border-color:var(--teal);color:var(--teal-2);background:var(--teal-bg);box-shadow:0 0 24px rgba(207,213,227,.18)}
 .body{padding:22px 24px 26px}
-h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-bottom:6px}
+.h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-bottom:6px}
 .body p.lead{color:var(--muted);font-size:14px;margin-bottom:20px}
 .phone{display:flex;gap:8px}
 .phone .ddi{flex:0 0 74px;text-align:center}
@@ -51,7 +51,7 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-
   <div class="box">
     <a href="index.html" class="back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Voltar ao site</a>
     <div class="panel">
-      <div class="top"><img class="logo-top" src="logo-h.webp" alt="Farias Barbearia" width="560" height="285"><div class="eyebrow">Área de acesso</div></div>
+      <div class="top"><img class="logo-top" src="logo-h.webp" alt="Farias Barbearia" width="560" height="285"><h1 class="eyebrow">Área de acesso</h1></div>
       <div class="roles">
         <button class="role on" data-r="cli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Cliente</button>
         <button class="role" data-r="adm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Equipe</button>
@@ -60,39 +60,39 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-
         <!-- CLIENTE -->
         <div class="mode on" id="mode-cli">
           <div class="step on" id="s1">
-            <h1>Entrar</h1>
+            <h2 class="h1">Entrar</h2>
             <p class="lead">Digite seu WhatsApp. Enviamos um código de acesso, sem senha.</p>
-            <label class="t">WhatsApp</label>
-            <div class="phone"><input class="inp ddi" value="+55" disabled><input class="inp" id="tel" inputmode="numeric" placeholder="(94) 9 0000-0000" maxlength="16"></div>
-            <div class="err-msg" id="e1"></div>
+            <label class="t" for="tel">WhatsApp</label>
+            <div class="phone"><input class="inp ddi" value="+55" disabled aria-label="Código do país"><input class="inp" id="tel" type="tel" inputmode="numeric" autocomplete="tel-national" aria-describedby="e1" placeholder="(94) 9 0000-0000" maxlength="16"></div>
+            <div class="err-msg" id="e1" role="alert"></div>
             <button class="btn btn-primary btn-block" id="send" style="margin-top:6px;padding:13px">Receber código no WhatsApp</button>
             <div class="row" style="justify-content:center;text-align:center">Primeira vez? A conta é criada automaticamente.</div>
             <div style="display:block;margin-top:14px;font-size:12px;color:var(--dim);text-align:center">Ao continuar, você concorda com a&nbsp;<a href="privacidade.html" style="color:var(--teal-2)">Política de Privacidade</a>.</div>
           </div>
           <div class="step" id="s3">
-            <h1>Bem-vindo!</h1>
+            <h2 class="h1">Bem-vindo!</h2>
             <p class="lead">É sua primeira vez por aqui. Como podemos te chamar?</p>
             <label class="t" for="nm">Seu nome</label>
-            <input class="inp" id="nm" placeholder="Nome e sobrenome" autocomplete="name">
-            <div class="err-msg" id="e4"></div>
+            <input class="inp" id="nm" aria-describedby="e4" placeholder="Nome e sobrenome" autocomplete="name">
+            <div class="err-msg" id="e4" role="alert"></div>
             <button class="btn btn-primary btn-block" id="nm-ok" style="margin-top:6px;padding:13px">Criar minha conta</button>
           </div>
           <div class="step" id="s2">
-            <h1>Digite o código</h1>
+            <h2 class="h1">Digite o código</h2>
             <div class="sent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg><span>Código enviado para <b id="telshow"></b></span></div>
-            <div class="code" id="code"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div>
-            <div class="err-msg" id="e2"></div>
+            <div class="code" id="code" role="group" aria-label="Código de 6 dígitos" aria-describedby="e2"><input maxlength="1" inputmode="numeric" aria-label="Dígito 1 de 6" autocomplete="one-time-code"><input maxlength="1" inputmode="numeric" aria-label="Dígito 2 de 6" autocomplete="off"><input maxlength="1" inputmode="numeric" aria-label="Dígito 3 de 6" autocomplete="off"><input maxlength="1" inputmode="numeric" aria-label="Dígito 4 de 6" autocomplete="off"><input maxlength="1" inputmode="numeric" aria-label="Dígito 5 de 6" autocomplete="off"><input maxlength="1" inputmode="numeric" aria-label="Dígito 6 de 6" autocomplete="off"></div>
+            <div class="err-msg" id="e2" role="alert"></div>
             <button class="btn btn-primary btn-block" id="verify" style="padding:13px">Entrar</button>
             <div class="row"><button id="change">Alterar número</button><button id="resend" disabled>Reenviar em 30s</button></div>
           </div>
         </div>
         <!-- EQUIPE / ADMIN -->
         <div class="mode" id="mode-adm">
-          <h1>Painel da barbearia</h1>
+          <h2 class="h1">Painel da barbearia</h2>
           <p class="lead">Acesso restrito ao barbeiro e à equipe.</p>
-          <div class="field"><label class="t">E-mail</label><input class="inp" id="em" type="email" placeholder="voce@fariasbarbearia.com.br"></div>
-          <div class="field"><label class="t">Senha</label><div class="pw"><input class="inp" id="pw" type="password" placeholder="Digite sua senha"><button id="eye" aria-label="Mostrar senha"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
-          <div class="err-msg" id="e3"></div>
+          <div class="field"><label class="t" for="em">E-mail</label><input class="inp" id="em" type="email" autocomplete="username" spellcheck="false" autocapitalize="none" aria-describedby="e3" placeholder="voce@fariasbarbearia.com.br"></div>
+          <div class="field"><label class="t" for="pw">Senha</label><div class="pw"><input class="inp" id="pw" type="password" autocomplete="current-password" placeholder="Digite sua senha"><button type="button" id="eye" aria-label="Mostrar senha" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="err-msg" id="e3" role="alert"></div>
           <button class="btn btn-primary btn-block" id="admin" style="padding:13px">Acessar painel</button>
           <div class="row"><button class="link" id="forgot">Esqueci minha senha</button></div>
         </div>
@@ -100,7 +100,7 @@ h1{font-family:"Bebas Neue";font-weight:400;font-size:34px;line-height:1;margin-
     </div>
   </div>
 </main>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="store.js"></script>
 <script src="entrar.js"></script>
 </body>
