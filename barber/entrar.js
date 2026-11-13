@@ -24,7 +24,7 @@ ins.forEach((el,i)=>{
   el.onpaste=e=>{const v=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(v){e.preventDefault();v.split('').forEach((c,j)=>ins[j].value=c);if(v.length===6)$('#verify').click()}};
 });
 $('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('err');$("#e2").textContent="Digite os 6 dígitos.";(ins.find(x=>!x.value)||ins[0]).focus();return}
-  $('#verify').textContent='Entrando...';
+  $('#verify').textContent='Entrando…';
   const phone=$('#tel').value.replace(/\D/g,'');let c=DB.data.clients.find(x=>x.phone===phone);
   if(!c){$('#s2').classList.remove('on');$('#s3').classList.add('on');$('#nm').focus();$('#verify').textContent='Entrar';return}
   try{localStorage.setItem('farias_me',c.id)}catch(e){}
@@ -32,7 +32,7 @@ $('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('e
 $('#nm-ok').onclick=()=>{const name=$('#nm').value.trim();if(name.length<2){$("#e4").textContent="Digite seu nome.";bad($("#nm"));return}
   const phone=$('#tel').value.replace(/\D/g,''),c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][new Date().getMonth()]+'/'+String(new Date().getFullYear()).slice(2)};
   DB.mutate('clients',L=>L.push(c),`${name} criou conta pelo site`,'Clientes','Site');try{localStorage.setItem('farias_me',c.id)}catch(e){}
-  $('#nm-ok').textContent='Entrando...';setTimeout(()=>location.href='assinante.html',400)};
+  $('#nm-ok').textContent='Entrando…';setTimeout(()=>location.href='assinante.html',400)};
 $('#nm').onkeydown=e=>{if(e.key==='Enter')$('#nm-ok').click()};
 $('#change').onclick=()=>{$('#s2').classList.remove('on');$('#s1').classList.add('on');ins.forEach(x=>x.value='')};
 $('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};
@@ -40,4 +40,4 @@ $('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};
 $('#forgot').onclick=()=>{const em=$('#em').value.trim();if(!/\S+@\S+\.\S+/.test(em)){$("#e3").textContent="Digite seu e-mail acima para receber o link.";bad($("#em"));return}$('#e3').textContent='';toast('Enviamos um link de redefinição para '+em)};
 $('#eye').onclick=()=>{const p=$("#pw"),show=p.type==="password";p.type=show?"text":"password";$("#eye").setAttribute("aria-pressed",show);$("#eye").setAttribute("aria-label",show?"Ocultar senha":"Mostrar senha")};
 $('#admin').onclick=()=>{if(!/\S+@\S+\.\S+/.test($('#em').value)||$('#pw').value.length<4){$("#e3").textContent="Informe e-mail e senha.";bad(/\S+@\S+\.\S+/.test($("#em").value)?$("#pw"):$("#em"));return}
-  $('#admin').textContent='Entrando...';setTimeout(()=>location.href='painel.html',500)};
+  $('#admin').textContent='Entrando…';setTimeout(()=>location.href='painel.html',500)};

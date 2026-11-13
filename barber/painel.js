@@ -3,8 +3,9 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const db=DB.data;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const money0=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:0});
+const NF2=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),NF0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0}),TF=new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const money=v=>'R$ '+NF2.format(Number(v||0));
+const money0=v=>'R$ '+NF0.format(Number(v||0));
 const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],WDF=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],MOF=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const today=new Date();today.setHours(0,0,0,0);const TODAY=DB.iso(today);
 const addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
@@ -101,7 +102,7 @@ function vHoje(){
         ${!late.length&&!pend.length&&!db.content.notice_on?'<p class="empty">Tudo em dia.</p>':''}
       </div>
       <div class="card box"><h3>Últimas alterações <small><a href="#historico" data-go="historico" style="color:var(--teal-2);display:inline-flex;align-items:center;min-height:24px">ver tudo</a></small></h3>
-        <div class="hist-mini">${db.log.slice().sort((a,b)=>b.t-a.t).slice(0,5).map(l=>`<div><span>${esc(l.desc)}</span><span>${new Date(l.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('')||'<p class="empty">Sem alterações.</p>'}</div>
+        <div class="hist-mini">${db.log.slice().sort((a,b)=>b.t-a.t).slice(0,5).map(l=>`<div><span>${esc(l.desc)}</span><span>${TF.format(new Date(l.t))}</span></div>`).join('')||'<p class="empty">Sem alterações.</p>'}</div>
       </div>
     </div>
   </div>`;
@@ -221,7 +222,7 @@ function vClientes(){
   const dupPhones=db.clients.map(c=>c.phone).filter((p,i,a)=>a.indexOf(p)!==i);
   return `<div class="top"><div><h1>Clientes</h1><p>${db.clients.length} cadastrados. Clique para ver a ficha, corrigir dados ou mesclar.</p></div><div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-cli">Exportar planilha</button><button class="btn btn-primary btn-sm" data-act="new-cli">+ Novo cliente</button></div></div>
   ${dupPhones.length?`<div class="al" style="margin-bottom:14px"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></div><div><b>Possível cadastro duplicado</b><span>${db.clients.filter(c=>dupPhones.includes(c.phone)).map(c=>esc(c.name)).join(' e ')} usam o mesmo número. Abra a ficha e use "Mesclar".</span></div></div>`:''}
-  <div class="card box"><div class="filters"><button class="fbtn ${cliF==='all'?'on':''}" data-cf="all">Todos</button><button class="fbtn ${cliF==='miss'?'on':''}" data-cf="miss">Com faltas</button><button class="fbtn ${cliF==='blocked'?'on':''}" data-cf="blocked">Bloqueados</button><input class="inp search" id="cli-q" placeholder="Buscar nome ou telefone..." value="${esc(cliQ)}"></div>
+  <div class="card box"><div class="filters"><button class="fbtn ${cliF==='all'?'on':''}" data-cf="all">Todos</button><button class="fbtn ${cliF==='miss'?'on':''}" data-cf="miss">Com faltas</button><button class="fbtn ${cliF==='blocked'?'on':''}" data-cf="blocked">Bloqueados</button><input class="inp search" id="cli-q" placeholder="Buscar nome ou telefone…" value="${esc(cliQ)}"></div>
   <div class="tw"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Atendimentos</th><th>Faltas</th><th>Cliente desde</th><th>Status</th></tr></thead><tbody>
   ${rows.map(c=>{const s=db.subs.find(x=>x.cid===c.id&&x.status!=='off');return `<tr class="click" data-cli="${c.id}"><td><button type="button" class="rowbtn" data-cli="${c.id}">${esc(c.name)}</button><small>${phoneFmt(c.phone)}</small></td><td>${s?esc(plan(s.plan).n):'<span class="hint">Avulso</span>'}</td><td>${visits(c.id)}</td><td>${c.misses?`<span class="dn">${c.misses}</span>`:'0'}</td><td>${esc(c.since)}</td><td>${c.blocked?'<span class="chip c-bad">Bloqueado</span>':'<span class="chip c-ok">Ativo</span>'}</td></tr>`}).join('')||'<tr><td colspan="6" class="empty">Nenhum cliente encontrado.</td></tr>'}
   </tbody></table></div></div>`;
@@ -233,10 +234,10 @@ function ficha(id){
   const s=db.subs.find(x=>x.cid===id&&x.status!=='off');
   modal(`<div class="eyebrow">Ficha do cliente</div><h3>${esc(c.name)}</h3><p>Cliente desde ${esc(c.since)}${s?' · Assinante '+esc(plan(s.plan).n):''}</p>
    <div class="form"><div class="two"><div class="fl"><label>Nome</label><input class="inp" id="c-name" value="${esc(c.name)}"></div><div class="fl"><label>WhatsApp</label><input class="inp" id="c-phone" type="tel" inputmode="numeric" autocomplete="off" value="${esc(c.phone)}"></div></div>
-   <div class="fl"><label>Observações (só a equipe vê)</label><textarea class="inp" id="c-notes" placeholder="Preferências, alergias...">${esc(c.notes)}</textarea></div>
+   <div class="fl"><label>Observações (só a equipe vê)</label><textarea class="inp" id="c-notes" placeholder="Preferências, alergias…">${esc(c.notes)}</textarea></div>
    <div class="two"><div class="fl"><label>Faltas registradas</label><input class="inp" type="number" min="0" id="c-miss" value="${c.misses||0}"></div><label style="display:flex;gap:10px;align-items:center;font-size:14px;margin-top:18px">${sw('c-block',c.blocked)} Bloquear agendamento online</label></div></div>
    <div class="sec"><h4>Últimos atendimentos</h4><div class="hist-mini">${hist.map(a=>`<div><span>${fmtD(a.date)} ${a.start} · ${esc(a.svc)}</span><span>${ST[a.status][0]}</span></div>`).join('')||'<p class="empty">Sem histórico.</p>'}</div></div>
-   <div class="sec"><h4>Mesclar cadastro duplicado</h4><div class="fix"><select class="inp" id="c-merge"><option value="">Escolha o cadastro duplicado...</option>${db.clients.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)} · ${phoneFmt(x.phone)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="c-mergebtn">Mesclar neste</button></div><p class="hint">Horários, assinatura e faltas do duplicado passam para esta ficha, e o duplicado é apagado.</p></div>
+   <div class="sec"><h4>Mesclar cadastro duplicado</h4><div class="fix"><select class="inp" id="c-merge"><option value="">Escolha o cadastro duplicado…</option>${db.clients.filter(x=>x.id!==id).map(x=>`<option value="${x.id}">${esc(x.name)} · ${phoneFmt(x.phone)}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" id="c-mergebtn">Mesclar neste</button></div><p class="hint">Horários, assinatura e faltas do duplicado passam para esta ficha, e o duplicado é apagado.</p></div>
    <div class="mact"><button class="btn btn-danger" id="c-del">Excluir dados (LGPD)</button><button class="btn btn-primary" id="c-save">Salvar</button></div>`,true);
   $('#c-save').onclick=()=>{closeModal();change('clients',L=>{const x=L.find(y=>y.id===id);Object.assign(x,{name:$('#c-name').value.trim()||x.name,phone:$('#c-phone').value.replace(/\D/g,''),notes:$('#c-notes').value,misses:+$('#c-miss').value,blocked:$('#c-block').checked})},`Ficha de ${c.name} atualizada`,'Clientes')};
   $('#c-mergebtn').onclick=()=>{const o=$('#c-merge').value;if(!o)return fieldErr('#c-merge','Escolha o cadastro duplicado');const on=cname(o);if(DB.activeSub(o)&&DB.activeSub(id))return toast('Os dois cadastros têm assinatura. Cancele uma delas antes de mesclar.');
@@ -256,7 +257,7 @@ function vAssinantes(){
   const rows=db.subs.filter(s=>(subFilter==='all'||s.status===subFilter)&&cname(s.cid).toLowerCase().includes(subQ));
   return `<div class="top"><div><h1>Assinantes</h1><p>Cobrança automática. Use "Gerenciar" para qualquer correção.</p></div><div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-sub">Exportar planilha</button><button class="btn btn-primary btn-sm" data-act="new-sub">+ Nova assinatura</button></div></div>
   <div class="pcards">${db.plans.map(p=>{const L=db.subs.filter(s=>s.plan===p.id&&s.status==='ok'),n=L.length;return `<div class="card pc"><small>${esc(p.n)}${p.on?'':' (fora da venda)'}</small><b>${n}</b><span>${money0(L.reduce((t,s)=>t+price(s),0))}/mês</span></div>`}).join('')}</div>
-  <div class="card box"><div class="filters">${[['all','Todos'],['ok','Ativos'],['late','Pendentes'],['paused','Pausados'],['off','Cancelados']].map(([k,n])=>`<button class="fbtn ${subFilter===k?'on':''}" data-sf="${k}">${n}</button>`).join('')}<input class="inp search" id="sub-q" placeholder="Buscar assinante..." value="${esc(subQ)}"></div>
+  <div class="card box"><div class="filters">${[['all','Todos'],['ok','Ativos'],['late','Pendentes'],['paused','Pausados'],['off','Cancelados']].map(([k,n])=>`<button class="fbtn ${subFilter===k?'on':''}" data-sf="${k}">${n}</button>`).join('')}<input class="inp search" id="sub-q" placeholder="Buscar assinante…" value="${esc(subQ)}"></div>
   <div class="tw"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th><th>Uso no mês</th><th>Próx. cobrança</th><th>Forma</th><th class="r">Ações</th></tr></thead><tbody>
   ${rows.map(s=>{const p=plan(s.plan)||{n:'—',quota:''};const q=/^(\d)/.exec(p.quota);const tot=q?(p.quota.includes('+')?+q[1]*2:+q[1]):0;
     return `<tr><td><b>${esc(cname(s.cid))}</b><small>desde ${esc(s.since)}</small></td><td>${esc(p.n)}</td><td><span class="chip ${SS[s.status][1]}">${SS[s.status][0]}</span>${s.courtesyUntil?`<small>cortesia até ${fmtD(s.courtesyUntil)}</small>`:''}${s.pausedUntil&&s.status==='paused'?`<small>até ${fmtD(s.pausedUntil)}</small>`:''}${s.cancelAt?`<small>cancela em ${fmtD(s.cancelAt)}</small>`:''}</td>
@@ -377,7 +378,7 @@ function vConteudo(){
     <div class="card box"><h3>Página inicial</h3><div class="form"><div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div><div class="two"><div class="fl"><label>Título (linha 1)</label><input class="inp" id="k-hero_t1" value="${esc(c.hero_t1)}"></div><div class="fl"><label>Título (destaque)</label><input class="inp" id="k-hero_t2" value="${esc(c.hero_t2)}"></div></div><div class="fl"><label>Texto</label><textarea class="inp" id="k-hero_lead">${esc(c.hero_lead)}</textarea></div><div class="fl"><label>Sobre o barbeiro</label><textarea class="inp" id="k-about">${esc(c.about)}</textarea></div></div></div>
     <div class="card box"><h3>Instagram na galeria ${sw('ig-on',!!c.ig_on)}</h3><div class="form">
       <p class="hint">Mostra as últimas fotos do perfil na página Galeria, atualizadas sozinhas. Precisa de uma conta profissional (comercial ou criador de conteúdo) e de um token de acesso gerado no painel de desenvolvedor da Meta.</p>
-      <div class="fl"><label>Token de acesso da Meta</label><input class="inp" id="ig-token" type="password" autocomplete="off" value="${esc(c.ig_token||'')}" placeholder="Cole aqui o token (começa com IG...)"></div>
+      <div class="fl"><label>Token de acesso da Meta</label><input class="inp" id="ig-token" type="password" autocomplete="off" value="${esc(c.ig_token||'')}" placeholder="Cole aqui o token (começa com IG…)"></div>
       <p class="hint">Neste protótipo o token fica salvo só neste navegador. No sistema definitivo ele fica guardado no servidor, nunca no site.</p>
       <div class="acts"><button class="btn btn-ghost btn-sm" data-act="ig-test">Testar conexão</button><button class="btn btn-primary btn-sm" data-act="ig-save">Salvar</button><span class="hint" id="ig-st"></span></div></div></div>
     <div class="card box"><h3>Contato</h3><div class="form"><div class="two"><div class="fl"><label>WhatsApp (com 55 e DDD)</label><input class="inp" id="k-wa" value="${esc(c.wa)}"></div><div class="fl"><label>Telefone exibido</label><input class="inp" id="k-phone" value="${esc(c.phone)}"></div></div><div class="two"><div class="fl"><label>Endereço</label><input class="inp" id="k-address" value="${esc(c.address)}"></div><div class="fl"><label>Instagram (sem @)</label><input class="inp" id="k-instagram" value="${esc(c.instagram)}"></div></div></div></div>
@@ -395,7 +396,7 @@ function vConteudo(){
 }
 const readList=(sel,key,fields)=>$$(sel).map(el=>{const o={id:el.dataset[key]};fields.forEach(f=>o[f]=el.querySelector(`[data-f="${f}"]`).value);return o});
 Object.assign(ACT,{
-  'ig-test':async()=>{const t=$('#ig-token').value.trim(),st=$('#ig-st');if(!t)return st.textContent='Cole o token primeiro.';st.textContent='Testando...';
+  'ig-test':async()=>{const t=$('#ig-token').value.trim(),st=$('#ig-st');if(!t)return st.textContent='Cole o token primeiro.';st.textContent='Testando…';
     try{const r=await fetch('https://graph.instagram.com/me?fields=username,media_count&access_token='+encodeURIComponent(t));const j=await r.json();
       st.textContent=j.username?`Conectado a @${j.username} (${j.media_count||0} publicações).`:'Token inválido ou expirado'+(j.error&&j.error.message?': '+j.error.message:'.')}catch(e){st.textContent='Não foi possível falar com o Instagram agora.'}},
   'ig-save':()=>{const on=$('#ig-on').checked,t=$('#ig-token').value.trim();if(on&&!t)return toast('Para ligar, cole o token de acesso.');try{sessionStorage.removeItem('farias_ig')}catch(e){}
@@ -459,8 +460,8 @@ function vHistorico(){
   const areas=[...new Set(db.log.map(l=>l.area))];
   const rows=db.log.slice().reverse().filter(l=>(logF==='all'||l.area===logF)&&l.desc.toLowerCase().includes(logQ));
   return `<div class="top"><div><h1>Histórico</h1><p>Toda alteração fica registrada. As mais recentes podem ser desfeitas.</p></div></div>
-  <div class="card box"><div class="filters"><button class="fbtn ${logF==='all'?'on':''}" data-lf="all">Tudo</button>${areas.map(a=>`<button class="fbtn ${logF===a?'on':''}" data-lf="${esc(a)}">${esc(a)}</button>`).join('')}<input class="inp search" id="log-q" placeholder="Buscar..." value="${esc(logQ)}"></div>
-  ${rows.map(l=>{const d=new Date(l.t);return `<div class="loge ${l.undone?'undone':''}"><time>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time><div><b>${esc(l.desc)}</b><span>${esc(l.who)} · ${esc(l.area)}${l.undone?' · desfeito':''}</span></div><div>${DB.canUndo(l)?`<button class="btn btn-ghost btn-sm" data-undo="${l.id}">Desfazer</button>`:''}</div></div>`}).join('')||'<p class="empty">Nenhum registro.</p>'}</div>`;
+  <div class="card box"><div class="filters"><button class="fbtn ${logF==='all'?'on':''}" data-lf="all">Tudo</button>${areas.map(a=>`<button class="fbtn ${logF===a?'on':''}" data-lf="${esc(a)}">${esc(a)}</button>`).join('')}<input class="inp search" id="log-q" placeholder="Buscar…" value="${esc(logQ)}"></div>
+  ${rows.map(l=>{const d=new Date(l.t);return `<div class="loge ${l.undone?'undone':''}"><time>${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${TF.format(d)}</time><div><b>${esc(l.desc)}</b><span>${esc(l.who)} · ${esc(l.area)}${l.undone?' · desfeito':''}</span></div><div>${DB.canUndo(l)?`<button class="btn btn-ghost btn-sm" data-undo="${l.id}">Desfazer</button>`:''}</div></div>`}).join('')||'<p class="empty">Nenhum registro.</p>'}</div>`;
 }
 document.addEventListener('click',e=>{const f=e.target.closest('[data-lf]');if(f){logF=f.dataset.lf;render()}const u=e.target.closest('[data-undo]');if(u){const id=u.dataset.undo,l=db.log.find(x=>x.id===id),n=DB.laterSameKey(id),orf=DB.undoOrphans(id);
   if(orf)return confirmBox('Não dá para desfazer só isso',`Desfazer deixaria ${plural(orf,'registro','registros')} (agenda, assinatura ou pagamento) sem cliente. Desfaça antes as alterações mais recentes ligadas a este cliente.`,'Entendi',()=>{},false);

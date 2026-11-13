@@ -1,6 +1,7 @@
 /* Farias Barbearia — scripts compartilhados do site público */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const brl=v=>'R$ '+Number(v||0).toFixed(2).replace('.',',');
+const NF2=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const brl=v=>'R$ '+NF2.format(Number(v||0));
 const brl0=v=>'R$ '+Math.round(v);
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
