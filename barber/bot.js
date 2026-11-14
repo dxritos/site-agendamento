@@ -41,7 +41,8 @@ const trimFill=t=>{const w=t.split(' ').filter(Boolean);while(w.length&&FILL.has
 const fone=p=>{const d=String(p||'').replace(/\D/g,'');return d.length===11?`(${d.slice(0,2)}) ${d[2]} ${d.slice(3,7)}-${d.slice(7)}`:d?p:'sem telefone'};
 const takeMet=p=>{const m=/\b(pix|dinheiro|debito|credito|cartao)\b/.exec(p.rest);if(!m)return null;p.rest=p.rest.replace(m[0],'').replace(/\s+/g,' ').trim();return METS[m[1]]};
 const dayList=ds=>db().appts.filter(a=>a.date===ds&&a.status!=='cancel').sort((a,b)=>a.start.localeCompare(b.start));
-const line=a=>a.status==='block'?`${a.start} · bloqueado${a.note?' ('+a.note+')':''}`:`${a.start} · ${cname(a.cid)} · ${a.svc} · ${a.plan?'assinante':brl(a.price)} · ${ST[a.status]||a.status}`;
+const val=a=>a.plan?'assinante'+(a.price?' + '+brl(a.price):''):brl(a.price);
+const line=a=>a.status==='block'?`${a.start} · bloqueado${a.note?' ('+a.note+')':''}`:`${a.start} · ${cname(a.cid)} · ${a.svc} · ${val(a)} · ${ST[a.status]||a.status}`;
 const closed=ds=>db().holidays.find(h=>h.date===ds);
 function agenda(ds){const L=dayList(ds),d=new Date(ds+'T00:00:00'),hol=closed(ds),tt=`${WDF[d.getDay()]}, ${short(ds)}`;
   if(hol&&!L.length)return `${tt}: fechado (${hol.name}).`;
@@ -70,7 +71,7 @@ const mut=(keys,fn,desc,area)=>DB.mutateMany(keys,fn,desc,area||'Agenda',WHO);
 const current=()=>{const L=dayList(TODAY()).filter(a=>OPEN.includes(a.status));return L.find(a=>a.status==='now')||L[0]||null};
 function proximo(){const a=current();if(!a)return 'Não há mais clientes hoje.';const c=cli(a.cid)||{},s=c.id&&DB.activeSub(c.id);
   return `*${a.status==='now'?'Na cadeira':'Próximo'}: ${a.start} · ${cname(a.cid)}*\n${a.svc} · ${a.plan?'assinante':brl(a.price)} · ${ST[a.status]}${s?'\nPlano: '+DB.plan(s.plan).n+(s.status==='late'?' (pagamento pendente)':''):''}${c.notes?'\nObs.: '+c.notes:''}${c.misses?'\nFaltas: '+c.misses:''}\n\nTerminou? Envie *ok pix* (ou dinheiro, débito, crédito).`}
-function finish(a,met){const pay=!a.plan&&a.price>0;
+function finish(a,met){const pay=a.price>0;
   mut(['appts','tx'],d=>{d.appts.find(x=>x.id===a.id).status='done';if(pay&&met)d.tx.unshift({id:DB.uid(),date:a.date,cid:a.cid,desc:a.svc,method:met,value:a.price,kind:'avulso',status:'ok'})},`${cname(a.cid)}: atendimento concluído pelo WhatsApp${pay&&met?` e ${brl(a.price)} recebido (${met})`:''}`);
   const th=DB.notify('thanks',a);const nx=current();return `Concluído: ${a.start} · ${cname(a.cid)}.${th?' Agradecimento enviado.':''}${pay?met?` ${brl(a.price)} em ${met}.`:` Pagamento não registrado. Envie *pago ${a.start} pix* para registrar.`:' Pelo plano.'}\n\n${nx?proximo():'Era o último de hoje. Envie *caixa* para ver o total.'}`}
 /* separa serviço e nome do cliente no texto */
@@ -156,7 +157,7 @@ const CMD={
     mut(['appts'],d=>{d.appts.find(x=>x.id===a.id).status='conf'},`${cname(a.cid)}: presença confirmada pelo WhatsApp (${short(a.date)} ${a.start})`);return `Confirmado: ${a.start} · ${cname(a.cid)}.`},
   concluir(p){const met=takeMet(p),r=find(p,OPEN);if(r.err)return r.err;return finish(r.a,met)},
   pago(p){const met=takeMet(p);if(!met)return 'Diga a forma. Ex.: *pago 15:00 pix*';const r=find(p,['done'],'pago 15:00 pix');if(r.err)return r.err;const a=r.a;
-    if(a.plan||!a.price)return `${cname(a.cid)} às ${a.start} foi pelo plano, não há o que cobrar.`;
+    if(!a.price)return `${cname(a.cid)} às ${a.start} foi pelo plano, não há o que cobrar.`;
     if(db().tx.some(t=>t.date===a.date&&t.cid===a.cid&&t.desc===a.svc&&t.status==='ok'))return `O pagamento de ${cname(a.cid)} (${a.start}) já está registrado.`;
     mut(['tx'],d=>{d.tx.unshift({id:DB.uid(),date:a.date,cid:a.cid,desc:a.svc,method:met,value:a.price,kind:'avulso',status:'ok'})},`${cname(a.cid)}: ${brl(a.price)} recebido (${met}) pelo WhatsApp`,'Financeiro');return `Registrado: ${brl(a.price)} de ${cname(a.cid)} em ${met}.`},
   faltou(p){const r=p.times[0]||p.rest?find(p,OPEN):{a:current()};if(r.err)return r.err;if(!r.a)return 'Não há cliente aberto hoje.';const a=r.a;
@@ -288,13 +289,13 @@ const THUMB_UP=/👍|✅|👌/,THUMB_DOWN=/👎|❌/;
 function onAsk(st,raw,n){const a=db().appts.find(x=>x.id===st.ask);if(!a||!OPEN.includes(a.status))return null;
   if(THUMB_UP.test(raw)||/^(ok|okay|sim|s|veio|chegou|confirma|confirmo|confirmado|presente|ta aqui|esta aqui)$/.test(n)){
     mut(['appts'],d=>{d.appts.forEach(x=>{if(x.date===a.date&&x.status==='now')x.status='conf'});d.appts.find(x=>x.id===a.id).status='now'},`${cname(a.cid)}: em atendimento (${a.start})`);setSt({pay:a.id});
-    return `${first(cli(a.cid)||{name:'Cliente'})} na cadeira.\nQuando terminar, `+(a.plan||!a.price?'envie *ok*.':'me diga como foi pago: *pix*, *dinheiro*, *débito* ou *crédito*.')}
+    return `${first(cli(a.cid)||{name:'Cliente'})} na cadeira.\nQuando terminar, `+(!a.price?'envie *ok*.':'me diga como foi pago: *pix*, *dinheiro*, *débito* ou *crédito*.')}
   if(THUMB_DOWN.test(raw)||/^(nao|n|nao veio|faltou|falta|furou)$/.test(n))return exec(`faltou ${a.start} ${short(a.date)}`);
   if(/^(cancelou|cancelado|cancelar|desmarcou|desmarcado)$/.test(n))return exec(`cancelar ${a.start} ${short(a.date)}`);
   return null}
 function onPay(st,raw,n){const a=db().appts.find(x=>x.id===st.pay);if(!a||a.status!=='now')return null;const p={rest:n},met=takeMet(p);
   if(met)return finish(a,met);
-  if(THUMB_UP.test(raw)||/^(ok|okay|pronto|feito|terminei|terminou|acabou|concluido|plano)$/.test(n)){if(a.plan||!a.price)return finish(a,null);return showMenu('Como o cliente pagou?',SUB.pagar[1])}
+  if(THUMB_UP.test(raw)||/^(ok|okay|pronto|feito|terminei|terminou|acabou|concluido|plano)$/.test(n)){if(!a.price)return finish(a,null);return showMenu('Como o cliente pagou?',SUB.pagar[1])}
   return null}
 
 window.Bot={

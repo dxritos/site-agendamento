@@ -122,6 +122,8 @@ const CONFIRM_OLD='Fala, {nome}! Horário confirmado: {servico} em {data} às {h
 function ensure(d){let ch=false;
   if(!d.bot){d.bot={staff:true,client:true,evNew:true,evCancel:true,evNext:true,evDaily:true};ch=true}
   if(!Array.isArray(d.outbox)){d.outbox=[];ch=true}
+  if(!Array.isArray(d.contacts)){d.contacts=[];ch=true}
+  if(!Array.isArray(d.settings.bairros)){d.settings.bairros=['Centro'];ch=true}
   const M=d.messages,add=(k,v)=>{if(!M[k]){M[k]=v;ch=true}};
   const CONFIRM_NEW='Fala, {nome}! Seu horário está marcado: {servico} em {data} às {hora}. Duas horas antes eu te mando o link para confirmar presença.';
   if(M.confirm&&[CONFIRM_OLD,'Fala, {nome}! Horário marcado: {servico} em {data} às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}'].includes(M.confirm.txt)){M.confirm.txt=CONFIRM_NEW;ch=true}

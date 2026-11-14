@@ -46,6 +46,22 @@ const openDay=d=>!!db.hours[d.getDay()]&&!holiday(d);
 const slotsFor=(d,dur=45)=>DB.freeSlots(DB.iso(d),dur);
 const mo=()=>MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2);
 
+/* ===== cliente que já entrou: o botão "Entrar" vira o perfil (nome, telefone, plano, validade e sair) ===== */
+(function(){let me=null;try{me=db.clients.find(c=>c.id===localStorage.getItem('farias_me'))||null}catch(e){}
+  const btn=$('header a.btn[href="entrar.html"]');if(!me||!btn)return;
+  const s=DB.activeSub(me.id),fd=x=>x?x.slice(8)+'/'+x.slice(5,7)+'/'+x.slice(0,4):'',d=String(me.phone||'').replace(/\D/g,''),tel=d.length===11?`(${d.slice(0,2)}) ${d[2]} ${d.slice(3,7)}-${d.slice(7)}`:me.phone||'';
+  const ini=me.name.split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  const planTxt=!s?'<span>Sem assinatura</span><small>Atendimento avulso</small>':`<span>${esc(DB.plan(s.plan).n)}</span><small>${s.status==='late'?'Pagamento pendente':s.status==='paused'?'Pausado'+(s.pausedUntil?' até '+fd(s.pausedUntil):''):(s.cancelAt?'Termina em ':'Válido até ')+fd(s.cancelAt||s.paidUntil||DB.nextBill(s))}</small>`;
+  const w=document.createElement('div');w.className='prof';
+  w.innerHTML=`<button class="prof-b" id="prof-b" aria-haspopup="true" aria-expanded="false" aria-controls="prof-m" aria-label="Minha conta: ${esc(me.name)}">${esc(ini)}</button>
+   <div class="prof-m" id="prof-m" hidden><div class="prof-h"><b>${esc(me.name)}</b><small>${esc(tel)}</small></div><div class="prof-p"><em>Plano atual</em>${planTxt}</div>
+   <a href="assinante.html">Minha área</a><a href="agendar.html">Agendar horário</a><button type="button" id="prof-out">Sair da conta</button></div>`;
+  btn.replaceWith(w);const b=$('#prof-b'),m=$('#prof-m'),set=o=>{m.hidden=!o;b.setAttribute('aria-expanded',o)};
+  b.onclick=e=>{e.stopPropagation();set(m.hidden)};document.addEventListener('click',e=>{if(!w.contains(e.target))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!m.hidden){set(false);b.focus()}});
+  $('#prof-out').onclick=()=>{try{localStorage.removeItem('farias_me')}catch(e){}location.href='index.html'};
+  $$('#mnav a[href="entrar.html"]').forEach(a=>{a.href='assinante.html';a.textContent='Minha conta ('+me.name.split(' ')[0]+')'});
+})();
+
 /* ===== conteúdo editável pelo painel ===== */
 $$('[data-k]').forEach(el=>{const v=C[el.dataset.k];if(v!=null&&v!=='')el.textContent=v});
 $$('[data-at]').forEach(el=>el.textContent='@'+C.instagram);
@@ -155,23 +171,25 @@ function renderWeek(){
   $('#week').innerHTML=days.map((d,i)=>{
     const s=slotsFor(d),wd=d.getDay(),hol=holiday(d),closed=!openDay(d),member=PLAN_DAYS.includes(wd);
     const tag=closed?'':`<span class="wtag ${member?'':'x'}">${member?'Válido para assinantes':'Somente avulso'}</span>`;
-    const body=closed?`<span class="none">${hol?'Fechado · '+esc(hol.name):'Fechado'}</span>`:s.length?s.slice(0,6).map(t=>`<a class="slot" href="agendar.html?d=${i}&t=${t}" aria-label="Agendar ${WDF[wd]} às ${t}">${t}</a>`).join('')+(s.length>6?`<a class="more" href="agendar.html?d=${i}">+${s.length-6} horários</a>`:''):'<span class="none">Sem horários livres</span>';
-    return `<div class="wrow"><div class="dbox"><small>${i===0?'Hoje':WD[wd]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></div><div class="wslots">${tag}${body}</div></div>`;
+    const body=closed?`<span class="closed-tag">Fechado</span>${hol?`<span class="none">${esc(hol.name)}</span>`:''}`:s.length?s.slice(0,6).map(t=>`<a class="slot" href="agendar.html?d=${i}&t=${t}" aria-label="Agendar ${WDF[wd]} às ${t}">${t}</a>`).join('')+(s.length>6?`<a class="more" href="agendar.html?d=${i}">+${s.length-6} horários</a>`:''):'<span class="none">Sem horários livres</span>';
+    return `<div class="wrow ${closed?'off':s.length?'':'full'}"><div class="dbox"><small>${i===0?'Hoje':WD[wd]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></div><div class="wslots">${tag}${body}</div></div>`;
   }).join('');
 }
 renderWeek();
 
 /* ===== agendamento ===== */
-if($('#svclist')){
-  const st={cat:'cab',svc:null,day:null,time:null,step:1};
+book:if($('#svclist')){
+  const st={cat:'cab',items:[],svc:null,day:null,time:null,step:1};
+  /* vários serviços no mesmo horário: st.svc é a soma do que foi escolhido (nomes, duração e preço) */
+  const agg=()=>{const I=st.items;st.svc=I.length?{n:I.map(x=>x.n).join(' + '),base:I.map(x=>x.base||x.n).join(' + '),planBase:(I.find(x=>x.plan)||{}).base,t:I.reduce((a,x)=>a+x.t,0),p:I.reduce((a,x)=>a+(x.plan?0:x.p),0),plan:I.some(x=>x.plan)}:null};
   // quem está agendando: cliente que entrou (ME) ou visitante avulso. A aba do plano só existe para assinante em dia.
   let ME=null;try{ME=db.clients.find(c=>c.id===localStorage.getItem('farias_me'))||null}catch(e){}
   const SUB=ME&&DB.activeSub(ME.id),MEMBER=!!(SUB&&SUB.status==='ok');
   if(!MEMBER){const t=$('#svctabs [data-c="ass"]');if(t)t.remove()}
-  const who=$('#bwho');if(who)who.innerHTML=ME
-    ?`Agendando como <b>${esc(ME.name)}</b>${MEMBER?' · assinante '+esc(DB.plan(SUB.plan).n):SUB?` · <a href="assinante.html">assinatura ${SUB.status==='late'?'com pagamento pendente':'pausada'}: regularize para usar o plano</a>`:''} · <button type="button" id="bout">não sou eu</button>`
-    :'Agendamento avulso, sem login. <a href="entrar.html?next=agendar">Tenho assinatura: entrar</a>';
-  if($('#bout'))$('#bout').onclick=()=>{try{localStorage.removeItem('farias_me');sessionStorage.removeItem('farias_guest')}catch(e){}location.href='entrar.html?next=agendar'};
+  if(!ME){try{localStorage.removeItem('farias_me')}catch(e){}location.replace('entrar.html?next=agendar');break book}
+  const who=$('#bwho');if(who)who.innerHTML=`Agendando como <b>${esc(ME.name)}</b>${MEMBER?' · assinante '+esc(DB.plan(SUB.plan).n):SUB?` · <a href="assinante.html">assinatura ${SUB.status==='late'?'com pagamento pendente':'pausada'}: regularize para usar o plano</a>`:''} · <button type="button" id="bout">não sou eu</button>`;
+  if($('#bout'))$('#bout').onclick=()=>{try{localStorage.removeItem('farias_me')}catch(e){}location.href='entrar.html?next=agendar'};
+  if(MEMBER)st.cat='ass';
   if($('#blead'))$('#blead').textContent=MEMBER?'Escolha o serviço e o melhor horário. O que está no seu plano sai por R$ 0.':'Escolha o serviço e o melhor horário. O pagamento é na barbearia.';
   const validDay=d=>openDay(d)&&(!st.svc||!st.svc.plan||PLAN_DAYS.includes(d.getDay()));
   const dayLabel=i=>{const d=days[i];return `${i===0?'Hoje':WD[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`};
@@ -179,8 +197,9 @@ if($('#svclist')){
   const phoneNow=()=>$('#btel').value.replace(/\D/g,'');
   const clientNow=()=>db.clients.find(x=>x.phone===phoneNow());
   function renderSvc(){
-    $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.svc&&st.svc.n===s.n?'on':''}" data-i="${i}" aria-pressed="${!!(st.svc&&st.svc.n===s.n)}"><span><strong>${esc(s.n)}</strong><small>${esc(s.d)} · ${s.t} min</small></span><span class="pr"><b>${s.plan?'Incluso':brl(s.p)}</b>${s.plan?'<small class="mem">R$ 0,00</small>':''}</span></button>`).join('')||'<p style="color:var(--muted)">Nenhum serviço nesta categoria.</p>';
-    $$('#svclist .svc').forEach(b=>b.onclick=()=>{st.svc=SVC[st.cat][b.dataset.i];if(st.day!==null&&!validDay(days[st.day])){st.day=null;st.time=null}renderSvc();update()});
+    $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.items.some(x=>x.n===s.n)?'on':''}" data-i="${i}" aria-pressed="${st.items.some(x=>x.n===s.n)}"><span><strong>${esc(s.n)}</strong><small>${esc(s.d)} · ${s.t} min</small></span><span class="pr"><b>${s.plan?'Incluso':brl(s.p)}</b>${s.plan?'<small class="mem">R$ 0,00</small>':''}</span></button>`).join('')||'<p style="color:var(--muted)">Nenhum serviço nesta categoria.</p>';
+    $$('#svclist .svc').forEach(b=>b.onclick=()=>{const s=SVC[st.cat][b.dataset.i],on=st.items.some(x=>x.n===s.n);
+      st.items=on?st.items.filter(x=>x.n!==s.n):[...st.items.filter(x=>!(s.plan&&x.plan)),s];agg();st.time=null;if(st.day!==null&&!validDay(days[st.day])){st.day=null;st.time=null}renderSvc();update()});
   }
   $$('#svctabs button').forEach(b=>{b.setAttribute('aria-pressed',b.classList.contains('on'));b.onclick=()=>{st.cat=b.dataset.c;$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b)});renderSvc()}});
   function renderDays(){
@@ -199,7 +218,8 @@ if($('#svclist')){
   }
   // preço final: assinante ativo paga o preço especial (mp) nos serviços que têm
   const isMember=()=>{const c=clientNow(),s=c&&DB.activeSub(c.id);return !!(s&&s.status==='ok')};
-  const priceNow=()=>{if(!st.svc||st.svc.plan)return 0;return st.svc.mp!=null&&isMember()?st.svc.mp:st.svc.p};
+  const priceNow=()=>{const m=isMember();return st.items.reduce((a,x)=>a+(x.plan?0:x.mp!=null&&m?x.mp:x.p),0)};
+  const valTxt=()=>st.svc.plan&&!priceNow()?'Incluso no plano':brl(priceNow())+(st.svc.plan?' + plano':'');
   function update(){
     const ok=(st.step===1&&st.svc)||(st.step===2&&st.time)||(st.step===3&&phoneNow().length===11&&$('#bname').value.trim().length>=2)||(st.step===4&&codeIns.every(x=>x.value));
     const nx=$('#next');nx.disabled=!ok;
@@ -209,11 +229,11 @@ if($('#svclist')){
     const vs=Math.min(st.step,3);
     $$('#bsteps div').forEach((el,i)=>{el.classList.toggle('on',i+1===vs&&st.step<5);el.classList.toggle('ok',i+1<vs||st.step===5);el.setAttribute('aria-current',i+1===vs&&st.step<5?'step':'false')});
     [1,2,3,4,5].forEach(n=>$('#p'+n).classList.toggle('on',n===st.step));
-    $('#sel').innerHTML=st.svc?`<b>${esc(st.svc.n)}</b> · ${st.svc.plan?'Incluso no plano':brl(priceNow())}${st.time?` · ${dayLabel(st.day)} às ${esc(st.time)}`:''}`:'Nenhum serviço selecionado';
+    $('#sel').innerHTML=st.svc?`<b>${esc(st.svc.n)}</b> · ${valTxt()} · ${st.svc.t} min${st.time?` · ${dayLabel(st.day)} às ${esc(st.time)}`:''}`:'Nenhum serviço selecionado';
     if(st.step===3)$('#sum').innerHTML=`<label class="t">Resumo</label>
-      <div class="row"><span>Serviço</span><b>${esc(st.svc.n)}</b></div><div class="row"><span>Barbeiro</span><b>Farias</b></div>
+      <div class="row"><span>${st.items.length>1?'Serviços':'Serviço'}</span><b>${esc(st.svc.n)}</b></div><div class="row"><span>Barbeiro</span><b>Farias</b></div>
       <div class="row"><span>Quando</span><b>${dayLabel(st.day)} · ${esc(st.time)}</b></div><div class="row"><span>Duração</span><b>${st.svc.t} min</b></div>
-      <div class="row"><span>Valor</span><b>${st.svc.plan?'R$ 0,00 (plano)':brl(priceNow())+(priceNow()<st.svc.p?' <small style="color:var(--teal-2);font-weight:500">preço de assinante</small>':'')}</b></div>`;
+      <div class="row"><span>Valor</span><b>${valTxt()+(priceNow()<st.svc.p?' <small style="color:var(--teal-2);font-weight:500">preço de assinante</small>':'')}</b></div>`;
     if(st.step===4)$('#otptel').textContent=$('#btel').value;
     if(st.step===5){$('#donetxt').textContent=`${st.svc.n} · ${dayLabel(st.day)} às ${st.time}. A confirmação chega no seu WhatsApp.`;
       const w=$('#wademo');if(w&&lastMsg){w.hidden=false;$('#wabubble').innerHTML=esc(lastMsg).replace(/(https?:\/\/\S+)/,'<a href="$1">$1</a>')}}
@@ -235,9 +255,9 @@ if($('#svclist')){
   let lastMsg=null;
   function avulsoOf(base){return base==='Corte + Barba'?{n:'Corte + Barba',d:'Avulso',p:svcById('corte').p+svcById('barba').p,t:60}:{...(SVC.cab.find(x=>x.n===svcById('corte').n)||{n:'Corte',p:svcById('corte').p,t:45})}}
   function planFail(msg,box='#bblock'){
-    const av=avulsoOf(st.svc.base);
+    const av=avulsoOf(st.svc.planBase);
     $(box).innerHTML=`${esc(msg)}<span class="bfix"><button type="button" class="btn btn-primary btn-sm" id="bav">Agendar como avulso · ${brl(av.p)}</button><a class="btn btn-ghost btn-sm" href="index.html#planos">Conhecer os planos</a></span>`;
-    $('#bav').onclick=()=>{st.svc=av;st.cat='cab';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='cab');x.setAttribute('aria-pressed',x.dataset.c==='cab')});
+    $('#bav').onclick=()=>{st.items=[av,...st.items.filter(x=>!x.plan&&x.n!==av.n)];agg();st.cat='cab';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='cab');x.setAttribute('aria-pressed',x.dataset.c==='cab')});
       if(!DB.freeSlots(DB.iso(days[st.day]),av.t).includes(st.time)){st.step=2;st.time=null;renderDays()}
       $(box).textContent='';renderSvc();update()};
   }
@@ -245,11 +265,11 @@ if($('#svclist')){
     if(st.step===3||st.step===4){DB.refresh();const c=clientNow();
       const back=()=>{if(st.step===4){st.step=3;update()}};
       if(DB.isBlocked(c)){back();$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Farias pelo WhatsApp.';return}
-      if(st.svc.plan){const err=c?DB.planCheck(c.id,DB.iso(days[st.day]),st.svc.base):'Este número não tem assinatura ativa.';if(err){back();planFail(err);return}}}
+      if(st.svc.plan){const err=c?DB.planCheck(c.id,DB.iso(days[st.day]),st.svc.planBase):'Este número não tem assinatura ativa.';if(err){back();planFail(err);return}}}
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
     if(st.step===1)renderDays();
     // assinante: as regras do plano (dias, saldo, intervalo) são conferidas já ao escolher o horário, não no fim
-    if(st.step===2&&st.svc.plan&&ME){DB.refresh();const err=DB.planCheck(ME.id,DB.iso(days[st.day]),st.svc.base);if(err){planFail(err,'#bblock2');return}}
+    if(st.step===2&&st.svc.plan&&ME){DB.refresh();const err=DB.planCheck(ME.id,DB.iso(days[st.day]),st.svc.planBase);if(err){planFail(err,'#bblock2');return}}
     // quem já entrou não precisa confirmar o WhatsApp de novo
     if(st.step===3&&ME){if(!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
       if(!saveBooking()){$('#bblock').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Farias.';return}
@@ -263,8 +283,8 @@ if($('#svclist')){
   $('#bname').oninput=update;
   // vindo da página de horários: ?d=índice&t=HH:MM (validado)
   const q=new URLSearchParams(location.search);
-  if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0]||null;if(st.svc){st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}}
-  if(q.get('cat')==='ass'&&MEMBER){st.cat='ass';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='ass');x.setAttribute('aria-pressed',x.dataset.c==='ass')})}
+  if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.items=SVC.cab[0]?[SVC.cab[0]]:[];agg();st.cat='cab';if(st.svc){st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}}
+  if(MEMBER&&!q.has('d')){st.cat='ass';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='ass');x.setAttribute('aria-pressed',x.dataset.c==='ass')})}
   if(ME){$('#bname').value=ME.name;$('#btel').value=maskPhone(ME.phone);$('#bname').readOnly=$('#btel').readOnly=true;const n=$('#bnote');if(n)n.textContent='Seus dados vêm do seu cadastro. A confirmação chega no seu WhatsApp.'}
   renderSvc();update();
   // outra aba mudou a agenda: atualiza os horários livres
@@ -307,11 +327,14 @@ if($('#gal')&&C.ig_on&&C.ig_token){(async()=>{
 if($('#map-load'))$('#map-load').onclick=()=>{$('#map').innerHTML='<iframe title="Mapa da barbearia" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q='+encodeURIComponent(C.address)+'&z=15&output=embed"></iframe>'};
 if($('#cform')){
   $('#cform').onsubmit=e=>{e.preventDefault();
-    const n=$('#cname').value.trim(),m=$('#cmsg').value.trim(),a=$('#csub').value;
+    const n=$('#cname').value.trim(),m=$('#cmsg').value.trim(),a=$('#csub').value,ph=$('#ctel').value.replace(/\D/g,'');
     if(!n||!m){$('#cerr').textContent='Preencha nome e mensagem.';return}
-    DB.refresh();DB._log({id:DB.uid(),t:Date.now(),who:'Site',area:'Contato',desc:`Mensagem de contato de ${n} (${a}): ${m.slice(0,120)}`});DB.save();e.target.reset();$('#cerr').style.color='var(--teal-2)';$('#cerr').textContent='Mensagem enviada! Respondemos em até 1 dia útil.';setTimeout(()=>{$('#cerr').textContent='';$('#cerr').style.color=''},5000);
+    if(ph.length!==11){$('#cerr').textContent='Informe seu WhatsApp com DDD + 9 dígitos, para a gente responder.';$('#ctel').focus();return}
+    DB.refresh();db.contacts.unshift({id:DB.uid(),t:Date.now(),name:n,phone:ph,subject:a,msg:m.slice(0,1200),done:false});if(db.contacts.length>100)db.contacts.length=100;
+    DB._log({id:DB.uid(),t:Date.now(),who:'Site',area:'Contato',desc:`Mensagem de contato de ${n} (${a})`});DB.save();DB.notifyStaff('evContact',`Mensagem pelo site: ${n} · ${a}\n"${m.slice(0,160)}"\nResponder: https://wa.me/55${ph}`);e.target.reset();$('#cerr').style.color='var(--teal-2)';$('#cerr').textContent='Mensagem enviada! Respondemos em até 1 dia útil.';setTimeout(()=>{$('#cerr').textContent='';$('#cerr').style.color=''},5000);
   };
-  ['#cname','#cmsg'].forEach(s=>$(s).oninput=()=>$('#cerr').textContent='');
+  ['#cname','#cmsg'].forEach(s=>$(s).oninput=()=>$('#cerr').textContent='');$('#ctel').oninput=e=>{e.target.value=maskPhone(e.target.value);$('#cerr').textContent=''};
+  try{const me=db.clients.find(c=>c.id===localStorage.getItem('farias_me'));if(me){$('#cname').value=me.name;$('#ctel').value=maskPhone(me.phone)}}catch(e){}
 }
 
 /* ===== animações de entrada ===== */

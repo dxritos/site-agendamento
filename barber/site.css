@@ -706,3 +706,19 @@ html.guard img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
 .wa-demo small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;text-align:center}
 .wa-b{white-space:pre-line;background:#0f3d2e;color:#e7f5ee;border-radius:14px 14px 4px 14px;padding:12px 14px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 .wa-b a{color:#8fe3bd;text-decoration:underline}
+/* ===== perfil no topo, vários serviços e dias fechados discretos ===== */
+.prof{position:relative}
+.prof-b{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);background:#d9dfea;color:#0b1124;font-weight:700;font-size:14px;cursor:pointer}
+.prof-m{position:absolute;right:0;top:calc(100% + 10px);width:260px;background:var(--card);border:1px solid var(--line-2);border-radius:16px;padding:8px;box-shadow:0 18px 50px rgba(0,0,0,.5);z-index:60}
+.prof-h,.prof-p{padding:10px 12px}.prof-h b{display:block;font-size:15px}.prof-h small,.prof-p small{display:block;color:var(--muted);font-size:12.5px}
+.prof-p{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:6px}
+.prof-p em{display:block;font-style:normal;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}.prof-p span{font-weight:600;font-size:14px}
+.prof-m a,.prof-m button{display:flex;align-items:center;width:100%;min-height:40px;padding:0 12px;border-radius:10px;border:0;background:none;color:var(--txt);font:inherit;font-size:14px;cursor:pointer;text-align:left}
+.prof-m a:hover,.prof-m button:hover{background:var(--teal-bg)}.prof-m #prof-out{color:#e46d6d}
+.svc-hint{font-size:13px;color:var(--dim);margin:-6px 0 14px}
+.svc.on strong::before{content:"\2713\00a0";color:var(--teal-2)}
+.wrow.off{background:rgba(0,0,0,.16)}
+.wrow.off .dbox,.wrow.full .dbox{opacity:.45;border-style:dashed}
+.wrow.off .wslots{display:flex;align-items:center;flex-wrap:wrap;gap:8px;align-self:center}
+.closed-tag{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0a9a9;border:1px solid rgba(228,109,109,.4);background:rgba(228,109,109,.1);border-radius:999px;padding:4px 12px}
+.wrow.full .wtag{opacity:.5}

@@ -72,18 +72,19 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
             <div class="err-msg" id="e1" role="alert"></div>
             <button class="btn btn-primary btn-block" id="send" style="margin-top:6px;padding:13px">Receber código no WhatsApp</button>
             <div class="row" style="justify-content:center;text-align:center">Primeira vez? A conta é criada automaticamente.</div>
-            <div id="guestbox" hidden>
-              <div class="or"><span>ou</span></div>
-              <a class="btn btn-ghost btn-block" id="guest" href="agendar.html?avulso=1" style="padding:13px">Agendar sem login (avulso)</a>
-              <p class="gnote">Para quem não tem assinatura. Você escolhe o horário e paga na barbearia.</p>
-            </div>
             <div style="display:block;margin-top:14px;font-size:12px;color:var(--dim);text-align:center">Ao continuar, você concorda com a&nbsp;<a href="privacidade.html" style="color:var(--teal-2)">Política de Privacidade</a>.</div>
           </div>
           <div class="step" id="s3">
             <h2 class="h1">Bem-vindo!</h2>
-            <p class="lead">É sua primeira vez por aqui. Como podemos te chamar?</p>
-            <label class="t" for="nm">Seu nome</label>
-            <input class="inp" id="nm" aria-describedby="e4" placeholder="Nome e sobrenome" autocomplete="name">
+            <p class="lead">É sua primeira vez por aqui. Complete seu cadastro para continuar.</p>
+            <div class="field"><label class="t" for="nm">Nome e sobrenome</label>
+            <input class="inp" id="nm" placeholder="Ex.: João Silva" autocomplete="name" aria-describedby="e4"></div>
+            <div class="field"><label class="t" for="bai">Bairro onde mora</label>
+            <input class="inp" id="bai" list="bairros" placeholder="Digite para pesquisar" autocomplete="address-level3" aria-describedby="e4"><datalist id="bairros"></datalist></div>
+            <div class="field"><label class="t" for="nasc">Data de nascimento (opcional)</label>
+            <input class="inp" id="nasc" type="date" autocomplete="bday"></div>
+            <div class="field"><label class="t" for="src">Como conheceu a barbearia? (opcional)</label>
+            <select class="inp" id="src"><option value="">Selecione</option><option>Instagram</option><option>Indicação de amigo</option><option>Passei na frente</option><option>Google</option><option>Outro</option></select></div>
             <div class="err-msg" id="e4" role="alert"></div>
             <button class="btn btn-primary btn-block" id="nm-ok" style="margin-top:6px;padding:13px">Criar minha conta</button>
           </div>
