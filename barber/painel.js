@@ -61,61 +61,75 @@ const I={
  equipe:'<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/>',
  historico:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
  config:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'};
-const NAV=[['Operação',[['hoje','Hoje'],['agenda','Agenda'],['clientes','Clientes'],['assinantes','Assinantes']]],['Gestão',[['financeiro','Financeiro'],['servicos','Serviços e planos']]],['Site',[['conteudo','Conteúdo do site'],['mensagens','Mensagens WhatsApp']]],['Sistema',[['equipe','Equipe e permissões'],['historico','Histórico'],['config','Configurações']]]];
+/* o dia a dia fica à vista; o resto abre em "Mais" (lembra se ficou aberto) */
+const PRIMARY=[['hoje','Hoje'],['agenda','Agenda'],['clientes','Clientes'],['assinantes','Assinantes']];
+const MORE=[['Negócio',[['financeiro','Financeiro'],['servicos','Serviços e planos']]],['Comunicação',[['mensagens','WhatsApp'],['conteudo','Site']]],['Sistema',[['equipe','Equipe'],['historico','Histórico'],['config','Configurações']]]];
+let moreOpen=false;try{moreOpen=localStorage.getItem('farias_more')==='1'}catch(e){}
 let VIEW=(location.hash||'#hoje').slice(1);if(!/^[a-z]+$/.test(VIEW)||!document.getElementById('v-'+VIEW))VIEW='hoje';
 function renderNav(){
-  const late=db.subs.filter(s=>s.status==='late').length;
-  const h=NAV.map(([g,items])=>`<div class="ngrp">${g}</div>`+items.map(([k,n])=>`<button class="tab ${k===VIEW?'on':''}" data-go="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${I[k]}</svg>${n}${k==='assinantes'&&late?`<span class="cnt">${late}</span>`:''}</button>`).join('')).join('');
+  const late=db.subs.filter(s=>s.status==='late').length,inMore=MORE.some(([,it])=>it.some(([k])=>k===VIEW)),open=moreOpen||inMore;
+  const tab=([k,n])=>`<button class="tab ${k===VIEW?'on':''}" data-go="${k}"${k===VIEW?' aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${I[k]}</svg>${n}${k==='assinantes'&&late?`<span class="cnt">${late}</span>`:''}</button>`;
+  const h=PRIMARY.map(tab).join('')+`<button class="tab more ${open?'open':''}" data-more aria-expanded="${open}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>Mais<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`
+    +(open?MORE.map(([g,it])=>`<div class="ngrp">${g}</div>`+it.map(tab).join('')).join(''):'');
   $('#snav').innerHTML=h;$('#mnav').innerHTML=h;
 }
+document.addEventListener('click',e=>{if(!e.target.closest('[data-more]'))return;const inMore=MORE.some(([,it])=>it.some(([k])=>k===VIEW));moreOpen=inMore?true:!moreOpen;try{localStorage.setItem('farias_more',moreOpen?'1':'0')}catch(x){}renderNav()});
 function go(k){if(!VIEWS[k])k='hoje';if(VIEW!==k)history.pushState(null,'','#'+k);VIEW=k;render();scrollTo(0,0)}
 addEventListener('hashchange',()=>{const k=(location.hash||'#hoje').slice(1);if(/^[a-z]+$/.test(k)&&VIEWS[k]&&k!==VIEW){VIEW=k;render()}});
 document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);if(g.dataset.filter){subFilter=g.dataset.filter;render()}}});
 
 /* ================= HOJE ================= */
 const ST={done:['Concluído','c-dim'],now:['Em atendimento','c-ok'],conf:['Confirmado','c-info'],pend:['Aguardando','c-warn'],miss:['Faltou','c-bad'],cancel:['Cancelado','c-dim'],block:['Bloqueado','c-dim']};
+let tipOff=false;try{tipOff=localStorage.getItem('farias_tip')==='0'}catch(e){}
 function vHoje(){
   const list=db.appts.filter(a=>a.date===TODAY&&a.status!=='cancel').sort((a,b)=>a.start.localeCompare(b.start));
   const svc=list.filter(a=>a.status!=='block');
-  const ok=db.subs.filter(s=>s.status==='ok'),late=db.subs.filter(s=>s.status==='late');
-  const mrr=ok.reduce((t,s)=>t+price(s),0),lateV=late.reduce((t,s)=>t+price(s),0);
+  const late=db.subs.filter(s=>s.status==='late'),lateV=late.reduce((t,s)=>t+price(s),0);
   const avToday=db.tx.filter(t=>t.date===TODAY&&t.kind!=='plano'&&t.status==='ok').reduce((t,x)=>t+x.value,0);
   const pend=db.appts.filter(a=>a.status==='pend'&&a.date>=TODAY);
   const hol=db.holidays.find(h=>h.date===TODAY);
   const hr=new Date().getHours();
+  // próximo cliente: quem está na cadeira ou o primeiro ainda não atendido
+  const open=svc.filter(a=>['conf','pend','now'].includes(a.status)),nx=open.find(a=>a.status==='now')||open[0];
+  const later=list.filter(a=>a!==nx&&!['done','miss'].includes(a.status)),past=list.filter(a=>['done','miss'].includes(a.status));
+  const c=nx&&client(nx.cid)||{};
+  const nextCard=nx?`<div class="card nextc"><div class="eyebrow">${nx.status==='now'?'Na cadeira agora':'Próximo cliente'}</div>
+     <div class="nx-main"><div class="nx-h">${nx.start}</div><div><strong>${esc(cname(nx.cid))}</strong><span>${esc(nx.svc)} · ${nx.plan?'Assinante':money(nx.price)} · ${nx.dur} min${nx.status==='pend'?' · <span class="up-w">ainda não confirmou</span>':''}</span>${c.notes?`<p class="nx-note">${esc(c.notes)}</p>`:''}</div></div>
+     <div class="nx-acts"><button class="btn btn-primary" data-st="done" data-id="${nx.id}">Concluir atendimento</button>${nx.status==='pend'?`<button class="btn btn-ghost" data-st="conf" data-id="${nx.id}">Confirmar presença</button>`:''}<button class="btn btn-danger" data-st="miss" data-id="${nx.id}">Faltou</button><button class="btn btn-ghost" data-edit="${nx.id}">Editar</button></div></div>`
+    :`<div class="card nextc"><div class="eyebrow">Próximo cliente</div><p class="empty">${hol?'Feriado: barbearia fechada.':svc.length?'Todos os clientes de hoje já foram atendidos.':'Nenhum horário marcado para hoje.'}</p></div>`;
+  const attention=[
+    late.length?`<div class="al"><div class="ic" style="background:var(--bad-bg);color:var(--bad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div><b>${plural(late.length,'assinante','assinantes')} com pagamento pendente</b><span>${money0(lateV)} em aberto · ${late.map(s=>esc(cname(s.cid))).join(', ')}</span><br><button class="btn btn-ghost btn-sm" data-go="assinantes" data-filter="late">Ver e corrigir</button></div></div>`:'',
+    pend.length?`<div class="al"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>${plural(pend.length,'cliente ainda não confirmou','clientes ainda não confirmaram')}</b><span>${pend.slice(0,3).map(a=>esc(cname(a.cid))+' · '+fmtD(a.date)+' '+a.start).join(' · ')}</span></div></div>`:'',
+    db.content.notice_on?`<div class="al"><div class="ic" style="background:var(--teal-bg);color:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18L3 13z"/></svg></div><div><b>Aviso ativo no site</b><span>${esc(db.content.notice)}</span><br><button class="btn btn-ghost btn-sm" data-go="conteudo">Editar</button></div></div>`:''].filter(Boolean).join('');
   return `<div class="top"><div><h1>${hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite'}, Farias</h1><p>${WDF[today.getDay()]}, ${today.getDate()} de ${MOF[today.getMonth()]}${hol?' · Feriado: '+esc(hol.name):''}</p></div>
-   <div class="acts"><button class="btn btn-ghost" data-act="block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>Bloquear horário</button><button class="btn btn-primary" data-act="new-appt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Encaixe</button></div></div>
-  <div class="kpis">
-    <div class="card kpi"><small>Atendimentos hoje</small><b>${svc.length}</b><span>${svc.filter(a=>a.status==='done').length} concluídos · ${svc.filter(a=>a.plan).length} de assinantes</span></div>
-    <div class="card kpi"><small>Avulso recebido hoje</small><b>${money0(avToday)}</b><span>${svc.filter(a=>!a.plan).length} atendimentos avulsos</span></div>
-    <div class="card kpi"><small>Assinantes ativos</small><b>${ok.length}</b><span>${db.subs.filter(s=>s.status==='paused').length} pausados</span></div>
-    <div class="card kpi"><small>Receita recorrente</small><b>${money0(mrr)}</b><span>por mês</span></div>
-    <div class="card kpi"><small>Pagamentos pendentes</small><b class="${late.length?'dn':''}">${late.length}</b><span class="${late.length?'dn':''}">${money0(lateV)} em aberto</span></div>
-  </div>
+   <div class="acts"><button class="btn btn-ghost" data-act="block">Bloquear horário</button><button class="btn btn-primary" data-act="new-appt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Novo horário</button></div></div>
+  ${tipOff?'':`<div class="card tip"><div><b>Por onde começar</b><ol><li>Veja aqui quem é o próximo cliente.</li><li>Terminou o corte? Toque em <b>Concluir atendimento</b>.</li><li>Cliente ligou? Use <b>Novo horário</b>.</li></ol><span>Financeiro, serviços, site e configurações ficam em <b>Mais</b>, no menu.</span></div><button class="btn btn-ghost btn-sm" data-act="tip-off">Entendi</button></div>`}
   <div class="g21">
-    <div class="card box"><h3>Agenda de hoje</h3>${list.length?list.map(apptRow).join(''):`<p class="empty">${hol?'Feriado — barbearia fechada.':'Nenhum horário marcado para hoje.'}</p>`}</div>
+    <div>${nextCard}
+      <div class="card box"><h3>${nx?'Depois':'Agenda de hoje'} <small>${plural(later.filter(a=>a.status!=='block').length,'cliente','clientes')}</small></h3>${later.length?later.map(apptRow).join(''):'<p class="empty">Ninguém mais na fila hoje.</p>'}
+        ${past.length?`<details class="pastd"><summary>Já atendidos hoje (${past.length})</summary>${past.map(apptRow).join('')}</details>`:''}</div>
+    </div>
     <div>
-      <div class="card box"><h3>Precisa da sua atenção</h3>
-        ${late.length?`<div class="al"><div class="ic" style="background:var(--bad-bg);color:var(--bad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></div><div><b>${plural(late.length,'assinante','assinantes')} com pagamento pendente</b><span>${late.map(s=>esc(cname(s.cid))).join(', ')}</span><br><button class="btn btn-ghost btn-sm" data-go="assinantes" data-filter="late">Ver e corrigir</button></div></div>`:''}
-        ${pend.length?`<div class="al"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>${plural(pend.length,'horário aguardando','horários aguardando')} confirmação</b><span>${pend.slice(0,2).map(a=>esc(cname(a.cid))+' · '+fmtD(a.date)+' '+a.start).join(' · ')}</span></div></div>`:''}
-        ${db.content.notice_on?`<div class="al"><div class="ic" style="background:var(--teal-bg);color:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18L3 13z"/></svg></div><div><b>Aviso ativo no site</b><span>${esc(db.content.notice)}</span><br><button class="btn btn-ghost btn-sm" data-go="conteudo">Editar</button></div></div>`:''}
-        ${!late.length&&!pend.length&&!db.content.notice_on?'<p class="empty">Tudo em dia.</p>':''}
-      </div>
-      <div class="card box"><h3>Últimas alterações <small><a href="#historico" data-go="historico" style="color:var(--teal-2);display:inline-flex;align-items:center;min-height:24px">ver tudo</a></small></h3>
-        <div class="hist-mini">${db.log.slice().sort((a,b)=>b.t-a.t).slice(0,5).map(l=>`<div><span>${esc(l.desc)}</span><span>${TF.format(new Date(l.t))}</span></div>`).join('')||'<p class="empty">Sem alterações.</p>'}</div>
-      </div>
+      <div class="card box"><h3>Hoje em números</h3>
+        <div class="num"><span>Atendimentos</span><b>${svc.filter(a=>a.status==='done').length} de ${svc.length}</b></div>
+        <div class="num"><span>Recebido (avulso)</span><b>${money0(avToday)}</b></div>
+        <div class="num"><span>Clientes de plano</span><b>${svc.filter(a=>a.plan).length}</b></div>
+        <button class="btn btn-ghost btn-sm" data-go="financeiro" style="margin-top:12px">Ver financeiro</button></div>
+      ${attention?`<div class="card box"><h3>Precisa da sua atenção</h3>${attention}</div>`:''}
     </div>
   </div>`;
 }
 function apptRow(a){
   if(a.status==='block')return `<div class="ti done"><div class="h">${a.start}</div><div class="inf"><strong>Bloqueado</strong><span>${esc(a.note||'Horário bloqueado')} · ${a.dur} min</span></div><div class="r"><button class="btn btn-ghost btn-sm" data-edit="${a.id}">Editar</button></div></div>`;
+  const act=a.status==='pend'?`<button class="btn btn-ghost btn-sm" data-st="conf" data-id="${a.id}">Confirmar</button>`:['conf','now'].includes(a.status)?`<button class="btn btn-ghost btn-sm" data-st="done" data-id="${a.id}">Concluir</button>`:'';
   return `<div class="ti ${a.status==='done'||a.status==='miss'?'done':''} ${a.status==='now'?'now':''}"><div class="h">${a.start}</div>
    <div class="inf"><strong>${esc(cname(a.cid))}</strong><span>${esc(a.svc)} · ${a.plan?'<span style="color:var(--teal-2)">Assinante</span>':money(a.price)}${a.note?' · '+esc(a.note):''}</span></div>
-   <div class="r"><span class="chip ${ST[a.status][1]}">${ST[a.status][0]}</span>${['conf','now','pend'].includes(a.status)?`<button class="btn btn-ghost btn-sm" data-st="done" data-id="${a.id}">Concluir</button>${a.status!=='now'?`<button class="btn btn-danger btn-sm" data-st="miss" data-id="${a.id}">Faltou</button>`:''}`:''}<button class="btn btn-ghost btn-sm" data-edit="${a.id}">Editar</button></div></div>`;
+   <div class="r"><span class="chip ${ST[a.status][1]}">${ST[a.status][0]}</span>${act}<button class="btn btn-ghost btn-sm" data-edit="${a.id}" aria-label="Editar horário de ${esc(cname(a.cid))}">Editar</button></div></div>`;
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-st]');if(b){const a=db.appts.find(x=>x.id===b.dataset.id);const st=b.dataset.st;
     const nextNow=L=>{const n=L.filter(y=>y.date===TODAY&&y.status==='conf').sort((p,q)=>p.start.localeCompare(q.start))[0];if(n&&!L.some(y=>y.date===TODAY&&y.status==='now'))n.status='now'};
+    if(st==='conf'){change('appts',L=>{L.find(y=>y.id===a.id).status='conf'},`${cname(a.cid)}: presença confirmada (${fmtD(a.date)} ${a.start})`,'Agenda');return}
     if(st==='miss'){mutMany(['appts','clients'],d=>{d.appts.find(y=>y.id===a.id).status='miss';const c=d.clients.find(y=>y.id===a.cid);if(c)c.misses=(c.misses||0)+1},`${cname(a.cid)}: falta registrada (${fmtD(a.date)} ${a.start})`,'Agenda');return}
     if(a.plan||!a.price){change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído (${fmtD(a.date)} ${a.start})`,'Agenda');return}
     const M=['Dinheiro','Pix','Maquininha (débito)','Maquininha (crédito)'];
@@ -183,7 +197,7 @@ function editAppt(id){
       if(newSt==='miss'&&a.status!=='miss'){const cl=d.clients.find(y=>y.id===a.cid);if(cl)cl.misses=(cl.misses||0)+1}},
       moved?`${c.name}: remarcado de ${fmtD(a.date)} ${a.start} para ${fmtD(nd)} ${ns}`:`${c.name}: agendamento de ${fmtD(a.date)} ${a.start} editado`,'Agenda')};
     if(warn&&(moved||planErr))confirmBox('Atenção',warn+' Salvar mesmo assim?','Salvar assim mesmo',doSave,false);else doSave()};
-  $('#f-cancel').onclick=()=>confirmBox('Cancelar horário?',`${esc(c.name)} · ${fmtD(a.date)} às ${a.start}. O horário volta a ficar livre no site.`,'Cancelar horário',()=>change('appts',L=>{L.find(y=>y.id===id).status='cancel'},`${c.name}: horário de ${fmtD(a.date)} ${a.start} cancelado`,'Agenda'));
+  $('#f-cancel').onclick=()=>confirmBox('Cancelar horário?',`${esc(c.name)} · ${fmtD(a.date)} às ${a.start}. O horário volta a ficar livre no site.`,'Cancelar horário',()=>{change('appts',L=>{L.find(y=>y.id===id).status='cancel'},`${c.name}: horário de ${fmtD(a.date)} ${a.start} cancelado`,'Agenda');if(c.phone)DB.notify('cancel',a)});
   $('#f-wa').onclick=()=>window.open(`https://wa.me/55${String(c.phone).replace(/\D/g,'')}?text=${encodeURIComponent(`Oi, ${c.name}! Sobre seu horário de ${fmtD(a.date)} às ${a.start}:`)}`,'_blank','noopener');
 }
 const ACT={
@@ -201,7 +215,8 @@ const ACT={
     $('#n-save').onclick=()=>{let cid=$('#n-cli').value;const t=$('#n-time').value;if(!t)return fieldErr('#n-time','Escolha um horário livre');
       if(!cid){const nm=$('#n-name').value.trim();if(!nm)return toast('Informe o nome do cliente');cid='c'+DB.uid();DB.mutate('clients',L=>L.push({id:cid,name:nm,phone:$('#n-phone').value.replace(/\D/g,''),notes:'',blocked:false,misses:0,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2)}),`Cliente ${nm} cadastrado`,'Clientes')}
       const s=svcInfo($('#n-svc').value),ds=$('#n-date').value,isPlanSvc=/^corte( \+ barba)?$/i.test($('#n-svc').value),usePlan=isPlanSvc&&!DB.planCheck(cid,ds,$('#n-svc').value);
-      closeModal();change('appts',L=>L.push({id:DB.uid(),date:$('#n-date').value,start:t,dur:s.t,cid,svc:$('#n-svc').value,price:usePlan?0:s.p,plan:usePlan,status:'conf',note:'Encaixe',origin:'painel'}),`Encaixe: ${cname(cid)} em ${fmtD($('#n-date').value)} às ${t}`,'Agenda')};
+      closeModal();change('appts',L=>L.push({id:DB.uid(),date:ds,start:t,dur:s.t,cid,svc:$('#n-svc').value,price:usePlan?0:s.p,plan:usePlan,status:'conf',note:'Encaixe',origin:'painel'}),`Encaixe: ${cname(cid)} em ${fmtD(ds)} às ${t}`,'Agenda');
+      const na=db.appts.find(x=>x.cid===cid&&x.date===ds&&x.start===t&&x.status==='conf');if(na&&client(cid).phone)DB.notify('confirm',na)};
   },
   block:()=>{
     modal(`<div class="eyebrow">Agenda</div><h3>Bloquear horário</h3><p>O horário some do agendamento online. Use para almoço, compromisso ou folga.</p>
@@ -425,12 +440,41 @@ document.addEventListener('change',e=>{const up=e.target.dataset&&e.target.datas
 const VARS=['{nome}','{servico}','{data}','{hora}','{plano}','{valor}','{link}','{codigo}'];
 const SAMPLE={nome:'Lucas',servico:'Corte + Barba',data:'14/11',hora:'15:30',plano:'Corte + Barba Ilimitado',valor:'200,00',link:'farias.bar/r/x7k',codigo:'482915',qtd:'9'};
 const fillVars=t=>t.replace(/\{(\w+)\}/g,(m,k)=>SAMPLE[k]??m);
+let waTab='robo';const chat=[];
+const waFmt=t=>esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
+const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Próximo cliente','15 min antes: nome, serviço e observações.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
 function vMensagens(){
-  return `<div class="top"><div><h1>Mensagens WhatsApp</h1><p>Edite os textos automáticos e escolha quais avisos são enviados.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="msg-save">Salvar mensagens</button></div></div>
-  <div class="card box">${Object.entries(db.messages).map(([k,m])=>`<div class="msg"><div><div class="hd"><b>${esc(m.name)}</b>${sw('m-on-'+k,m.on,m.lock)}</div><textarea class="inp" id="m-${k}" data-k="${k}" rows="3">${esc(m.txt)}</textarea><div class="chips-var" style="margin-top:8px">${VARS.map(v=>`<button data-ins="${v}" data-t="m-${k}">${v}</button>`).join('')}</div>${m.lock?'<p class="hint" style="margin-top:6px">Obrigatória para o login.</p>':''}</div><div class="bubble ${m.on?'':'off'}" id="pv-${k}">${esc(fillVars(m.txt))}<small>agora ✓✓</small></div></div>`).join('')}</div>`;
+  const b=db.bot,tabs=[['robo','Robô'],['msgs','Mensagens automáticas'],['out',`Enviadas (${db.outbox.length})`]];
+  const head=`<div class="top"><div><h1>WhatsApp</h1><p>O robô avisa você e o cliente, e aceita comandos por mensagem.</p></div>${waTab==='msgs'?'<div class="acts"><button class="btn btn-primary btn-sm" data-act="msg-save">Salvar mensagens</button></div>':''}</div>
+   <div class="filters" role="tablist">${tabs.map(([k,n])=>`<button class="fbtn ${waTab===k?'on':''}" role="tab" aria-selected="${waTab===k}" data-wa="${k}">${n}</button>`).join('')}</div>`;
+  if(waTab==='msgs')return head+`<div class="card box">${Object.entries(db.messages).map(([k,m])=>`<div class="msg"><div><div class="hd"><b>${esc(m.name)}</b>${sw('m-on-'+k,m.on,m.lock)}</div><textarea class="inp" id="m-${k}" data-k="${k}" rows="3">${esc(m.txt)}</textarea><div class="chips-var" style="margin-top:8px">${VARS.map(v=>`<button data-ins="${v}" data-t="m-${k}">${v}</button>`).join('')}</div>${m.lock?'<p class="hint" style="margin-top:6px">Obrigatória para o login.</p>':''}</div><div class="bubble ${m.on?'':'off'}" id="pv-${k}">${esc(fillVars(m.txt))}<small>agora ✓✓</small></div></div>`).join('')}</div>`;
+  if(waTab==='out')return head+`<div class="card box"><h3>Mensagens geradas <small>${db.outbox.length?'<button class="btn btn-ghost btn-sm" data-act="out-clear">Limpar</button>':''}</small></h3>
+    <p class="hint" style="margin-bottom:12px">Neste protótipo as mensagens não saem de verdade: ficam aqui para conferência. O link de cada cliente funciona, pode abrir.</p>
+    ${db.outbox.slice().reverse().map(m=>`<div class="outm"><div class="outh"><b>${m.to==='staff'?'Para a equipe':'Para '+esc(m.name)}</b><span>${m.to==='staff'?'':esc(phoneFmt(m.phone))+' · '}${fmtD(DB.iso(new Date(m.t)))} ${TF.format(new Date(m.t))}</span></div><div class="bubble">${waFmt(m.txt)}</div></div>`).join('')||'<p class="empty">Nenhuma mensagem ainda. Marque um horário pelo site para ver.</p>'}</div>`;
+  return head+`<div class="g11">
+   <div>
+    <div class="card box"><h3>Robô da equipe ${sw('bt-staff',b.staff)}</h3><p class="hint">Avisos e comandos no WhatsApp do barbeiro. Desligue se a recepção cuida da agenda.</p>
+      ${EV.map(([k,n,d])=>`<div class="set"><div>${n}<small>${d}</small></div>${sw('bt-'+k,b[k]!==false,!b.staff)}</div>`).join('')}</div>
+    <div class="card box"><h3>Mensagens para o cliente ${sw('bt-client',b.client)}</h3><p class="hint">Confirmação ao marcar, lembretes e um link só dele para confirmar presença, remarcar ou cancelar sem login. O painel registra quem alterou.</p>
+      <button class="btn btn-ghost btn-sm" data-wa="msgs" style="margin-top:12px">Editar os textos</button></div>
+   </div>
+   <div class="card box"><h3>Teste o robô <small>como se fosse o WhatsApp</small></h3>
+     <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map(m=>`<div class="cb ${m.me?'me':''}">${m.me?esc(m.t):waFmt(m.t)}</div>`).join(''):'<div class="cb">'+waFmt('Oi, Farias! Envie *ajuda* para ver o que eu faço.')+'</div>'}</div>
+     <div class="chips-var" style="margin:10px 0">${['hoje','próximo','livres amanhã','resumo','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
+     <div class="fix"><input class="inp" id="bot-in" placeholder="Ex.: agendar João corte amanhã 15:00" aria-label="Mensagem para o robô" autocomplete="off" ${b.staff?'':'disabled'}><button class="btn btn-primary btn-sm" data-act="bot-send" ${b.staff?'':'disabled'}>Enviar</button></div>
+     <p class="hint" style="margin-top:10px">Os comandos mexem na agenda de verdade deste protótipo. O envio pelo WhatsApp real depende de ligar a conta do WhatsApp Business no servidor.</p></div>
+  </div>`;
 }
+function botSend(t){t=(t||'').trim();if(!t)return;chat.push({me:1,t},{t:Bot.run(t)});if(chat.length>40)chat.splice(0,chat.length-40);render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight;const i=$('#bot-in');if(i)i.focus()}
+document.addEventListener('click',e=>{const w=e.target.closest('[data-wa]');if(w){waTab=w.dataset.wa;render();return}const q=e.target.closest('[data-bot]');if(q)botSend(q.dataset.bot)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='bot-in'){e.preventDefault();botSend(e.target.value)}});
+document.addEventListener('change',e=>{const m=/^bt-(\w+)$/.exec(e.target.id||'');if(!m)return;const k=m[1],on=e.target.checked,nm=k==='staff'?'Robô da equipe':k==='client'?'Mensagens para o cliente':'Aviso "'+(EV.find(x=>x[0]===k)||[,k])[1]+'"';
+  change('bot',B=>{B[k]=on},`${nm}: ${on?'ligado':'desligado'}`,'WhatsApp')});
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&db.messages[k]&&$('#pv-'+k))$('#pv-'+k).innerHTML=esc(fillVars(e.target.value))+'<small>agora ✓✓</small>'});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ins]');if(!b)return;const t=$('#'+b.dataset.t),p=t.selectionStart??t.value.length;t.value=t.value.slice(0,p)+b.dataset.ins+t.value.slice(t.selectionEnd??p);t.focus();t.dispatchEvent(new Event('input',{bubbles:true}))});
+ACT['bot-send']=()=>botSend($('#bot-in').value);
+ACT['out-clear']=()=>confirmBox('Limpar mensagens?','Apaga a lista de mensagens geradas. Os agendamentos não mudam.','Limpar',()=>change('outbox',L=>L.splice(0,L.length),'Lista de mensagens do WhatsApp limpa','WhatsApp'));
+ACT['tip-off']=()=>{tipOff=true;try{localStorage.setItem('farias_tip','0')}catch(e){}render()};
 ACT['msg-save']=()=>change('messages',M=>Object.keys(M).forEach(k=>{M[k].txt=$('#m-'+k).value;M[k].on=$('#m-on-'+k).checked}),'Mensagens do WhatsApp atualizadas','Mensagens');
 
 /* ================= EQUIPE ================= */

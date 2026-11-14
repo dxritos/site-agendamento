@@ -115,16 +115,29 @@ function defaults(){
 }
 
 function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return o}}catch(e){}return null}
-let data=load();if(!data){data=defaults();try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+/* link individual de cada agendamento: token aleatório, impossível de adivinhar */
+const tok=()=>{const a=new Uint8Array(15);crypto.getRandomValues(a);return [...a].map(b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('')};
+const CONFIRM_OLD='Fala, {nome}! Horário confirmado: {servico} em {data} às {hora}. Até lá! — Farias Barbearia';
+/* completa bancos antigos com o que veio depois: robô do WhatsApp, caixa de saída, links e mensagens novas */
+function ensure(d){let ch=false;
+  if(!d.bot){d.bot={staff:true,client:true,evNew:true,evCancel:true,evNext:true,evDaily:true};ch=true}
+  if(!Array.isArray(d.outbox)){d.outbox=[];ch=true}
+  const M=d.messages,add=(k,v)=>{if(!M[k]){M[k]=v;ch=true}};
+  if(M.confirm&&M.confirm.txt===CONFIRM_OLD){M.confirm.txt='Fala, {nome}! Horário marcado: {servico} em {data} às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}';ch=true}
+  add('move',{on:true,name:'Horário remarcado',txt:'{nome}, seu horário foi remarcado para {data} às {hora}. Para confirmar, remarcar ou cancelar: {link}'});
+  add('cancel',{on:true,name:'Cancelamento',txt:'{nome}, seu horário de {data} às {hora} foi cancelado. Quando quiser, marque outro: {link}'});
+  (d.appts||[]).forEach(a=>{if(!a.tok&&a.status!=='block'){a.tok=tok();ch=true}});
+  return ch}
+let data=load();if(!data)data=defaults();if(ensure(data)||!load()){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
 let imgs={};try{imgs=JSON.parse(localStorage.getItem(IMGKEY)||'{}')}catch(e){}
 const addMonth=(ds,n=1)=>{const d=new Date(ds+'T00:00:00');d.setMonth(d.getMonth()+n);return iso(d)};
 const todayIso=()=>iso(new Date());
 
 window.DB={
   data,iso,toMin,toHM,uid,addMonth,
-  save(){try{localStorage.setItem(KEY,JSON.stringify(this.data));return true}catch(e){return false}},
+  save(){ensure(this.data);try{localStorage.setItem(KEY,JSON.stringify(this.data));return true}catch(e){return false}},
   /* traz para a memória o que outra aba gravou (sem trocar o objeto, as telas continuam apontando para ele) */
-  refresh(){const f=load();if(!f)return false;Object.keys(this.data).forEach(k=>{if(!(k in f))delete this.data[k]});Object.assign(this.data,f);return true},
+  refresh(){const f=load();if(!f)return false;ensure(f);Object.keys(this.data).forEach(k=>{if(!(k in f))delete this.data[k]});Object.assign(this.data,f);return true},
   /* estados que vencem com o tempo: pausa, cancelamento e troca de plano agendados */
   normalize(){
     const t=todayIso();let ch=false;
@@ -176,6 +189,17 @@ window.DB={
     if(!Array.isArray(d.roles.perms))bad('permissões');
     const im=o.images||{};Object.values(im).forEach(u=>{if(!IMG.test(u))bad('imagens')});localStorage.setItem(KEY,JSON.stringify(o.db));localStorage.setItem(IMGKEY,JSON.stringify(o.images||{}))},
   img:{get:id=>imgs[id]||null,set(id,url){imgs[id]=url;try{localStorage.setItem(IMGKEY,JSON.stringify(imgs));return true}catch(e){delete imgs[id];return false}},del(id){delete imgs[id];try{localStorage.setItem(IMGKEY,JSON.stringify(imgs))}catch(e){}}},
+
+  /* ===== WhatsApp: links individuais e caixa de saída (o envio real é feito pelo servidor) ===== */
+  link(a){return location.origin+location.pathname.replace(/[^/]*$/,'')+'confirmar.html?t='+a.tok},
+  byToken(t){return /^[a-z2-9]{15}$/.test(t||'')?this.data.appts.find(a=>a.tok===t)||null:null},
+  _out(m){const O=this.data.outbox;O.push({id:uid(),t:Date.now(),...m});if(O.length>80)O.splice(0,O.length-80);this.save()},
+  /* mensagem ao cliente a partir do modelo editável no painel: confirm, move, cancel, r24, r2 */
+  notify(kind,a){const d=this.data,m=d.messages[kind],c=d.clients.find(x=>x.id===a.cid);if(!d.bot.client||!m||!m.on||!c)return null;
+    const v={nome:c.name.split(' ')[0],servico:a.svc,data:a.date.slice(8)+'/'+a.date.slice(5,7),hora:a.start,link:this.link(a)};
+    const txt=m.txt.replace(/\{(\w+)\}/g,(x,k)=>v[k]??x);this._out({to:'client',name:c.name,phone:c.phone,kind,txt,aid:a.id});return txt},
+  /* aviso para o WhatsApp do barbeiro/equipe (desligável quando há recepção) */
+  notifyStaff(ev,txt){const b=this.data.bot;if(!b.staff||b[ev]===false)return null;this._out({to:'staff',name:'Equipe',kind:ev,txt});return txt},
 
   /* ===== regras de negócio compartilhadas (site, área do cliente e painel usam as mesmas) ===== */
   plan(id){return this.data.plans.find(p=>p.id===id)||{id,n:'(plano excluído)',p:0,days:[],quota:'',gap:0,perks:'—',on:false}},

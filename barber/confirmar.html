@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR" class="guard">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="guard.js"></script>
+<title>Seu horário | Farias Barbearia</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#090e26">
+<link rel="stylesheet" href="site.css">
+<style>
+body{min-height:100vh}
+.cf{max-width:520px;margin:0 auto;padding:28px 16px 60px}
+.cf-logo{display:block;width:170px;height:auto;margin:0 auto 20px}
+.cf-card{background:var(--card);border:1px solid var(--line-2);border-radius:24px;padding:26px 22px}
+.cf-card h1{font-family:"Bebas Neue";font-weight:400;font-size:40px;line-height:1;margin:6px 0 8px}
+.cf-card p{color:var(--muted);font-size:15px}
+.cf-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:4px 11px}
+.cf-st.pend{color:#f2c94c;background:rgba(242,201,76,.12)}.cf-st.conf{color:#7fd6a8;background:rgba(127,214,168,.12)}.cf-st.off{color:var(--muted);background:rgba(255,255,255,.06)}
+.cf-rows{margin:18px 0;border-top:1px solid var(--line)}
+.cf-rows div{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--muted)}
+.cf-rows b{color:var(--txt);text-align:right;font-variant-numeric:tabular-nums}
+.cf-acts{display:grid;gap:10px}
+.cf-acts .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cf-acts .btn{width:100%}
+.btn-bad{border:1px solid rgba(228,109,109,.4);color:#e46d6d;background:transparent}
+.btn-bad:hover{background:rgba(228,109,109,.1)}
+.cf-note{font-size:13px;color:var(--dim);margin-top:14px;text-align:center}
+.cf-note a{color:var(--teal-2);text-decoration:underline}
+.cf-sub{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:20px 0 10px}
+.cf-msg{border-radius:12px;padding:11px 14px;font-size:14px;margin-bottom:14px;background:rgba(127,214,168,.1);color:#bfeed6}
+.cf-msg.bad{background:rgba(228,109,109,.1);color:#f0a9a9}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<main id="main" class="cf">
+  <a href="index.html" translate="no"><img class="cf-logo" src="logo-h.webp" alt="Farias Barbearia" width="560" height="285"></a>
+  <div class="cf-card" id="card" aria-live="polite"></div>
+  <p class="cf-note">Este link é só seu: quem abrir consegue alterar este horário. Não compartilhe.</p>
+</main>
+<script src="store.js"></script>
+<script src="confirmar.js"></script>
+</body>
+</html>

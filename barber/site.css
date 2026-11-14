@@ -694,3 +694,15 @@ table,time,.slot,.svc .pr,.hours,.wslots,.kpi,.confirm,.price,.stats b,.dbox b{f
 .modal,.mbox,.lb{overscroll-behavior:contain}
 .skip{position:absolute;left:12px;top:-60px;z-index:200;background:#eef1f7;color:#0b1124;font-weight:600;font-size:14px;padding:10px 16px;border-radius:10px}
 .skip:focus{top:12px}
+/* ===== proteção de conteúdo (ver guard.js) ===== */
+html.guard body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html.guard input,html.guard textarea,html.guard select{-webkit-user-select:text;user-select:text}
+html.guard img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+/* ===== agendar: quem está agendando + prévia do WhatsApp ===== */
+[hidden]{display:none!important}
+.bwho{max-width:860px;margin:0 auto 14px;font-size:14px;color:var(--muted);text-align:center}
+.bwho a,.bwho button{color:var(--teal-2);background:none;border:0;font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:24px}
+.wa-demo{margin:22px auto 0;max-width:420px;text-align:left}
+.wa-demo small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;text-align:center}
+.wa-b{background:#0f3d2e;color:#e7f5ee;border-radius:14px 14px 4px 14px;padding:12px 14px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.wa-b a{color:#8fe3bd;text-decoration:underline}

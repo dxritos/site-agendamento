@@ -164,6 +164,15 @@ renderWeek();
 /* ===== agendamento ===== */
 if($('#svclist')){
   const st={cat:'cab',svc:null,day:null,time:null,step:1};
+  // quem está agendando: cliente que entrou (ME) ou visitante avulso. A aba do plano só existe para assinante em dia.
+  let ME=null;try{ME=db.clients.find(c=>c.id===localStorage.getItem('farias_me'))||null}catch(e){}
+  const SUB=ME&&DB.activeSub(ME.id),MEMBER=!!(SUB&&SUB.status==='ok');
+  if(!MEMBER){const t=$('#svctabs [data-c="ass"]');if(t)t.remove()}
+  const who=$('#bwho');if(who)who.innerHTML=ME
+    ?`Agendando como <b>${esc(ME.name)}</b>${MEMBER?' · assinante '+esc(DB.plan(SUB.plan).n):SUB?` · <a href="assinante.html">assinatura ${SUB.status==='late'?'com pagamento pendente':'pausada'}: regularize para usar o plano</a>`:''} · <button type="button" id="bout">não sou eu</button>`
+    :'Agendamento avulso, sem login. <a href="entrar.html?next=agendar">Tenho assinatura: entrar</a>';
+  if($('#bout'))$('#bout').onclick=()=>{try{localStorage.removeItem('farias_me');sessionStorage.removeItem('farias_guest')}catch(e){}location.href='entrar.html?next=agendar'};
+  if($('#blead'))$('#blead').textContent=MEMBER?'Escolha o serviço e o melhor horário. O que está no seu plano sai por R$ 0.':'Escolha o serviço e o melhor horário. O pagamento é na barbearia.';
   const validDay=d=>openDay(d)&&(!st.svc||!st.svc.plan||PLAN_DAYS.includes(d.getDay()));
   const dayLabel=i=>{const d=days[i];return `${i===0?'Hoje':WD[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`};
   const codeIns=$$('#code input');codeIns.forEach((el,i)=>{el.setAttribute('aria-label',`Dígito ${i+1} de 6`);if(i===0)el.setAttribute('autocomplete','one-time-code')});
@@ -194,7 +203,7 @@ if($('#svclist')){
   function update(){
     const ok=(st.step===1&&st.svc)||(st.step===2&&st.time)||(st.step===3&&phoneNow().length===11&&$('#bname').value.trim().length>=2)||(st.step===4&&codeIns.every(x=>x.value));
     const nx=$('#next');nx.disabled=!ok;
-    nx.textContent=st.step===3?'Receber código no WhatsApp':st.step===4?'Confirmar agendamento':'Continuar';
+    nx.textContent=st.step===3?(ME?'Confirmar agendamento':'Receber código no WhatsApp'):st.step===4?'Confirmar agendamento':'Continuar';
     nx.style.display=st.step===5?'none':'';
     $('#back').style.display=st.step>1&&st.step<5?'':'none';
     const vs=Math.min(st.step,3);
@@ -206,7 +215,8 @@ if($('#svclist')){
       <div class="row"><span>Quando</span><b>${dayLabel(st.day)} · ${esc(st.time)}</b></div><div class="row"><span>Duração</span><b>${st.svc.t} min</b></div>
       <div class="row"><span>Valor</span><b>${st.svc.plan?'R$ 0,00 (plano)':brl(priceNow())+(priceNow()<st.svc.p?' <small style="color:var(--teal-2);font-weight:500">preço de assinante</small>':'')}</b></div>`;
     if(st.step===4)$('#otptel').textContent=$('#btel').value;
-    if(st.step===5)$('#donetxt').textContent=`${st.svc.n} · ${dayLabel(st.day)} às ${st.time}. A confirmação chega no seu WhatsApp.`;
+    if(st.step===5){$('#donetxt').textContent=`${st.svc.n} · ${dayLabel(st.day)} às ${st.time}. A confirmação chega no seu WhatsApp.`;
+      const w=$('#wademo');if(w&&lastMsg){w.hidden=false;$('#wabubble').innerHTML=esc(lastMsg).replace(/(https?:\/\/\S+)/,'<a href="$1">$1</a>')}}
   }
   function saveBooking(){
     DB.refresh();
@@ -214,16 +224,22 @@ if($('#svclist')){
     let c=db.clients.find(x=>x.phone===phone);const isNew=!c;
     if(isNew)c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:mo()};
     const svc=st.svc.base||st.svc.n,ds=DB.iso(days[st.day]);
-    return DB.mutateMany(['clients','appts'],d=>{if(isNew)d.clients.push(c);d.appts.push({id:DB.uid(),date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:!!st.svc.plan,status:'conf',note:'',origin:'site'})},
+    const aid=DB.uid();
+    const ok=DB.mutateMany(['clients','appts'],d=>{if(isNew)d.clients.push(c);d.appts.push({id:aid,date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:!!st.svc.plan,status:'pend',note:'',origin:'site'})},
       `Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
+    // WhatsApp: confirmação com o link individual para o cliente e aviso para o barbeiro
+    if(ok){const a=db.appts.find(x=>x.id===aid);lastMsg=DB.notify('confirm',a);
+      DB.notifyStaff('evNew',`Novo agendamento: ${c.name} · ${svc} · ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}${a.plan?' (assinante)':' · '+brl(a.price)}`)}
+    return ok;
   }
+  let lastMsg=null;
   function avulsoOf(base){return base==='Corte + Barba'?{n:'Corte + Barba',d:'Avulso',p:svcById('corte').p+svcById('barba').p,t:60}:{...(SVC.cab.find(x=>x.n===svcById('corte').n)||{n:'Corte',p:svcById('corte').p,t:45})}}
-  function planFail(msg){
+  function planFail(msg,box='#bblock'){
     const av=avulsoOf(st.svc.base);
-    $('#bblock').innerHTML=`${esc(msg)}<span class="bfix"><button type="button" class="btn btn-primary btn-sm" id="bav">Agendar como avulso · ${brl(av.p)}</button><a class="btn btn-ghost btn-sm" href="index.html#planos">Conhecer os planos</a></span>`;
+    $(box).innerHTML=`${esc(msg)}<span class="bfix"><button type="button" class="btn btn-primary btn-sm" id="bav">Agendar como avulso · ${brl(av.p)}</button><a class="btn btn-ghost btn-sm" href="index.html#planos">Conhecer os planos</a></span>`;
     $('#bav').onclick=()=>{st.svc=av;st.cat='cab';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='cab');x.setAttribute('aria-pressed',x.dataset.c==='cab')});
       if(!DB.freeSlots(DB.iso(days[st.day]),av.t).includes(st.time)){st.step=2;st.time=null;renderDays()}
-      $('#bblock').textContent='';renderSvc();update()};
+      $(box).textContent='';renderSvc();update()};
   }
   $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';
     if(st.step===3||st.step===4){DB.refresh();const c=clientNow();
@@ -232,6 +248,12 @@ if($('#svclist')){
       if(st.svc.plan){const err=c?DB.planCheck(c.id,DB.iso(days[st.day]),st.svc.base):'Este número não tem assinatura ativa.';if(err){back();planFail(err);return}}}
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
     if(st.step===1)renderDays();
+    // assinante: as regras do plano (dias, saldo, intervalo) são conferidas já ao escolher o horário, não no fim
+    if(st.step===2&&st.svc.plan&&ME){DB.refresh();const err=DB.planCheck(ME.id,DB.iso(days[st.day]),st.svc.base);if(err){planFail(err,'#bblock2');return}}
+    // quem já entrou não precisa confirmar o WhatsApp de novo
+    if(st.step===3&&ME){if(!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
+      if(!saveBooking()){$('#bblock').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Farias.';return}
+      st.step=5;update();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'});return}
     if(st.step===4&&!saveBooking()){$('#bblock2').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Farias.';return}
     st.step++;if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
   $('#back').onclick=()=>{st.step--;update()};
@@ -242,8 +264,8 @@ if($('#svclist')){
   // vindo da página de horários: ?d=índice&t=HH:MM (validado)
   const q=new URLSearchParams(location.search);
   if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.svc=SVC.cab[0]||null;if(st.svc){st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}}
-  if(q.get('cat')==='ass'){st.cat='ass';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='ass');x.setAttribute('aria-pressed',x.dataset.c==='ass')})}
-  try{const me=db.clients.find(c=>c.id===localStorage.getItem('farias_me'));if(me){$('#bname').value=me.name;$('#btel').value=maskPhone(me.phone)}}catch(e){}
+  if(q.get('cat')==='ass'&&MEMBER){st.cat='ass';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='ass');x.setAttribute('aria-pressed',x.dataset.c==='ass')})}
+  if(ME){$('#bname').value=ME.name;$('#btel').value=maskPhone(ME.phone);$('#bname').readOnly=$('#btel').readOnly=true;const n=$('#bnote');if(n)n.textContent='Seus dados vêm do seu cadastro. A confirmação chega no seu WhatsApp.'}
   renderSvc();update();
   // outra aba mudou a agenda: atualiza os horários livres
   window.onDBChange=()=>{if(st.step<=2){renderDays()}};

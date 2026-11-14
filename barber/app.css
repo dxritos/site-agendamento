@@ -150,3 +150,8 @@ table,time,.slot,.svc .pr,.hours,.wslots,.kpi,.confirm,.price,.stats b,.dbox b{f
 .modal,.mbox,.lb{overscroll-behavior:contain}
 .skip{position:absolute;left:12px;top:-60px;z-index:200;background:#eef1f7;color:#0b1124;font-weight:600;font-size:14px;padding:10px 16px;border-radius:10px}
 .skip:focus{top:12px}
+/* ===== proteção de conteúdo (ver guard.js) ===== */
+html.guard body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html.guard input,html.guard textarea,html.guard select{-webkit-user-select:text;user-select:text}
+html.guard img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+[hidden]{display:none!important}

@@ -3,6 +3,12 @@ const $=s=>document.querySelector(s);
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
 // marca o campo inválido e leva o foco até ele
 const bad=el=>{el.setAttribute("aria-invalid","true");el.focus();el.addEventListener("input",()=>el.removeAttribute("aria-invalid"),{once:true})};
+// vindo do "Agendar": mostra a opção de seguir sem login e, depois de entrar, volta para o agendamento
+const Q=new URLSearchParams(location.search),NEXT=Q.get('next')==='agendar';
+const fwd=extra=>{const p=new URLSearchParams(extra||'');['d','t'].forEach(k=>{const v=Q.get(k)||'';if(/^[\d:]{1,5}$/.test(v))p.set(k,v)});const q=p.toString();return 'agendar.html'+(q?'?'+q:'')};
+const dest=()=>NEXT?fwd():'assinante.html';
+if(NEXT){$('.roles').hidden=true;$('#guestbox').hidden=false;$('#guest').href=fwd('avulso=1');
+  $('#s1-t').textContent='Tem assinatura?';$('#s1-l').textContent='Entre com seu WhatsApp para usar o plano no agendamento. Enviamos um código, sem senha.'}
 // alterna cliente / equipe
 document.querySelectorAll('.role').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.role').forEach(x=>x.classList.toggle('on',x===b));
@@ -28,11 +34,11 @@ $('#verify').onclick=()=>{if(!ins.every(x=>x.value)){$('#code').classList.add('e
   const phone=$('#tel').value.replace(/\D/g,'');let c=DB.data.clients.find(x=>x.phone===phone);
   if(!c){$('#s2').classList.remove('on');$('#s3').classList.add('on');$('#nm').focus();$('#verify').textContent='Entrar';return}
   try{localStorage.setItem('farias_me',c.id)}catch(e){}
-  setTimeout(()=>location.href='assinante.html',400)};
+  setTimeout(()=>location.href=dest(),400)};
 $('#nm-ok').onclick=()=>{const name=$('#nm').value.trim();if(name.length<2){$("#e4").textContent="Digite seu nome.";bad($("#nm"));return}
   const phone=$('#tel').value.replace(/\D/g,''),c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][new Date().getMonth()]+'/'+String(new Date().getFullYear()).slice(2)};
   DB.mutate('clients',L=>L.push(c),`${name} criou conta pelo site`,'Clientes','Site');try{localStorage.setItem('farias_me',c.id)}catch(e){}
-  $('#nm-ok').textContent='Entrando…';setTimeout(()=>location.href='assinante.html',400)};
+  $('#nm-ok').textContent='Entrando…';setTimeout(()=>location.href=dest(),400)};
 $('#nm').onkeydown=e=>{if(e.key==='Enter')$('#nm-ok').click()};
 $('#change').onclick=()=>{$('#s2').classList.remove('on');$('#s1').classList.add('on');ins.forEach(x=>x.value='')};
 $('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};

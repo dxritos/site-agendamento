@@ -1,8 +1,10 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="guard">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="guard.js"></script>
+<script src="gate.js"></script>
 <title>Agendar horário | Farias Barbearia</title>
 <meta name="description" content="Agende seu corte com o Farias em menos de um minuto.">
 <link rel="preload" href="fonts/bebas-neue.woff2" as="font" type="font/woff2" crossorigin>
@@ -43,13 +45,14 @@
     <div class="crumb"><a href="index.html">Início</a><span>/</span>Agendar</div>
     <div class="eyebrow">Agendamento online</div>
     <h1 class="bebas">Agende seu horário</h1>
-    <p>Escolha o serviço e o melhor horário. Assinante? O serviço do plano sai por R$ 0.</p>
+    <p id="blead">Escolha o serviço e o melhor horário.</p>
   </div>
 </section>
 
 <!-- AGENDAR -->
 <section id="agendar" style="padding-top:10px">
   <div class="wrap">
+    <p class="bwho" id="bwho"></p>
     <div class="book">
       <div class="book-steps" id="bsteps"><div class="on"><i>1</i>Serviço</div><div><i>2</i>Dia e horário</div><div><i>3</i>Confirmar</div></div>
       <div class="book-body">
@@ -73,7 +76,7 @@
               <input class="inp" id="bname" placeholder="Nome completo" aria-label="Nome completo" autocomplete="name">
               <input class="inp" id="btel" inputmode="numeric" aria-label="WhatsApp com DDD" autocomplete="tel-national" placeholder="WhatsApp — (94) 9 0000-0000">
               <p class="berr" id="bblock"></p>
-              <p style="font-size:12.5px;color:var(--dim)">Você recebe um código no WhatsApp para confirmar — sem senha. Ao continuar, você concorda com a <a href="privacidade.html" style="color:var(--teal-2)">Política de Privacidade</a>.</p>
+              <p id="bnote" style="font-size:12.5px;color:var(--dim)">Você recebe um código no WhatsApp para confirmar — sem senha. Ao continuar, você concorda com a <a href="privacidade.html" style="color:var(--teal-2)">Política de Privacidade</a>.</p>
             </div>
           </div>
         </div>
@@ -86,7 +89,8 @@
           </div>
         </div>
         <div class="pane" id="p5">
-          <div class="done"><div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div><h3 class="bebas">Horário confirmado!</h3><p id="donetxt"></p></div>
+          <div class="done"><div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div><h3 class="bebas">Horário marcado!</h3><p id="donetxt"></p>
+            <div class="wa-demo" id="wademo" hidden><small>Mensagem enviada ao seu WhatsApp (demonstração)</small><div class="wa-b" id="wabubble"></div></div></div>
         </div>
       </div>
       <div class="book-foot">
