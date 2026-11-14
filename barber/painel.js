@@ -102,7 +102,8 @@ function vHoje(){
     pend.length?`<div class="al"><div class="ic" style="background:var(--warn-bg);color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><b>${plural(pend.length,'cliente ainda não confirmou','clientes ainda não confirmaram')}</b><span>${pend.slice(0,3).map(a=>esc(cname(a.cid))+' · '+fmtD(a.date)+' '+a.start).join(' · ')}</span></div></div>`:'',
     db.content.notice_on?`<div class="al"><div class="ic" style="background:var(--teal-bg);color:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8v18L3 13z"/></svg></div><div><b>Aviso ativo no site</b><span>${esc(db.content.notice)}</span><br><button class="btn btn-ghost btn-sm" data-go="conteudo">Editar</button></div></div>`:''].filter(Boolean).join('');
   return `<div class="top"><div><h1>${hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite'}, Farias</h1><p>${WDF[today.getDay()]}, ${today.getDate()} de ${MOF[today.getMonth()]}${hol?' · Feriado: '+esc(hol.name):''}</p></div>
-   <div class="acts"><button class="btn btn-ghost" data-act="block">Bloquear horário</button><button class="btn btn-primary" data-act="new-appt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Novo horário</button></div></div>
+   <div class="acts"><button class="btn btn-ghost" data-go="config">Fechar a agenda</button><button class="btn btn-ghost" data-act="block">Bloquear horário</button><button class="btn btn-primary" data-act="new-appt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Novo horário</button></div></div>
+  ${closedNow().map(x=>`<div class="card closedb top1"><div><span><b>${x.label}</b>${esc(x.why)}. Ninguém consegue marcar pelo site.</span><button class="btn btn-primary btn-sm" data-act="reopen" data-k="${x.k}" data-id="${x.id}">Reabrir agenda</button></div></div>`).join('')}
   ${tipOff?'':`<div class="card tip"><div><b>Por onde começar</b><ol><li>Veja aqui quem é o próximo cliente.</li><li>Terminou o corte? Toque em <b>Concluir atendimento</b>.</li><li>Cliente ligou? Use <b>Novo horário</b>.</li></ol><span>Financeiro, serviços, site e configurações ficam em <b>Mais</b>, no menu.</span></div><button class="btn btn-ghost btn-sm" data-act="tip-off">Entendi</button></div>`}
   <div class="g21">
     <div>${nextCard}
@@ -131,12 +132,12 @@ document.addEventListener('click',e=>{
     const nextNow=L=>{const n=L.filter(y=>y.date===TODAY&&y.status==='conf').sort((p,q)=>p.start.localeCompare(q.start))[0];if(n&&!L.some(y=>y.date===TODAY&&y.status==='now'))n.status='now'};
     if(st==='conf'){change('appts',L=>{L.find(y=>y.id===a.id).status='conf'},`${cname(a.cid)}: presença confirmada (${fmtD(a.date)} ${a.start})`,'Agenda');return}
     if(st==='miss'){mutMany(['appts','clients'],d=>{d.appts.find(y=>y.id===a.id).status='miss';const c=d.clients.find(y=>y.id===a.cid);if(c)c.misses=(c.misses||0)+1},`${cname(a.cid)}: falta registrada (${fmtD(a.date)} ${a.start})`,'Agenda');return}
-    if(a.plan||!a.price){change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído (${fmtD(a.date)} ${a.start})`,'Agenda');return}
+    if(a.plan||!a.price){change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído (${fmtD(a.date)} ${a.start})`,'Agenda');DB.notify('thanks',a);return}
     const M=['Dinheiro','Pix','Maquininha (débito)','Maquininha (crédito)'];
     modal(`<div class="eyebrow">Concluir atendimento</div><h3>${esc(cname(a.cid))}</h3><p>${esc(a.svc)} · ${money(a.price)}. Como o cliente pagou?</p><div class="opts4" id="cp-met" style="margin-top:16px">${M.map((m,i)=>`<div class="opt pay ${i===0?'on':''}" role="radio" tabindex="0" aria-checked="${i===0}" data-payic="${m}" data-v="${m}">${payIcon(m)}${m.replace('Maquininha ','').replace(/[()]/g,'')}</div>`).join('')}</div>
       <div class="mact"><button class="btn btn-ghost" id="cp-later">Concluir sem pagamento</button><button class="btn btn-primary btn-pay" id="cp-ok" data-paybtn>${payIcon('Dinheiro')}Concluir e registrar</button></div>`);
-    $('#cp-ok').onclick=()=>{const m=$('#cp-met .opt.on').dataset.v;closeModal();mutMany(['appts','tx'],d=>{d.appts.find(y=>y.id===a.id).status='done';nextNow(d.appts);d.tx.unshift({id:DB.uid(),date:TODAY,cid:a.cid,desc:a.svc,method:m,value:a.price,kind:'avulso',status:'ok'})},`${cname(a.cid)}: atendimento concluído e ${money(a.price)} recebido (${m})`,'Agenda')};
-    $('#cp-later').onclick=()=>{closeModal();change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído sem pagamento registrado`,'Agenda')}}
+    $('#cp-ok').onclick=()=>{const m=$('#cp-met .opt.on').dataset.v;closeModal();mutMany(['appts','tx'],d=>{d.appts.find(y=>y.id===a.id).status='done';nextNow(d.appts);d.tx.unshift({id:DB.uid(),date:TODAY,cid:a.cid,desc:a.svc,method:m,value:a.price,kind:'avulso',status:'ok'})},`${cname(a.cid)}: atendimento concluído e ${money(a.price)} recebido (${m})`,'Agenda');DB.notify('thanks',a)};
+    $('#cp-later').onclick=()=>{closeModal();change('appts',L=>{L.find(y=>y.id===a.id).status='done';nextNow(L)},`${cname(a.cid)}: atendimento concluído sem pagamento registrado`,'Agenda');DB.notify('thanks',a)}}
   const ed=e.target.closest('[data-edit]');if(ed)editAppt(ed.dataset.edit);
   const ac=e.target.closest('[data-act]');if(ac&&ACT[ac.dataset.act])ACT[ac.dataset.act](ac);
 });
@@ -445,10 +446,12 @@ document.addEventListener('change',e=>{const up=e.target.dataset&&e.target.datas
     const g=db.gallery.find(x=>x.id===up);change('gallery',L=>{saveGalFields(L);L.find(x=>x.id===up).img=iid},`Foto enviada para "${g.t}"`,'Conteúdo')};img.src=rd.result};rd.readAsDataURL(file)});
 
 /* ================= MENSAGENS ================= */
-const VARS=['{nome}','{servico}','{data}','{hora}','{plano}','{valor}','{link}','{codigo}'];
-const SAMPLE={nome:'Lucas',servico:'Corte + Barba',data:'14/11',hora:'15:30',plano:'Corte + Barba Ilimitado',valor:'200,00',link:'farias.bar/r/x7k',codigo:'482915',qtd:'9'};
-const fillVars=t=>t.replace(/\{(\w+)\}/g,(m,k)=>SAMPLE[k]??m);
-let waTab='robo';const chat=[];
+const VARS=['{nome}','{servico}','{data}','{hora}','{plano}','{valor}','{link}','{site}','{codigo}'];
+const SAMPLE={site:'farias.bar',nome:'Lucas',servico:'Corte + Barba',data:'14/11',hora:'15:30',plano:'Corte + Barba Ilimitado',valor:'200,00',link:'farias.bar/r/x7k',codigo:'482915',qtd:'9'};
+const fillVars=t=>'Bot:\n'+t.replace(/\{(\w+)\}/g,(m,k)=>SAMPLE[k]??m);
+let waTab='robo',botFrom='';const chat=[];
+/* no simulador, as opções numeradas da última resposta viram botões, como a lista do WhatsApp */
+const chatMsg=(m,last)=>m.me?esc(m.t):last?waFmt(m.t).replace(/(?:^|<br>)(\d{1,2})\. ([^<]+)/g,(x,n,t)=>`<button class="copt" data-bot="${n}">${n}. ${t}</button>`):waFmt(m.t);
 const waFmt=t=>esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
 const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Próximo cliente','15 min antes: nome, serviço e observações.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
 function vMensagens(){
@@ -457,8 +460,8 @@ function vMensagens(){
    <div class="filters" role="tablist">${tabs.map(([k,n])=>`<button class="fbtn ${waTab===k?'on':''}" role="tab" aria-selected="${waTab===k}" data-wa="${k}">${n}</button>`).join('')}</div>`;
   if(waTab==='msgs')return head+`<div class="card box">${Object.entries(db.messages).map(([k,m])=>`<div class="msg"><div><div class="hd"><b>${esc(m.name)}</b>${sw('m-on-'+k,m.on,m.lock)}</div><textarea class="inp" id="m-${k}" data-k="${k}" rows="3">${esc(m.txt)}</textarea><div class="chips-var" style="margin-top:8px">${VARS.map(v=>`<button data-ins="${v}" data-t="m-${k}">${v}</button>`).join('')}</div>${m.lock?'<p class="hint" style="margin-top:6px">Obrigatória para o login.</p>':''}</div><div class="bubble ${m.on?'':'off'}" id="pv-${k}">${esc(fillVars(m.txt))}<small>agora ✓✓</small></div></div>`).join('')}</div>`;
   if(waTab==='out')return head+`<div class="card box"><h3>Mensagens geradas <small>${db.outbox.length?'<button class="btn btn-ghost btn-sm" data-act="out-clear">Limpar</button>':''}</small></h3>
-    <p class="hint" style="margin-bottom:12px">Neste protótipo as mensagens não saem de verdade: ficam aqui para conferência. O link de cada cliente funciona, pode abrir.</p>
-    ${db.outbox.slice().reverse().map(m=>`<div class="outm"><div class="outh"><b>${m.to==='staff'?'Para a equipe':'Para '+esc(m.name)}</b><span>${m.to==='staff'?'':esc(phoneFmt(m.phone))+' · '}${fmtD(DB.iso(new Date(m.t)))} ${TF.format(new Date(m.t))}</span></div><div class="bubble">${waFmt(m.txt)}</div></div>`).join('')||'<p class="empty">Nenhuma mensagem ainda. Marque um horário pelo site para ver.</p>'}</div>`;
+    <p class="hint" style="margin-bottom:12px">Neste protótipo as mensagens não saem de verdade: ficam aqui para conferência. As programadas saem 2 h antes do horário. O link de cada cliente funciona, pode abrir.</p>
+    ${db.outbox.slice().reverse().map(m=>`<div class="outm"><div class="outh"><b>${m.to==='staff'?'Para a equipe':'Para '+esc(m.name)} ${m.at>Date.now()?'<span class="chip c-warn">Programada</span>':''}</b><span>${m.to==='staff'?'':esc(phoneFmt(m.phone))+' · '}${m.at>Date.now()?'sai em ':''}${fmtD(DB.iso(new Date(m.at||m.t)))} ${TF.format(new Date(m.at||m.t))}</span></div><div class="bubble">${waFmt(m.txt)}</div></div>`).join('')||'<p class="empty">Nenhuma mensagem ainda. Marque um horário pelo site para ver.</p>'}</div>`;
   return head+`<div class="g11">
    <div>
     <div class="card box"><h3>Robô da equipe ${sw('bt-staff',b.staff)}</h3><p class="hint">Avisos e comandos no WhatsApp do barbeiro. Desligue se a recepção cuida da agenda.</p>
@@ -467,16 +470,17 @@ function vMensagens(){
       <button class="btn btn-ghost btn-sm" data-wa="msgs" style="margin-top:12px">Editar os textos</button></div>
    </div>
    <div class="card box"><h3>Teste o robô <small>como se fosse o WhatsApp</small></h3>
-     <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map(m=>`<div class="cb ${m.me?'me':''}">${m.me?esc(m.t):waFmt(m.t)}</div>`).join(''):'<div class="cb">'+waFmt('Oi, Farias! Envie *ajuda* para ver o que eu faço.')+'</div>'}</div>
-     <div class="chips-var" style="margin:10px 0">${['hoje','próximo','livres amanhã','resumo','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
-     <div class="fix"><input class="inp" id="bot-in" placeholder="Ex.: agendar João corte amanhã 15:00" aria-label="Mensagem para o robô" autocomplete="off" ${b.staff?'':'disabled'}><button class="btn btn-primary btn-sm" data-act="bot-send" ${b.staff?'':'disabled'}>Enviar</button></div>
+     <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map((m,i)=>`<div class="cb ${m.me?'me':''}">${chatMsg(m,i===chat.length-1)}</div>`).join(''):'<div class="cb">'+waFmt('Bot:\nEnvie *menu* para escolher uma opção, ou escreva um comando.')+'</div>'}</div>
+     <div class="chips-var" style="margin:10px 0">${['menu','próximo','ok pix','agendar corte Lucas às 15','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
+     <div class="fl" style="margin-bottom:10px"><label>Enviar como</label><select class="inp" id="bot-from"><option value="">Farias (número da equipe)</option><option value="94900001234" ${botFrom?'selected':''}>Número desconhecido (cliente)</option></select></div>
+     <div class="fix"><input class="inp" id="bot-in" placeholder="Ex.: agendar corte João às 15" aria-label="Mensagem para o robô" autocomplete="off" ${b.staff?'':'disabled'}><button class="btn btn-primary btn-sm" data-act="bot-send" ${b.staff?'':'disabled'}>Enviar</button></div>
      <p class="hint" style="margin-top:10px">Os comandos mexem na agenda de verdade deste protótipo. O envio pelo WhatsApp real depende de ligar a conta do WhatsApp Business no servidor.</p></div>
   </div>`;
 }
-function botSend(t){t=(t||'').trim();if(!t)return;chat.push({me:1,t},{t:Bot.run(t)});if(chat.length>40)chat.splice(0,chat.length-40);render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight;const i=$('#bot-in');if(i)i.focus()}
+function botSend(t){t=(t||'').trim();if(!t)return;chat.push({me:1,t},{t:Bot.run(t,botFrom)});if(chat.length>40)chat.splice(0,chat.length-40);render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight;const i=$('#bot-in');if(i)i.focus()}
 document.addEventListener('click',e=>{const w=e.target.closest('[data-wa]');if(w){waTab=w.dataset.wa;render();return}const q=e.target.closest('[data-bot]');if(q)botSend(q.dataset.bot)});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='bot-in'){e.preventDefault();botSend(e.target.value)}});
-document.addEventListener('change',e=>{const m=/^bt-(\w+)$/.exec(e.target.id||'');if(!m)return;const k=m[1],on=e.target.checked,nm=k==='staff'?'Robô da equipe':k==='client'?'Mensagens para o cliente':'Aviso "'+(EV.find(x=>x[0]===k)||[,k])[1]+'"';
+document.addEventListener('change',e=>{if(e.target.id==='bot-from'){botFrom=e.target.value;return}const m=/^bt-(\w+)$/.exec(e.target.id||'');if(!m)return;const k=m[1],on=e.target.checked,nm=k==='staff'?'Robô da equipe':k==='client'?'Mensagens para o cliente':'Aviso "'+(EV.find(x=>x[0]===k)||[,k])[1]+'"';
   change('bot',B=>{B[k]=on},`${nm}: ${on?'ligado':'desligado'}`,'WhatsApp')});
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&db.messages[k]&&$('#pv-'+k))$('#pv-'+k).innerHTML=esc(fillVars(e.target.value))+'<small>agora ✓✓</small>'});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ins]');if(!b)return;const t=$('#'+b.dataset.t),p=t.selectionStart??t.value.length;t.value=t.value.slice(0,p)+b.dataset.ins+t.value.slice(t.selectionEnd??p);t.focus();t.dispatchEvent(new Event('input',{bubbles:true}))});
@@ -491,25 +495,27 @@ const presetOf=r=>db.roles.perms.map((_,i)=>r==='admin'?1:(db.roles[r]||[])[i]?1
 function vEquipe(){
   return `<div class="top"><div><h1>Equipe</h1><p>Quem acessa o painel. As permissões são definidas pessoa por pessoa.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="team-add">+ Adicionar pessoa</button></div></div>
   <div class="card box"><div class="tw"><table><thead><tr><th>Nome</th><th>Perfil</th><th>Acesso</th><th></th></tr></thead><tbody>
-  ${db.team.map(u=>{const n=(u.perms||[]).filter(Boolean).length;return `<tr><td><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${u.id==='u1'?'Administrador (dono)':esc(ROLE[u.role]||ROLE.custom)}<small>${u.id==='u1'?'Acesso total':`${n} de ${db.roles.perms.length} permissões`}</small></td><td>${sw('tmon-'+u.id,u.active,u.id==='u1')}</td><td class="r">${u.id==='u1'?'':`<button class="btn btn-ghost btn-sm" data-act="team-edit" data-id="${u.id}">Permissões</button> <button class="btn btn-danger btn-sm" data-act="team-rm" data-id="${u.id}">Remover</button>`}</td></tr>`}).join('')}
+  ${db.team.map(u=>{const n=(u.perms||[]).filter(Boolean).length;return `<tr><td><b>${esc(u.name)}</b><small>${esc(u.email)}${u.phone?' · '+phoneFmt(u.phone):' · sem WhatsApp'}</small></td><td>${u.id==='u1'?'Administrador (dono)':esc(ROLE[u.role]||ROLE.custom)}<small>${u.id==='u1'?'Acesso total':`${n} de ${db.roles.perms.length} permissões`}</small></td><td>${sw('tmon-'+u.id,u.active,u.id==='u1')}</td><td class="r">${u.id==='u1'?`<button class="btn btn-ghost btn-sm" data-act="team-edit" data-id="${u.id}">Editar</button>`:`<button class="btn btn-ghost btn-sm" data-act="team-edit" data-id="${u.id}">Permissões</button> <button class="btn btn-danger btn-sm" data-act="team-rm" data-id="${u.id}">Remover</button>`}</td></tr>`}).join('')}
   </tbody></table></div><p class="hint" style="margin-top:14px">Para ver ou mudar o que alguém pode fazer, toque em <b>Permissões</b> na linha da pessoa.</p></div>`;
 }
 /* cadastro e edição: nome, e-mail, um modelo pronto e a lista de permissões daquela pessoa */
 function teamForm(u){
-  const isNew=!u,role=u?u.role:'barbeiro',perms=u?u.perms:presetOf('barbeiro');
-  modal(`<div class="eyebrow">Equipe</div><h3>${isNew?'Adicionar pessoa':'Permissões de '+esc(u.name)}</h3><p>${isNew?'Ela recebe um convite por e-mail para criar a senha.':'Ajuste o que esta pessoa pode ver e fazer no painel.'}</p>
+  const isNew=!u,own=!!u&&u.id==='u1',role=u?u.role:'barbeiro',perms=own?presetOf('admin'):u?u.perms:presetOf('barbeiro');
+  modal(`<div class="eyebrow">Equipe</div><h3>${isNew?'Adicionar pessoa':own?'Seus dados':'Permissões de '+esc(u.name)}</h3><p>${isNew?'Ela recebe um convite por e-mail para criar a senha.':'Ajuste o que esta pessoa pode ver e fazer no painel.'}</p>
    <div class="form"><div class="two"><div class="fl"><label>Nome</label><input class="inp" id="tm-name" value="${esc(u?u.name:'')}" autocomplete="off"></div><div class="fl"><label>E-mail</label><input class="inp" id="tm-email" type="email" value="${esc(u?u.email:'')}" autocomplete="off" spellcheck="false"></div></div>
-   <div class="fl"><label>Modelo de permissões</label><select class="inp" id="tm-role">${[['barbeiro','Barbeiro: só a agenda e os clientes'],['recepcao','Recepção: agenda, clientes, assinaturas e pagamentos'],['admin','Administrador: tudo'],['custom','Personalizado']].map(([k,n])=>`<option value="${k}" ${k===role?'selected':''}>${n}</option>`).join('')}</select></div>
-   <div><div class="flt" id="tm-pl">O que esta pessoa pode fazer</div><div class="pgrid" id="tm-perms" role="group" aria-labelledby="tm-pl">${db.roles.perms.map((p,i)=>`<label class="pchk"><input type="checkbox" data-pi="${i}" ${perms[i]?'checked':''}><span>${esc(p)}</span></label>`).join('')}</div></div></div>
-   <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tm-save">${isNew?'Enviar convite':'Salvar permissões'}</button></div>`,true);
+   <div class="fl"><label>WhatsApp (para usar o robô)</label><input class="inp" id="tm-phone" type="tel" inputmode="numeric" autocomplete="off" value="${esc(u&&u.phone?phoneFmt(u.phone):'')}" placeholder="(94) 9 0000-0000"><p class="hint" style="margin-top:6px">Só os números cadastrados aqui têm os comandos do robô. Qualquer outro número recebe as boas-vindas e o link do site.</p></div>
+   <div class="fl"><label>Modelo de permissões</label><select class="inp" id="tm-role" ${own?'disabled':''}>${[['barbeiro','Barbeiro: só a agenda e os clientes'],['recepcao','Recepção: agenda, clientes, assinaturas e pagamentos'],['admin','Administrador: tudo'],['custom','Personalizado']].map(([k,n])=>`<option value="${k}" ${k===role?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div><div class="flt" id="tm-pl">O que esta pessoa pode fazer</div><div class="pgrid" id="tm-perms" role="group" aria-labelledby="tm-pl">${db.roles.perms.map((p,i)=>`<label class="pchk"><input type="checkbox" data-pi="${i}" ${perms[i]?'checked':''} ${own?'disabled':''}><span>${esc(p)}</span></label>`).join('')}</div></div></div>
+   <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tm-save">${isNew?'Enviar convite':own?'Salvar':'Salvar permissões'}</button></div>`,true);
   const boxes=()=>$$('#tm-perms input'),cur=()=>boxes().map(x=>x.checked?1:0);
   $('#tm-role').onchange=()=>{const r=$('#tm-role').value;if(r!=='custom')presetOf(r).forEach((v,i)=>boxes()[i].checked=!!v)};
   boxes().forEach(x=>x.onchange=()=>{const c=JSON.stringify(cur());$('#tm-role').value=['barbeiro','recepcao','admin'].find(r=>JSON.stringify(presetOf(r))===c)||'custom'});
-  $('#tm-save').onclick=()=>{const n=$('#tm-name').value.trim(),em=$('#tm-email').value.trim(),r=$('#tm-role').value,pm=cur();
+  $('#tm-save').onclick=()=>{const n=$('#tm-name').value.trim(),em=$('#tm-email').value.trim(),r=own?'admin':$('#tm-role').value,pm=cur(),ph=$('#tm-phone').value.replace(/\D/g,'');
+    if(ph&&ph.length!==11)return fieldErr('#tm-phone','Use DDD + 9 dígitos');
     if(!n)return fieldErr('#tm-name','Informe o nome');if(!/\S+@\S+\.\S+/.test(em))return fieldErr('#tm-email','Informe um e-mail válido');
     if(!pm.some(Boolean))return fieldErr('#tm-perms','Marque pelo menos uma permissão');closeModal();
-    if(isNew)change('team',L=>L.push({id:'u'+DB.uid(),name:n,email:em,role:r,perms:pm,active:true}),`${n} adicionado(a) à equipe (${ROLE[r]}, ${pm.filter(Boolean).length} permissões)`,'Equipe');
-    else change('team',L=>Object.assign(L.find(x=>x.id===u.id),{name:n,email:em,role:r,perms:pm}),`${n}: permissões atualizadas (${ROLE[r]}, ${pm.filter(Boolean).length} de ${pm.length})`,'Equipe')};
+    if(isNew)change('team',L=>L.push({id:'u'+DB.uid(),name:n,email:em,phone:ph,role:r,perms:pm,active:true}),`${n} adicionado(a) à equipe (${ROLE[r]}, ${pm.filter(Boolean).length} permissões)`,'Equipe');
+    else change('team',L=>Object.assign(L.find(x=>x.id===u.id),{name:n,email:em,phone:ph,role:r,perms:pm}),`${n}: permissões atualizadas (${ROLE[r]}, ${pm.filter(Boolean).length} de ${pm.length})`,'Equipe')};
 }
 document.addEventListener('change',e=>{const t=e.target;
   if(t.id&&t.id.startsWith('tmon-')){const u=db.team.find(x=>x.id===t.id.slice(5));if(!u)return;change('team',L=>{L.find(x=>x.id===u.id).active=t.checked},`${u.name}: acesso ${t.checked?'liberado':'suspenso'}`,'Equipe')}});
@@ -535,6 +541,11 @@ document.addEventListener('click',e=>{const f=e.target.closest('[data-lf]');if(f
 document.addEventListener('input',e=>{if(e.target.id==='log-q'){logQ=e.target.value.toLowerCase();const pos=e.target.selectionStart;render();const i=$('#log-q');i.focus();i.setSelectionRange(pos,pos)}});
 
 /* ================= CONFIGURAÇÕES ================= */
+/* fechamentos: dia inteiro (lista de dias fechados) ou parte do dia (bloqueio marcado como fechamento) */
+function closedList(){const L=db.holidays.filter(h=>h.date>=TODAY).map(h=>({k:'h',id:h.id,date:h.date,why:h.name,now:h.date===TODAY,label:(h.date===TODAY?'Hoje':WD[new Date(h.date+'T00:00').getDay()]+' '+fmtD(h.date))+' · dia todo'}));
+  db.appts.filter(a=>a.status==='block'&&a.closed&&a.date>=TODAY).forEach(a=>L.push({k:'b',id:a.id,date:a.date,why:a.note||'Fechado',now:a.date===TODAY,label:(a.date===TODAY?'Hoje':WD[new Date(a.date+'T00:00').getDay()]+' '+fmtD(a.date))+' · a partir das '+a.start}));
+  return L.sort((x,y)=>x.date.localeCompare(y.date))}
+const closedNow=()=>closedList().filter(x=>x.now).map(x=>({...x,label:'A agenda de hoje está fechada'+(x.k==='b'?' '+x.label.split(' · ')[1]:'')+'. '}));
 function vConfig(){
   const s=db.settings,sel=(id,opts,v)=>`<select class="inp" id="${id}">${opts.map(([val,l])=>`<option value="${val}" ${+val===+v?'selected':''}>${l}</option>`).join('')}</select>`;
   return `<div class="top"><div><h1>Configurações</h1><p>Regras da agenda, feriados e backup.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="cfg-save">Salvar alterações</button></div></div>
@@ -542,12 +553,17 @@ function vConfig(){
    <div>
     <div class="card box"><h3>Horário de funcionamento</h3>${[1,2,3,4,5,6,0].map(d=>{const h=db.hours[d];return `<div class="hrow"><span>${WDF[d]}</span><select class="inp" id="h-a-${d}" ${h?'':'disabled'}>${timeOpts(h?h[0]:'09:00',6*60,22*60,30)}</select><select class="inp" id="h-b-${d}" ${h?'':'disabled'}>${timeOpts(h?h[1]:'19:00',6*60,23*60,30)}</select>${sw('h-on-'+d,!!h)}</div>`}).join('')}
      <div class="hrow" style="margin-top:6px;border-top:1px solid var(--line);padding-top:12px"><span>Almoço</span><select class="inp" id="l-a" ${db.lunch?'':'disabled'}>${timeOpts(db.lunch?db.lunch[0]:'12:00',10*60,15*60,30)}</select><select class="inp" id="l-b" ${db.lunch?'':'disabled'}>${timeOpts(db.lunch?db.lunch[1]:'13:00',10*60,16*60,30)}</select>${sw('l-on',!!db.lunch)}</div></div>
-    <div class="card box"><h3>Fechar a agenda <small>o dia some do agendamento no site</small></h3><div class="form">
-      <div class="two"><div class="fl"><label>De</label><input class="inp" type="date" id="cl-a" value="${TODAY}" min="${TODAY}"></div><div class="fl"><label>Até (opcional)</label><input class="inp" type="date" id="cl-b" min="${TODAY}"></div></div>
+    <div class="card box"><h3>Fechar a agenda <small>some do agendamento no site</small></h3>
+     ${closedNow().length?`<div class="closedb">${closedNow().map(x=>`<div><span><b>${x.label}</b>${esc(x.why)}</span><button class="btn btn-primary btn-sm" data-act="reopen" data-k="${x.k}" data-id="${x.id}">Reabrir</button></div>`).join('')}</div>`:''}
+     <div class="form">
+      <div class="fl"><label>Quando</label><select class="inp" id="cl-when"><option value="today">Hoje, o dia todo</option><option value="rest">O resto de hoje</option><option value="other">Outro dia ou período</option></select></div>
+      <div class="fl" id="cl-rest" hidden><label>A partir de</label><select class="inp" id="cl-from">${timeOpts(DB.toHM(Math.min(23*60,Math.ceil((new Date().getHours()*60+new Date().getMinutes())/15)*15)),6*60,23*60,15)}</select></div>
+      <div class="two" id="cl-other" hidden><div class="fl"><label>De</label><input class="inp" type="date" id="cl-a" value="${DB.iso(addD(today,1))}" min="${TODAY}"></div><div class="fl"><label>Até (opcional)</label><input class="inp" type="date" id="cl-b" min="${TODAY}"></div></div>
       <div class="two"><div class="fl"><label>Motivo</label><select class="inp" id="cl-why">${['Feriado','Folga','Férias','Imprevisto','Outro'].map(m=>`<option>${m}</option>`).join('')}</select></div><div class="fl"><label>Detalhe (aparece no site)</label><input class="inp" id="cl-txt" placeholder="Ex.: Consciência Negra"></div></div>
       <label class="pchk"><input type="checkbox" id="cl-cancel"><span>Cancelar os horários já marcados e avisar os clientes pelo WhatsApp</span></label>
-      <div class="acts"><button class="btn btn-primary btn-sm" data-act="close-add">Fechar a agenda</button><button class="btn btn-ghost btn-sm" data-act="close-today">Fechar hoje</button></div></div>
-     <div class="sec"><h4>Dias fechados</h4><div class="hist-mini" style="max-height:220px">${db.holidays.filter(h=>h.date>=TODAY).sort((a,b)=>a.date.localeCompare(b.date)).map(h=>`<div><span>${WD[new Date(h.date+'T00:00').getDay()]} ${fmtD(h.date)}/${h.date.slice(2,4)} · ${esc(h.name)}</span><button class="btn btn-ghost btn-sm" data-act="hol-rm" data-id="${h.id}">Reabrir</button></div>`).join('')||'<p class="empty">Nenhum dia fechado à frente.</p>'}</div></div></div>
+      <div class="acts"><button class="btn btn-primary btn-sm" data-act="close-add">Fechar a agenda</button></div>
+      <p class="hint">Dá para reabrir a qualquer momento: o dia volta a aparecer no site.</p></div>
+     <div class="sec"><h4>Próximos dias fechados</h4><div class="hist-mini" style="max-height:220px">${closedList().filter(x=>!x.now).map(x=>`<div><span>${x.label} · ${esc(x.why)}</span><button class="btn btn-ghost btn-sm" data-act="reopen" data-k="${x.k}" data-id="${x.id}">Reabrir</button></div>`).join('')||'<p class="empty">Nenhum dia fechado à frente.</p>'}</div></div></div>
    </div>
    <div>
     <div class="card box"><h3>Regras da agenda</h3>
@@ -564,6 +580,7 @@ function vConfig(){
 document.addEventListener('change',e=>{const t=e.target;if(!t.id)return;
   const m=/^h-on-(\d)$/.exec(t.id);if(m){$('#h-a-'+m[1]).disabled=$('#h-b-'+m[1]).disabled=!t.checked}
   if(t.id==='l-on'){$('#l-a').disabled=$('#l-b').disabled=!t.checked}
+  if(t.id==='cl-when'){$('#cl-rest').hidden=t.value!=='rest';$('#cl-other').hidden=t.value!=='other'}
   if(t.id==='bk-imp'&&t.files[0]){const rd=new FileReader();rd.onload=()=>{try{DB.importAll(rd.result);toast('Backup restaurado');setTimeout(()=>location.reload(),600)}catch(err){toast('Arquivo de backup inválido')}};rd.readAsText(t.files[0])}});
 Object.assign(ACT,{
   'cfg-save':()=>{
@@ -577,16 +594,23 @@ Object.assign(ACT,{
     const ns={};['step','minAdv','cancelUntil','tolerance','noShow'].forEach(k=>ns[k]=+$('#cf-'+k).value);
     if(JSON.stringify(ns)!==JSON.stringify(db.settings)){DB.mutate('settings',S=>Object.assign(S,ns),'Regras da agenda alteradas','Configurações');ch.push('regras')}
     DB.save();render();toast(ch.length?'Configurações salvas':'Nada foi alterado')},
-  'close-today':()=>{$('#cl-a').value=TODAY;$('#cl-b').value='';ACT['close-add']()},
-  'close-add':()=>{const a=$('#cl-a').value,b=$('#cl-b').value||a,why=$('#cl-txt').value.trim()||$('#cl-why').value,kill=$('#cl-cancel').checked;
+  'close-add':()=>{const when=$('#cl-when').value,why=$('#cl-txt').value.trim()||$('#cl-why').value,kill=$('#cl-cancel').checked,OPENS=['conf','pend','now'];
+    if(when==='rest'){const from=$('#cl-from').value,h=db.hours[today.getDay()];if(!h)return toast('A barbearia não abre hoje');if(from>=h[1])return fieldErr('#cl-from',`Hoje a agenda encerra às ${h[1]}`);
+      if(db.holidays.some(x=>x.date===TODAY)||db.appts.some(x=>x.date===TODAY&&x.status==='block'&&x.closed))return toast('Hoje já está fechado. Reabra antes para mudar.');
+      const hit=db.appts.filter(x=>x.date===TODAY&&OPENS.includes(x.status)&&x.start>=from);
+      const go1=()=>{mutMany(['appts'],d=>{d.appts.push({id:DB.uid(),date:TODAY,start:from,dur:DB.toMin(h[1])-DB.toMin(from),cid:null,svc:'',price:0,plan:false,status:'block',closed:true,note:why});if(kill)hit.forEach(x=>{d.appts.find(y=>y.id===x.id).status='cancel'})},`Agenda de hoje fechada a partir das ${from}: ${why}${kill&&hit.length?` (${plural(hit.length,'horário cancelado','horários cancelados')})`:''}`,'Configurações');if(kill)hit.forEach(x=>DB.notify('cancel',x))};
+      return hit.length?confirmBox(kill?'Cancelar os horários marcados?':'Ainda há clientes hoje',`${plural(hit.length,'cliente marcado','clientes marcados')} depois das ${from}: ${hit.map(x=>esc(cname(x.cid))+' '+x.start).join(', ')}. ${kill?'Os horários serão cancelados e cada cliente recebe o aviso.':'Eles continuam na agenda: avise e remarque, ou marque a opção de cancelar e avisar.'}`,kill?'Fechar e cancelar':'Fechar mesmo assim',go1,kill):go1()}
+    const a=when==='today'?TODAY:$('#cl-a').value,b=when==='today'?TODAY:($('#cl-b').value||a);
     if(!a)return fieldErr('#cl-a','Escolha a data');if(b<a)return fieldErr('#cl-b','A data final precisa ser depois da inicial');
     const days=[];for(let d=new Date(a+'T00:00');DB.iso(d)<=b&&days.length<62;d.setDate(d.getDate()+1)){const ds=DB.iso(d);if(!db.holidays.some(h=>h.date===ds))days.push(ds)}
-    if(!days.length)return toast('Esse período já está fechado');
-    const hit=db.appts.filter(x=>days.includes(x.date)&&['conf','pend','now'].includes(x.status)),lbl=days.length===1?fmtD(days[0]):`${fmtD(days[0])} a ${fmtD(days[days.length-1])}`;
-    const go2=()=>{mutMany(['holidays','appts'],d=>{days.forEach(ds=>d.holidays.push({id:DB.uid(),date:ds,name:why}));if(kill)hit.forEach(x=>{d.appts.find(y=>y.id===x.id).status='cancel'})},`Agenda fechada em ${lbl}: ${why}${kill&&hit.length?` (${plural(hit.length,'horário cancelado','horários cancelados')})`:''}`,'Configurações');
+    if(!days.length)return toast(when==='today'?'Hoje já está fechado':'Esse período já está fechado');
+    const hit=db.appts.filter(x=>days.includes(x.date)&&OPENS.includes(x.status)),lbl=days.length===1?(days[0]===TODAY?'hoje':fmtD(days[0])):`${fmtD(days[0])} a ${fmtD(days[days.length-1])}`;
+    const go2=()=>{mutMany(['holidays','appts'],d=>{days.forEach(ds=>d.holidays.push({id:DB.uid(),date:ds,name:why}));if(kill)hit.forEach(x=>{d.appts.find(y=>y.id===x.id).status='cancel'})},`Agenda fechada ${lbl==='hoje'?'hoje':'em '+lbl}: ${why}${kill&&hit.length?` (${plural(hit.length,'horário cancelado','horários cancelados')})`:''}`,'Configurações');
       if(kill)hit.forEach(x=>DB.notify('cancel',x))};
     if(!hit.length)return go2();
-    confirmBox(kill?'Cancelar os horários marcados?':'Já há clientes nesse período',`${plural(hit.length,'cliente marcado','clientes marcados')} em ${lbl}: ${hit.slice(0,5).map(x=>esc(cname(x.cid))+' '+fmtD(x.date)+' '+x.start).join(', ')}${hit.length>5?'…':''}. ${kill?'Os horários serão cancelados e cada cliente recebe o aviso com o link para marcar outro dia.':'Eles continuam na agenda: avise e remarque, ou marque a opção de cancelar e avisar.'}`,kill?'Fechar e cancelar':'Fechar mesmo assim',go2,kill)},
+    confirmBox(kill?'Cancelar os horários marcados?':'Já há clientes nesse período',`${plural(hit.length,'cliente marcado','clientes marcados')} ${lbl==='hoje'?'hoje':'em '+lbl}: ${hit.slice(0,5).map(x=>esc(cname(x.cid))+' '+fmtD(x.date)+' '+x.start).join(', ')}${hit.length>5?'…':''}. ${kill?'Os horários serão cancelados e cada cliente recebe o aviso com o link para marcar outro dia.':'Eles continuam na agenda: avise e remarque, ou marque a opção de cancelar e avisar.'}`,kill?'Fechar e cancelar':'Fechar mesmo assim',go2,kill)},
+  reopen:b=>{if(b.dataset.k==='b'){const x=db.appts.find(y=>y.id===b.dataset.id);if(x)change('appts',L=>L.splice(L.findIndex(y=>y.id===x.id),1),`Agenda de ${x.date===TODAY?'hoje':fmtD(x.date)} reaberta (estava fechada a partir das ${x.start})`,'Configurações')}
+    else{const h=db.holidays.find(x=>x.id===b.dataset.id);if(h)change('holidays',L=>L.splice(L.findIndex(x=>x.id===h.id),1),`Agenda de ${h.date===TODAY?'hoje':fmtD(h.date)} reaberta (${h.name})`,'Configurações')}},
   'hol-rm':b=>{const h=db.holidays.find(x=>x.id===b.dataset.id);change('holidays',L=>L.splice(L.findIndex(x=>x.id===h.id),1),`Agenda de ${fmtD(h.date)} reaberta (${h.name})`,'Configurações')},
   'bk-exp':()=>download(`backup-farias-${TODAY}.json`,DB.exportAll(),'application/json'),
   'bk-reset':()=>confirmBox('Voltar aos dados de exemplo?','Apaga todas as alterações feitas neste navegador. Baixe um backup antes, se quiser guardar.','Apagar e recomeçar',()=>{DB.reset();location.reload()}),

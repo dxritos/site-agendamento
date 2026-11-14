@@ -123,7 +123,11 @@ function ensure(d){let ch=false;
   if(!d.bot){d.bot={staff:true,client:true,evNew:true,evCancel:true,evNext:true,evDaily:true};ch=true}
   if(!Array.isArray(d.outbox)){d.outbox=[];ch=true}
   const M=d.messages,add=(k,v)=>{if(!M[k]){M[k]=v;ch=true}};
-  if(M.confirm&&M.confirm.txt===CONFIRM_OLD){M.confirm.txt='Fala, {nome}! Horário marcado: {servico} em {data} às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}';ch=true}
+  const CONFIRM_NEW='Fala, {nome}! Seu horário está marcado: {servico} em {data} às {hora}. Duas horas antes eu te mando o link para confirmar presença.';
+  if(M.confirm&&[CONFIRM_OLD,'Fala, {nome}! Horário marcado: {servico} em {data} às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}'].includes(M.confirm.txt)){M.confirm.txt=CONFIRM_NEW;ch=true}
+  if(M.r2&&M.r2.txt==='{nome}, seu horário é hoje às {hora}. Te espero!'){M.r2.name='Confirmação de presença (2 h antes, com o link)';M.r2.txt='{nome}, seu horário de {servico} é hoje às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}';ch=true}
+  add('thanks',{on:true,name:'Agradecimento ao concluir',txt:'Valeu, {nome}! Obrigado pela preferência. Quando quiser marcar de novo: {site}'});
+  add('welcome',{on:true,name:'Boas-vindas (quem escreve para o robô)',txt:'Olá! Aqui é o atendimento automático da Farias Barbearia. Para agendar, remarcar ou conhecer os planos, acesse: {site}'});
   add('move',{on:true,name:'Horário remarcado',txt:'{nome}, seu horário foi remarcado para {data} às {hora}. Para confirmar, remarcar ou cancelar: {link}'});
   add('cancel',{on:true,name:'Cancelamento',txt:'{nome}, seu horário de {data} às {hora} foi cancelado. Quando quiser, marque outro: {link}'});
   (d.appts||[]).forEach(a=>{if(!a.tok&&a.status!=='block'){a.tok=tok();ch=true}});
@@ -195,11 +199,20 @@ window.DB={
   /* ===== WhatsApp: links individuais e caixa de saída (o envio real é feito pelo servidor) ===== */
   link(a){return location.origin+location.pathname.replace(/[^/]*$/,'')+'confirmar.html?t='+a.tok},
   byToken(t){return /^[a-z2-9]{15}$/.test(t||'')?this.data.appts.find(a=>a.tok===t)||null:null},
-  _out(m){const O=this.data.outbox;O.push({id:uid(),t:Date.now(),...m});if(O.length>80)O.splice(0,O.length-80);this.save()},
+  site(){return location.origin+location.pathname.replace(/[^/]*$/,'')},
+  /* toda mensagem do robô começa com "Bot:" em uma linha própria. `at` no futuro = mensagem programada */
+  _out(m){const O=this.data.outbox;O.push({id:uid(),t:Date.now(),...m,txt:'Bot:\n'+m.txt});if(O.length>120)O.splice(0,O.length-120);this.save()},
+  _fill(kind,a,c){const m=this.data.messages[kind],v={nome:c.name.split(' ')[0],servico:a.svc,data:a.date.slice(8)+'/'+a.date.slice(5,7),hora:a.start,link:this.link(a),site:this.site()};return m.txt.replace(/\{(\w+)\}/g,(x,k)=>v[k]??x)},
+  /* link de confirmação de presença: sai 2 h antes do horário (na hora, se já faltar menos que isso) */
+  _schedule(a,c){const d=this.data,m=d.messages.r2;d.outbox=d.outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));if(!m||!m.on)return;
+    const at=new Date(a.date+'T'+a.start+':00').getTime()-2*36e5;this._out({to:'client',name:c.name,phone:c.phone,kind:'r2',aid:a.id,at:Math.max(at,Date.now()),txt:this._fill('r2',a,c)})},
   /* mensagem ao cliente a partir do modelo editável no painel: confirm, move, cancel, r24, r2 */
   notify(kind,a){const d=this.data,m=d.messages[kind],c=d.clients.find(x=>x.id===a.cid);if(!d.bot.client||!m||!m.on||!c)return null;
-    const v={nome:c.name.split(' ')[0],servico:a.svc,data:a.date.slice(8)+'/'+a.date.slice(5,7),hora:a.start,link:this.link(a)};
-    const txt=m.txt.replace(/\{(\w+)\}/g,(x,k)=>v[k]??x);this._out({to:'client',name:c.name,phone:c.phone,kind,txt,aid:a.id});return txt},
+    const txt=this._fill(kind,a,c);this._out({to:'client',name:c.name,phone:c.phone,kind,txt,aid:a.id});
+    if(kind==='confirm'||kind==='move')this._schedule(a,c);
+    if(kind==='cancel'){d.outbox=d.outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));this.save()}
+    return 'Bot:\n'+txt},
+  welcome(){const m=this.data.messages.welcome;return 'Bot:\n'+(m?m.txt:'Olá! Acesse: {site}').replace(/\{site\}/g,this.site())},
   /* aviso para o WhatsApp do barbeiro/equipe (desligável quando há recepção) */
   /* mensagem avulsa ao cliente (atraso, lembrete, cobrança) */
   sendClient(c,kind,txt){if(!this.data.bot.client||!c||!c.phone)return false;this._out({to:'client',name:c.name,phone:c.phone,kind,txt});return true},

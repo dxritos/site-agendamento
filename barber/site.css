@@ -704,5 +704,5 @@ html.guard img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
 .bwho a,.bwho button{color:var(--teal-2);background:none;border:0;font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:24px}
 .wa-demo{margin:22px auto 0;max-width:420px;text-align:left}
 .wa-demo small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;text-align:center}
-.wa-b{background:#0f3d2e;color:#e7f5ee;border-radius:14px 14px 4px 14px;padding:12px 14px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.wa-b{white-space:pre-line;background:#0f3d2e;color:#e7f5ee;border-radius:14px 14px 4px 14px;padding:12px 14px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 .wa-b a{color:#8fe3bd;text-decoration:underline}
