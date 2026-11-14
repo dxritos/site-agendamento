@@ -18,7 +18,7 @@ function render(){
   const a=appt(),box=$('#card');
   if(!a){box.innerHTML='<h1>Link inválido</h1><p>Este link não existe mais ou foi digitado errado. Abra o link mais recente que você recebeu no WhatsApp.</p><div class="cf-acts" style="margin-top:18px"><a class="btn btn-primary" href="agendar.html">Agendar um horário</a></div>';return}
   const c=db.clients.find(x=>x.id===a.cid)||{name:'cliente'},first=esc(c.name.split(' ')[0]);
-  const mins=(dOf(a)-Date.now())/6e4,past=mins<0,active=['pend','conf'].includes(a.status)&&!past,canChange=active&&mins>=(db.settings.cancelUntil||120);
+  const mins=(dOf(a)-Date.now())/6e4,past=mins<0,active=['pend','conf'].includes(a.status)&&!past,canChange=active&&mins>=(db.settings.cancelUntil??120);
   const stTxt=a.status==='cancel'?['off','Cancelado']:a.status==='done'?['off','Concluído']:a.status==='miss'?['off','Não compareceu']:past?['off','Já passou']:a.status==='pend'?['pend','Aguardando sua confirmação']:['conf','Presença confirmada'];
   const rows=`<div class="cf-rows"><div><span>Serviço</span><b>${esc(a.svc)}</b></div><div><span>Quando</span><b>${dLabel(a.date)} · ${a.start}</b></div><div><span>Duração</span><b>${a.dur} min</b></div><div><span>Valor</span><b>${a.plan?'Incluso no plano':'R$ '+NF.format(a.price||0)}</b></div><div><span>Barbeiro</span><b>Farias</b></div></div>`;
   const head=`<span class="cf-st ${stTxt[0]}">${stTxt[1]}</span><h1>${a.status==='cancel'?'Horário cancelado':'Olá, '+first}</h1>`;

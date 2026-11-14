@@ -46,7 +46,7 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g
 /* ===== dados do cliente ===== */
 const upcoming=()=>db.appts.filter(a=>a.cid===ME&&a.date>=TODAY&&['conf','pend','now'].includes(a.status)).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
 const pastAppts=()=>db.appts.filter(a=>a.cid===ME&&['done','miss','cancel'].includes(a.status)).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start));
-const canChange=a=>((dt(a.date)-new Date())/60000+DB.toMin(a.start))>=(db.settings.cancelUntil||120);
+const canChange=a=>((dt(a.date)-new Date())/60000+DB.toMin(a.start))>=(db.settings.cancelUntil??120);
 const subState=s=>s.status==='late'?['Suspenso','c-bad']:s.status==='paused'?['Pausado','c-warn']:s.cancelAt?['Cancelamento agendado','c-warn']:['Ativo','c-ok'];
 
 /* ===== telas ===== */

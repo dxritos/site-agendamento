@@ -127,6 +127,8 @@ function ensure(d){let ch=false;
   add('move',{on:true,name:'Horário remarcado',txt:'{nome}, seu horário foi remarcado para {data} às {hora}. Para confirmar, remarcar ou cancelar: {link}'});
   add('cancel',{on:true,name:'Cancelamento',txt:'{nome}, seu horário de {data} às {hora} foi cancelado. Quando quiser, marque outro: {link}'});
   (d.appts||[]).forEach(a=>{if(!a.tok&&a.status!=='block'){a.tok=tok();ch=true}});
+  /* permissões passam a ser de cada pessoa; as funções viram modelos prontos */
+  (d.team||[]).forEach(u=>{if(!Array.isArray(u.perms)){u.perms=d.roles.perms.map((_,i)=>u.role==='admin'?1:(d.roles[u.role]||[])[i]?1:0);ch=true}});
   return ch}
 let data=load();if(!data)data=defaults();if(ensure(data)||!load()){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
 let imgs={};try{imgs=JSON.parse(localStorage.getItem(IMGKEY)||'{}')}catch(e){}
@@ -199,6 +201,8 @@ window.DB={
     const v={nome:c.name.split(' ')[0],servico:a.svc,data:a.date.slice(8)+'/'+a.date.slice(5,7),hora:a.start,link:this.link(a)};
     const txt=m.txt.replace(/\{(\w+)\}/g,(x,k)=>v[k]??x);this._out({to:'client',name:c.name,phone:c.phone,kind,txt,aid:a.id});return txt},
   /* aviso para o WhatsApp do barbeiro/equipe (desligável quando há recepção) */
+  /* mensagem avulsa ao cliente (atraso, lembrete, cobrança) */
+  sendClient(c,kind,txt){if(!this.data.bot.client||!c||!c.phone)return false;this._out({to:'client',name:c.name,phone:c.phone,kind,txt});return true},
   notifyStaff(ev,txt){const b=this.data.bot;if(!b.staff||b[ev]===false)return null;this._out({to:'staff',name:'Equipe',kind:ev,txt});return txt},
 
   /* ===== regras de negócio compartilhadas (site, área do cliente e painel usam as mesmas) ===== */
@@ -237,13 +241,13 @@ window.DB={
     if(date<todayIso())return[];
     const dt=new Date(date+'T00:00:00'),h=this.data.hours[dt.getDay()];
     if(!h||this.data.holidays.some(x=>x.date===date))return[];
-    const step=this.data.settings.step||30,busy=this.data.appts.filter(a=>a.date===date&&a.status!=='cancel'&&a.id!==ignoreId).map(a=>[toMin(a.start),toMin(a.start)+a.dur]);
+    const sv=this.data.settings.step,step=sv===0?dur:(sv||30),busy=this.data.appts.filter(a=>a.date===date&&a.status!=='cancel'&&a.id!==ignoreId).map(a=>[toMin(a.start),toMin(a.start)+a.dur]);
     if(dt.getDay()<=5&&this.data.lunch)busy.push([toMin(this.data.lunch[0]),toMin(this.data.lunch[1])]);
     const now=new Date(),isToday=date===todayIso(),lim=now.getHours()*60+now.getMinutes()+(this.data.settings.minAdv||0);
     const out=[];for(let m=toMin(h[0]);m+dur<=toMin(h[1]);m+=step){if(isToday&&m<lim)continue;if(busy.some(([a,b])=>m<b&&m+dur>a))continue;out.push(toHM(m))}
     return out;
   },
-  cancelText(){const m=this.data.settings.cancelUntil||120;return m>=1440?(m/1440)+(m/1440>1?' dias':' dia'):m>=60?(m/60)+(m/60>1?' horas':' hora'):m+' minutos'}
+  cancelText(){const m=this.data.settings.cancelUntil??120;return m===0?'poucos minutos':m>=1440?(m/1440)+(m/1440>1?' dias':' dia'):m>=60?(m/60)+(m/60>1?' horas':' hora'):m+' minutos'}
 };
 DB.normalize();
 /* outra aba gravou: atualiza a memória e avisa a tela (cada página define window.onDBChange) */

@@ -384,31 +384,39 @@ ACT['plan-ed']=b=>{const p=db.plans.find(x=>x.id===b.dataset.id)||{n:'',p:'',day
   if($('#p-del'))$('#p-del').onclick=()=>{const n=db.subs.filter(s=>s.plan===p.id||s.nextPlan===p.id).length;if(n)return toast(`Não dá para excluir: ${plural(n,'assinatura usa','assinaturas usam')} este plano (inclusive canceladas). Oculte o plano em vez de excluir.`);confirmBox('Excluir plano?',esc(p.n),'Excluir',()=>change('plans',L=>L.splice(L.findIndex(x=>x.id===p.id),1),`Plano ${p.n} excluído`,'Serviços'))}};
 
 /* ================= CONTEÚDO DO SITE ================= */
+let siteTab='inicio';
+const STABS=[['inicio','Página inicial'],['aviso','Aviso'],['contato','Contato'],['faq','Perguntas'],['aval','Avaliações'],['galeria','Galeria'],['insta','Instagram']];
 function vConteudo(){
-  const c=db.content;
-  return `<div class="top"><div><h1>Conteúdo do site</h1><p>Edite o que os clientes veem. Ao salvar, o site é atualizado na hora.</p></div><div class="acts"><a class="btn btn-ghost btn-sm" href="index.html" target="_blank">Abrir o site ↗</a></div></div>
-  <div class="g11">
-   <div>
-    <div class="card box"><h3>Aviso no topo do site ${sw('k-notice_on',c.notice_on)}</h3><div class="form"><input class="inp" id="k-notice" value="${esc(c.notice)}" placeholder="Ex.: Fechado no feriado"><p class="hint">Faixa que aparece no topo de todas as páginas. Use para feriado, promoção ou mudança de horário.</p></div></div>
-    <div class="card box"><h3>Página inicial</h3><div class="form"><div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div><div class="two"><div class="fl"><label>Título (linha 1)</label><input class="inp" id="k-hero_t1" value="${esc(c.hero_t1)}"></div><div class="fl"><label>Título (destaque)</label><input class="inp" id="k-hero_t2" value="${esc(c.hero_t2)}"></div></div><div class="fl"><label>Texto</label><textarea class="inp" id="k-hero_lead">${esc(c.hero_lead)}</textarea></div><div class="fl"><label>Sobre o barbeiro</label><textarea class="inp" id="k-about">${esc(c.about)}</textarea></div></div></div>
-    <div class="card box"><h3>Instagram na galeria ${sw('ig-on',!!c.ig_on)}</h3><div class="form">
-      <p class="hint">Mostra as últimas fotos do perfil na página Galeria, atualizadas sozinhas. Precisa de uma conta profissional (comercial ou criador de conteúdo) e de um token de acesso gerado no painel de desenvolvedor da Meta.</p>
-      <div class="fl"><label>Token de acesso da Meta</label><input class="inp" id="ig-token" type="password" autocomplete="off" value="${esc(c.ig_token||'')}" placeholder="Cole aqui o token (começa com IG…)"></div>
-      <p class="hint">Neste protótipo o token fica salvo só neste navegador. No sistema definitivo ele fica guardado no servidor, nunca no site.</p>
-      <div class="acts"><button class="btn btn-ghost btn-sm" data-act="ig-test">Testar conexão</button><button class="btn btn-primary btn-sm" data-act="ig-save">Salvar</button><span class="hint" id="ig-st"></span></div></div></div>
-    <div class="card box"><h3>Contato</h3><div class="form"><div class="two"><div class="fl"><label>WhatsApp (com 55 e DDD)</label><input class="inp" id="k-wa" value="${esc(c.wa)}"></div><div class="fl"><label>Telefone exibido</label><input class="inp" id="k-phone" value="${esc(c.phone)}"></div></div><div class="two"><div class="fl"><label>Endereço</label><input class="inp" id="k-address" value="${esc(c.address)}"></div><div class="fl"><label>Instagram (sem @)</label><input class="inp" id="k-instagram" value="${esc(c.instagram)}"></div></div></div></div>
-    <button class="btn btn-primary" data-act="save-content" style="margin-top:16px">Salvar e publicar</button>
-   </div>
-   <div>
-    <div class="card box"><h3>Perguntas frequentes <button class="btn btn-ghost btn-sm" data-act="faq-add">+ Pergunta</button></h3><div class="list-ed" id="faq-ed">${db.faq.map(f=>`<div class="li-ed" data-fid="${f.id}"><button class="btn btn-danger btn-sm rm" data-act="faq-rm" data-id="${f.id}">×</button><input class="inp" value="${esc(f.q)}" data-f="q" style="padding-right:44px"><textarea class="inp" data-f="a">${esc(f.a)}</textarea></div>`).join('')}</div><button class="btn btn-primary btn-sm" data-act="faq-save" style="margin-top:12px">Salvar perguntas</button></div>
-    <div class="card box"><h3>Avaliações <button class="btn btn-ghost btn-sm" data-act="rev-add">+ Avaliação</button></h3><div class="list-ed" id="rev-ed">${db.reviews.map(r=>`<div class="li-ed" data-rid="${r.id}"><button class="btn btn-danger btn-sm rm" data-act="rev-rm" data-id="${r.id}">×</button><div class="two" style="padding-right:44px"><input class="inp" value="${esc(r.name)}" data-f="name" placeholder="Nome"><input class="inp" value="${esc(r.info)}" data-f="info" placeholder="Detalhe"></div><textarea class="inp" data-f="text">${esc(r.text)}</textarea></div>`).join('')}</div><button class="btn btn-primary btn-sm" data-act="rev-save" style="margin-top:12px">Salvar avaliações</button></div>
-   </div>
-  </div>
-  <div class="card box" style="margin-top:16px"><h3>Galeria <span class="acts"><span class="hint">Fotos são reduzidas automaticamente.</span><button class="btn btn-ghost btn-sm" data-act="gal-add">+ Foto</button></span></h3>
-   <div class="gal-ed">${db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);return `<div class="gimg" data-gid="${g.id}"><div class="ph" style="${im&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(im)?`background-image:url(${im})`:''}">${im?'':`<span style="padding:10px;text-transform:none;letter-spacing:0;font-size:11.5px;line-height:1.35;text-align:center">${esc(g.hint||'Sem foto')}</span>`}</div><div class="tools"><label title="Enviar foto"><input type="file" accept="image/*" hidden data-up="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></label><button title="Remover" data-act="gal-rm" data-id="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
+  const c=db.content,sec=(k,html)=>`<section class="ssec ${k==='galeria'?'wide':''}" ${siteTab===k?'':'hidden'}>${html}</section>`,pub='<div class="sfoot"><button class="btn btn-primary" data-act="save-content">Salvar e publicar</button><span class="hint">O site é atualizado na hora.</span></div>';
+  return `<div class="top"><div><h1>Site</h1><p>Edite o que os clientes veem. Uma parte de cada vez.</p></div><div class="acts"><a class="btn btn-ghost btn-sm" href="index.html" target="_blank">Abrir o site ↗</a></div></div>
+  <div class="filters stabs" role="tablist">${STABS.map(([k,n])=>`<button class="fbtn ${siteTab===k?'on':''}" role="tab" aria-selected="${siteTab===k}" data-site="${k}">${n}</button>`).join('')}</div>
+  ${sec('inicio',`<div class="card box sbox"><h3>Página inicial</h3><p class="hint">Os textos do topo da primeira página.</p><div class="form">
+     <div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div>
+     <div class="two"><div class="fl"><label>Título (linha 1)</label><input class="inp" id="k-hero_t1" value="${esc(c.hero_t1)}"></div><div class="fl"><label>Título (destaque)</label><input class="inp" id="k-hero_t2" value="${esc(c.hero_t2)}"></div></div>
+     <div class="fl"><label>Texto</label><textarea class="inp" id="k-hero_lead" rows="3">${esc(c.hero_lead)}</textarea></div>
+     <div class="fl"><label>Sobre o barbeiro</label><textarea class="inp" id="k-about" rows="3">${esc(c.about)}</textarea></div></div>${pub}</div>`)}
+  ${sec('aviso',`<div class="card box sbox"><h3>Aviso no topo do site ${sw('k-notice_on',c.notice_on)}</h3><p class="hint">Faixa que aparece no topo de todas as páginas. Use para feriado, promoção ou mudança de horário.</p><div class="form">
+     <div class="fl"><label>Texto do aviso</label><input class="inp" id="k-notice" value="${esc(c.notice)}" placeholder="Ex.: Fechado no feriado"></div></div>${pub}</div>`)}
+  ${sec('contato',`<div class="card box sbox"><h3>Contato</h3><p class="hint">Aparece no rodapé, na página de contato e nos botões de WhatsApp.</p><div class="form">
+     <div class="two"><div class="fl"><label>WhatsApp (com 55 e DDD)</label><input class="inp" id="k-wa" inputmode="numeric" value="${esc(c.wa)}"></div><div class="fl"><label>Telefone exibido</label><input class="inp" id="k-phone" value="${esc(c.phone)}"></div></div>
+     <div class="fl"><label>Endereço</label><input class="inp" id="k-address" value="${esc(c.address)}"></div>
+     <div class="fl"><label>Instagram (sem @)</label><input class="inp" id="k-instagram" value="${esc(c.instagram)}"></div></div>${pub}</div>`)}
+  ${sec('faq',`<div class="card box sbox"><h3>Perguntas frequentes <button class="btn btn-ghost btn-sm" data-act="faq-add">+ Pergunta</button></h3><p class="hint">Aparecem no fim da página inicial.</p>
+     <div class="list-ed" id="faq-ed">${db.faq.map((f,i)=>`<div class="li-ed sp" data-fid="${f.id}"><div class="li-h"><b>Pergunta ${i+1}</b><button class="btn btn-danger btn-sm" data-act="faq-rm" data-id="${f.id}">Remover</button></div><div class="fl"><label>Pergunta</label><input class="inp" value="${esc(f.q)}" data-f="q"></div><div class="fl"><label>Resposta</label><textarea class="inp" data-f="a" rows="3">${esc(f.a)}</textarea></div></div>`).join('')||'<p class="empty">Nenhuma pergunta.</p>'}</div>
+     <div class="sfoot"><button class="btn btn-primary" data-act="faq-save">Salvar perguntas</button></div></div>`)}
+  ${sec('aval',`<div class="card box sbox"><h3>Avaliações <button class="btn btn-ghost btn-sm" data-act="rev-add">+ Avaliação</button></h3><p class="hint">Depoimentos mostrados na página inicial.</p>
+     <div class="list-ed" id="rev-ed">${db.reviews.map((r,i)=>`<div class="li-ed sp" data-rid="${r.id}"><div class="li-h"><b>Avaliação ${i+1}</b><button class="btn btn-danger btn-sm" data-act="rev-rm" data-id="${r.id}">Remover</button></div><div class="two"><div class="fl"><label>Nome</label><input class="inp" value="${esc(r.name)}" data-f="name"></div><div class="fl"><label>Detalhe</label><input class="inp" value="${esc(r.info)}" data-f="info" placeholder="Ex.: Assinante"></div></div><div class="fl"><label>Depoimento</label><textarea class="inp" data-f="text" rows="3">${esc(r.text)}</textarea></div></div>`).join('')||'<p class="empty">Nenhuma avaliação.</p>'}</div>
+     <div class="sfoot"><button class="btn btn-primary" data-act="rev-save">Salvar avaliações</button></div></div>`)}
+  ${sec('galeria',`<div class="card box sbox"><h3>Galeria <button class="btn btn-ghost btn-sm" data-act="gal-add">+ Foto</button></h3><p class="hint">As fotos são reduzidas automaticamente ao enviar.</p>
+   <div class="gal-ed">${db.gallery.map(g=>{const im=g.img&&DB.img.get(g.img);return `<div class="gimg" data-gid="${g.id}"><div class="ph" style="${im&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(im)?`background-image:url(${im})`:''}">${im?'':`<span style="padding:10px;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.35;text-align:center">${esc(g.hint||'Sem foto')}</span>`}</div><div class="tools"><label title="Enviar foto"><input type="file" accept="image/*" hidden data-up="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></label><button title="Remover" data-act="gal-rm" data-id="${g.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>
    <div class="fields"><input class="inp" data-f="t" value="${esc(g.t)}" placeholder="Título"><input class="inp" data-f="s" value="${esc(g.s)}" placeholder="Legenda"><textarea class="inp" data-f="hint" rows="2" placeholder="O que esta foto deve mostrar" style="min-height:54px;font-size:12.5px">${esc(g.hint||'')}</textarea><select class="inp" data-f="cat">${[['cortes','Cortes'],['barba','Barba'],['espaco','Espaço']].map(([k,v])=>`<option value="${k}" ${k===g.cat?'selected':''}>${v}</option>`).join('')}</select></div></div>`}).join('')}</div>
-   <button class="btn btn-primary btn-sm" data-act="gal-save" style="margin-top:14px">Salvar galeria</button></div>`;
+   <div class="sfoot"><button class="btn btn-primary" data-act="gal-save">Salvar galeria</button></div></div>`)}
+  ${sec('insta',`<div class="card box sbox"><h3>Instagram na galeria ${sw('ig-on',!!c.ig_on)}</h3><p class="hint">Mostra as últimas fotos do perfil na página Galeria, atualizadas sozinhas. Precisa de uma conta profissional e de um token de acesso gerado no painel de desenvolvedor da Meta.</p><div class="form">
+      <div class="fl"><label>Token de acesso da Meta</label><input class="inp" id="ig-token" type="password" autocomplete="off" value="${esc(c.ig_token||'')}" placeholder="Cole aqui o token (começa com IG…)"></div>
+      <p class="hint">Neste protótipo o token fica salvo só neste navegador. No sistema definitivo ele fica guardado no servidor, nunca no site.</p></div>
+      <div class="sfoot"><button class="btn btn-primary" data-act="ig-save">Salvar</button><button class="btn btn-ghost" data-act="ig-test">Testar conexão</button><span class="hint" id="ig-st"></span></div></div>`)}`;
 }
+document.addEventListener('click',e=>{const t=e.target.closest('[data-site]');if(t){siteTab=t.dataset.site;render()}});
 const readList=(sel,key,fields)=>$$(sel).map(el=>{const o={id:el.dataset[key]};fields.forEach(f=>o[f]=el.querySelector(`[data-f="${f}"]`).value);return o});
 Object.assign(ACT,{
   'ig-test':async()=>{const t=$('#ig-token').value.trim(),st=$('#ig-st');if(!t)return st.textContent='Cole o token primeiro.';st.textContent='Testando…';
@@ -478,24 +486,37 @@ ACT['tip-off']=()=>{tipOff=true;try{localStorage.setItem('farias_tip','0')}catch
 ACT['msg-save']=()=>change('messages',M=>Object.keys(M).forEach(k=>{M[k].txt=$('#m-'+k).value;M[k].on=$('#m-on-'+k).checked}),'Mensagens do WhatsApp atualizadas','Mensagens');
 
 /* ================= EQUIPE ================= */
-const ROLE={admin:'Administrador',barbeiro:'Barbeiro',recepcao:'Recepção'};
+const ROLE={admin:'Administrador',barbeiro:'Barbeiro',recepcao:'Recepção',custom:'Personalizado'};
+const presetOf=r=>db.roles.perms.map((_,i)=>r==='admin'?1:(db.roles[r]||[])[i]?1:0);
 function vEquipe(){
-  return `<div class="top"><div><h1>Equipe e permissões</h1><p>Quem acessa o painel e o que cada um pode fazer.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="team-add">+ Adicionar pessoa</button></div></div>
-  <div class="card box"><h3>Pessoas</h3><div class="tw"><table><thead><tr><th>Nome</th><th>Função</th><th>Acesso</th><th></th></tr></thead><tbody>
-  ${db.team.map(u=>`<tr><td><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${u.id==='u1'?'Administrador (dono)':`<select class="inp" data-role="${u.id}" style="width:auto">${Object.entries(ROLE).map(([k,v])=>`<option value="${k}" ${k===u.role?'selected':''}>${v}</option>`).join('')}</select>`}</td><td>${sw('tmon-'+u.id,u.active,u.id==='u1')}</td><td class="r">${u.id==='u1'?'':`<button class="btn btn-danger btn-sm" data-act="team-rm" data-id="${u.id}">Remover</button>`}</td></tr>`).join('')}
-  </tbody></table></div></div>
-  <div class="card box"><h3>Permissões por função <button class="btn btn-primary btn-sm" data-act="perm-save">Salvar permissões</button></h3><div class="tw"><table class="perm"><thead><tr><th>Permissão</th><th>Administrador</th><th>Barbeiro</th><th>Recepção</th></tr></thead><tbody>
-  ${db.roles.perms.map((p,i)=>`<tr><td>${esc(p)}</td><td><input type="checkbox" checked disabled></td><td><input type="checkbox" data-perm="barbeiro" data-i="${i}" ${db.roles.barbeiro[i]?'checked':''}></td><td><input type="checkbox" data-perm="recepcao" data-i="${i}" ${db.roles.recepcao[i]?'checked':''}></td></tr>`).join('')}
-  </tbody></table></div></div>`;
+  return `<div class="top"><div><h1>Equipe</h1><p>Quem acessa o painel. As permissões são definidas pessoa por pessoa.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="team-add">+ Adicionar pessoa</button></div></div>
+  <div class="card box"><div class="tw"><table><thead><tr><th>Nome</th><th>Perfil</th><th>Acesso</th><th></th></tr></thead><tbody>
+  ${db.team.map(u=>{const n=(u.perms||[]).filter(Boolean).length;return `<tr><td><b>${esc(u.name)}</b><small>${esc(u.email)}</small></td><td>${u.id==='u1'?'Administrador (dono)':esc(ROLE[u.role]||ROLE.custom)}<small>${u.id==='u1'?'Acesso total':`${n} de ${db.roles.perms.length} permissões`}</small></td><td>${sw('tmon-'+u.id,u.active,u.id==='u1')}</td><td class="r">${u.id==='u1'?'':`<button class="btn btn-ghost btn-sm" data-act="team-edit" data-id="${u.id}">Permissões</button> <button class="btn btn-danger btn-sm" data-act="team-rm" data-id="${u.id}">Remover</button>`}</td></tr>`}).join('')}
+  </tbody></table></div><p class="hint" style="margin-top:14px">Para ver ou mudar o que alguém pode fazer, toque em <b>Permissões</b> na linha da pessoa.</p></div>`;
+}
+/* cadastro e edição: nome, e-mail, um modelo pronto e a lista de permissões daquela pessoa */
+function teamForm(u){
+  const isNew=!u,role=u?u.role:'barbeiro',perms=u?u.perms:presetOf('barbeiro');
+  modal(`<div class="eyebrow">Equipe</div><h3>${isNew?'Adicionar pessoa':'Permissões de '+esc(u.name)}</h3><p>${isNew?'Ela recebe um convite por e-mail para criar a senha.':'Ajuste o que esta pessoa pode ver e fazer no painel.'}</p>
+   <div class="form"><div class="two"><div class="fl"><label>Nome</label><input class="inp" id="tm-name" value="${esc(u?u.name:'')}" autocomplete="off"></div><div class="fl"><label>E-mail</label><input class="inp" id="tm-email" type="email" value="${esc(u?u.email:'')}" autocomplete="off" spellcheck="false"></div></div>
+   <div class="fl"><label>Modelo de permissões</label><select class="inp" id="tm-role">${[['barbeiro','Barbeiro: só a agenda e os clientes'],['recepcao','Recepção: agenda, clientes, assinaturas e pagamentos'],['admin','Administrador: tudo'],['custom','Personalizado']].map(([k,n])=>`<option value="${k}" ${k===role?'selected':''}>${n}</option>`).join('')}</select></div>
+   <div><div class="flt" id="tm-pl">O que esta pessoa pode fazer</div><div class="pgrid" id="tm-perms" role="group" aria-labelledby="tm-pl">${db.roles.perms.map((p,i)=>`<label class="pchk"><input type="checkbox" data-pi="${i}" ${perms[i]?'checked':''}><span>${esc(p)}</span></label>`).join('')}</div></div></div>
+   <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tm-save">${isNew?'Enviar convite':'Salvar permissões'}</button></div>`,true);
+  const boxes=()=>$$('#tm-perms input'),cur=()=>boxes().map(x=>x.checked?1:0);
+  $('#tm-role').onchange=()=>{const r=$('#tm-role').value;if(r!=='custom')presetOf(r).forEach((v,i)=>boxes()[i].checked=!!v)};
+  boxes().forEach(x=>x.onchange=()=>{const c=JSON.stringify(cur());$('#tm-role').value=['barbeiro','recepcao','admin'].find(r=>JSON.stringify(presetOf(r))===c)||'custom'});
+  $('#tm-save').onclick=()=>{const n=$('#tm-name').value.trim(),em=$('#tm-email').value.trim(),r=$('#tm-role').value,pm=cur();
+    if(!n)return fieldErr('#tm-name','Informe o nome');if(!/\S+@\S+\.\S+/.test(em))return fieldErr('#tm-email','Informe um e-mail válido');
+    if(!pm.some(Boolean))return fieldErr('#tm-perms','Marque pelo menos uma permissão');closeModal();
+    if(isNew)change('team',L=>L.push({id:'u'+DB.uid(),name:n,email:em,role:r,perms:pm,active:true}),`${n} adicionado(a) à equipe (${ROLE[r]}, ${pm.filter(Boolean).length} permissões)`,'Equipe');
+    else change('team',L=>Object.assign(L.find(x=>x.id===u.id),{name:n,email:em,role:r,perms:pm}),`${n}: permissões atualizadas (${ROLE[r]}, ${pm.filter(Boolean).length} de ${pm.length})`,'Equipe')};
 }
 document.addEventListener('change',e=>{const t=e.target;
-  if(t.dataset&&t.dataset.role){const u=db.team.find(x=>x.id===t.dataset.role);change('team',L=>{L.find(x=>x.id===u.id).role=t.value},`${u.name}: função alterada para ${ROLE[t.value]}`,'Equipe')}
   if(t.id&&t.id.startsWith('tmon-')){const u=db.team.find(x=>x.id===t.id.slice(5));if(!u)return;change('team',L=>{L.find(x=>x.id===u.id).active=t.checked},`${u.name}: acesso ${t.checked?'liberado':'suspenso'}`,'Equipe')}});
 Object.assign(ACT,{
-  'team-add':()=>{modal(`<h3>Adicionar pessoa</h3><p>Ela recebe um convite por e-mail para criar a senha.</p><div class="form"><div class="two"><input class="inp" id="tm-name" placeholder="Nome"><input class="inp" id="tm-email" type="email" placeholder="E-mail"></div><select class="inp" id="tm-role"><option value="barbeiro">Barbeiro</option><option value="recepcao">Recepção</option><option value="admin">Administrador</option></select></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tm-save">Enviar convite</button></div>`);
-    $('#tm-save').onclick=()=>{const n=$('#tm-name').value.trim(),em=$('#tm-email').value.trim();if(!n||!/\S+@\S+\.\S+/.test(em))return toast('Informe nome e e-mail');closeModal();change('team',L=>L.push({id:'u'+DB.uid(),name:n,email:em,role:$('#tm-role').value,active:true}),`${n} adicionado(a) à equipe como ${ROLE[$('#tm-role').value]}`,'Equipe')}},
+  'team-add':()=>teamForm(null),
+  'team-edit':b=>teamForm(db.team.find(x=>x.id===b.dataset.id)),
   'team-rm':b=>{const u=db.team.find(x=>x.id===b.dataset.id);confirmBox('Remover da equipe?',`${esc(u.name)} perde o acesso ao painel.`,'Remover',()=>change('team',L=>L.splice(L.findIndex(x=>x.id===u.id),1),`${u.name} removido(a) da equipe`,'Equipe'))},
-  'perm-save':()=>change('roles',R=>{['barbeiro','recepcao'].forEach(r=>R[r]=R.perms.map((_,i)=>$(`[data-perm="${r}"][data-i="${i}"]`).checked?1:0))},'Permissões das funções atualizadas','Equipe'),
 });
 
 /* ================= HISTÓRICO ================= */
@@ -521,15 +542,19 @@ function vConfig(){
    <div>
     <div class="card box"><h3>Horário de funcionamento</h3>${[1,2,3,4,5,6,0].map(d=>{const h=db.hours[d];return `<div class="hrow"><span>${WDF[d]}</span><select class="inp" id="h-a-${d}" ${h?'':'disabled'}>${timeOpts(h?h[0]:'09:00',6*60,22*60,30)}</select><select class="inp" id="h-b-${d}" ${h?'':'disabled'}>${timeOpts(h?h[1]:'19:00',6*60,23*60,30)}</select>${sw('h-on-'+d,!!h)}</div>`}).join('')}
      <div class="hrow" style="margin-top:6px;border-top:1px solid var(--line);padding-top:12px"><span>Almoço</span><select class="inp" id="l-a" ${db.lunch?'':'disabled'}>${timeOpts(db.lunch?db.lunch[0]:'12:00',10*60,15*60,30)}</select><select class="inp" id="l-b" ${db.lunch?'':'disabled'}>${timeOpts(db.lunch?db.lunch[1]:'13:00',10*60,16*60,30)}</select>${sw('l-on',!!db.lunch)}</div></div>
-    <div class="card box"><h3>Feriados e folgas <small>o dia fica fechado no site</small></h3><div class="fix"><div class="two"><input class="inp" type="date" id="hol-d"><input class="inp" id="hol-n" placeholder="Nome (ex.: Férias)"></div><button class="btn btn-ghost btn-sm" data-act="hol-add">Adicionar</button></div>
-     <div class="hist-mini" style="max-height:none">${db.holidays.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(h=>`<div><span>${fmtD(h.date)}/${h.date.slice(2,4)} · ${esc(h.name)}${h.date<TODAY?' (passou)':''}</span><button class="btn btn-danger btn-sm" data-act="hol-rm" data-id="${h.id}">Remover</button></div>`).join('')||'<p class="empty">Nenhum feriado cadastrado.</p>'}</div></div>
+    <div class="card box"><h3>Fechar a agenda <small>o dia some do agendamento no site</small></h3><div class="form">
+      <div class="two"><div class="fl"><label>De</label><input class="inp" type="date" id="cl-a" value="${TODAY}" min="${TODAY}"></div><div class="fl"><label>Até (opcional)</label><input class="inp" type="date" id="cl-b" min="${TODAY}"></div></div>
+      <div class="two"><div class="fl"><label>Motivo</label><select class="inp" id="cl-why">${['Feriado','Folga','Férias','Imprevisto','Outro'].map(m=>`<option>${m}</option>`).join('')}</select></div><div class="fl"><label>Detalhe (aparece no site)</label><input class="inp" id="cl-txt" placeholder="Ex.: Consciência Negra"></div></div>
+      <label class="pchk"><input type="checkbox" id="cl-cancel"><span>Cancelar os horários já marcados e avisar os clientes pelo WhatsApp</span></label>
+      <div class="acts"><button class="btn btn-primary btn-sm" data-act="close-add">Fechar a agenda</button><button class="btn btn-ghost btn-sm" data-act="close-today">Fechar hoje</button></div></div>
+     <div class="sec"><h4>Dias fechados</h4><div class="hist-mini" style="max-height:220px">${db.holidays.filter(h=>h.date>=TODAY).sort((a,b)=>a.date.localeCompare(b.date)).map(h=>`<div><span>${WD[new Date(h.date+'T00:00').getDay()]} ${fmtD(h.date)}/${h.date.slice(2,4)} · ${esc(h.name)}</span><button class="btn btn-ghost btn-sm" data-act="hol-rm" data-id="${h.id}">Reabrir</button></div>`).join('')||'<p class="empty">Nenhum dia fechado à frente.</p>'}</div></div></div>
    </div>
    <div>
     <div class="card box"><h3>Regras da agenda</h3>
-     <div class="set"><div>Intervalo entre horários<small>Grade exibida ao cliente</small></div>${sel('cf-step',[[15,'15 min'],[30,'30 min'],[60,'1 hora']],s.step)}</div>
+     <div class="set"><div>Intervalo entre horários<small>Grade exibida ao cliente</small></div>${sel('cf-step',[[0,'Nenhum (pela duração do serviço)'],[15,'15 min'],[30,'30 min'],[60,'1 hora']],s.step)}</div>
      <div class="set"><div>Antecedência mínima<small>Para o cliente agendar</small></div>${sel('cf-minAdv',[[0,'Nenhuma'],[30,'30 min'],[60,'1 hora'],[120,'2 horas']],s.minAdv)}</div>
-     <div class="set"><div>Cancelar ou remarcar até<small>Antes do horário</small></div>${sel('cf-cancelUntil',[[60,'1 hora'],[120,'2 horas'],[240,'4 horas'],[1440,'24 horas']],s.cancelUntil)}</div>
-     <div class="set"><div>Tolerância de atraso</div>${sel('cf-tolerance',[[10,'10 min'],[15,'15 min'],[20,'20 min']],s.tolerance)}</div>
+     <div class="set"><div>Cancelar ou remarcar até<small>Antes do horário</small></div>${sel('cf-cancelUntil',[[0,'Sem prazo (até a hora marcada)'],[60,'1 hora'],[120,'2 horas'],[240,'4 horas'],[1440,'24 horas']],s.cancelUntil)}</div>
+     <div class="set"><div>Tolerância de atraso<small>Depois disso o horário pode ser liberado</small></div>${sel('cf-tolerance',[[0,'Nenhuma'],[10,'10 min'],[15,'15 min'],[20,'20 min']],s.tolerance)}</div>
      <div class="set"><div>Faltas sem aviso<small>Bloqueia agendamento online após</small></div>${sel('cf-noShow',[[2,'2 faltas'],[3,'3 faltas'],[5,'5 faltas'],[99,'Nunca bloquear']],s.noShow)}</div></div>
     <div class="card box"><h3>Backup dos dados</h3><p class="hint" style="margin-bottom:14px">Baixe uma cópia de tudo (clientes, agenda, financeiro, conteúdo) ou restaure um backup.</p>
      <div class="acts"><button class="btn btn-ghost btn-sm" data-act="bk-exp">Baixar backup</button><label class="btn btn-ghost btn-sm">Restaurar backup<input type="file" accept=".json" hidden id="bk-imp"></label>${new URLSearchParams(location.search).has('demo')?'<button class="btn btn-danger btn-sm" data-act="bk-reset">Voltar aos dados de exemplo</button>':''}</div></div>
@@ -552,10 +577,17 @@ Object.assign(ACT,{
     const ns={};['step','minAdv','cancelUntil','tolerance','noShow'].forEach(k=>ns[k]=+$('#cf-'+k).value);
     if(JSON.stringify(ns)!==JSON.stringify(db.settings)){DB.mutate('settings',S=>Object.assign(S,ns),'Regras da agenda alteradas','Configurações');ch.push('regras')}
     DB.save();render();toast(ch.length?'Configurações salvas':'Nada foi alterado')},
-  'hol-add':()=>{const d=$('#hol-d').value,n=$('#hol-n').value.trim()||'Folga';if(!d)return toast('Escolha a data');const clash=db.appts.filter(a=>a.date===d&&!['cancel','block'].includes(a.status)).length;
-    const go2=()=>change('holidays',L=>L.push({id:DB.uid(),date:d,name:n}),`Dia ${fmtD(d)} fechado: ${n}`,'Configurações');
-    clash?confirmBox('Já há horários nesse dia',`${clash} cliente(s) marcados em ${fmtD(d)}. Eles continuam na agenda — avise e remarque pela Agenda.`,'Fechar o dia mesmo assim',go2,false):go2()},
-  'hol-rm':b=>{const h=db.holidays.find(x=>x.id===b.dataset.id);change('holidays',L=>L.splice(L.findIndex(x=>x.id===h.id),1),`Dia ${fmtD(h.date)} reaberto (${h.name})`,'Configurações')},
+  'close-today':()=>{$('#cl-a').value=TODAY;$('#cl-b').value='';ACT['close-add']()},
+  'close-add':()=>{const a=$('#cl-a').value,b=$('#cl-b').value||a,why=$('#cl-txt').value.trim()||$('#cl-why').value,kill=$('#cl-cancel').checked;
+    if(!a)return fieldErr('#cl-a','Escolha a data');if(b<a)return fieldErr('#cl-b','A data final precisa ser depois da inicial');
+    const days=[];for(let d=new Date(a+'T00:00');DB.iso(d)<=b&&days.length<62;d.setDate(d.getDate()+1)){const ds=DB.iso(d);if(!db.holidays.some(h=>h.date===ds))days.push(ds)}
+    if(!days.length)return toast('Esse período já está fechado');
+    const hit=db.appts.filter(x=>days.includes(x.date)&&['conf','pend','now'].includes(x.status)),lbl=days.length===1?fmtD(days[0]):`${fmtD(days[0])} a ${fmtD(days[days.length-1])}`;
+    const go2=()=>{mutMany(['holidays','appts'],d=>{days.forEach(ds=>d.holidays.push({id:DB.uid(),date:ds,name:why}));if(kill)hit.forEach(x=>{d.appts.find(y=>y.id===x.id).status='cancel'})},`Agenda fechada em ${lbl}: ${why}${kill&&hit.length?` (${plural(hit.length,'horário cancelado','horários cancelados')})`:''}`,'Configurações');
+      if(kill)hit.forEach(x=>DB.notify('cancel',x))};
+    if(!hit.length)return go2();
+    confirmBox(kill?'Cancelar os horários marcados?':'Já há clientes nesse período',`${plural(hit.length,'cliente marcado','clientes marcados')} em ${lbl}: ${hit.slice(0,5).map(x=>esc(cname(x.cid))+' '+fmtD(x.date)+' '+x.start).join(', ')}${hit.length>5?'…':''}. ${kill?'Os horários serão cancelados e cada cliente recebe o aviso com o link para marcar outro dia.':'Eles continuam na agenda: avise e remarque, ou marque a opção de cancelar e avisar.'}`,kill?'Fechar e cancelar':'Fechar mesmo assim',go2,kill)},
+  'hol-rm':b=>{const h=db.holidays.find(x=>x.id===b.dataset.id);change('holidays',L=>L.splice(L.findIndex(x=>x.id===h.id),1),`Agenda de ${fmtD(h.date)} reaberta (${h.name})`,'Configurações')},
   'bk-exp':()=>download(`backup-farias-${TODAY}.json`,DB.exportAll(),'application/json'),
   'bk-reset':()=>confirmBox('Voltar aos dados de exemplo?','Apaga todas as alterações feitas neste navegador. Baixe um backup antes, se quiser guardar.','Apagar e recomeçar',()=>{DB.reset();location.reload()}),
 });
