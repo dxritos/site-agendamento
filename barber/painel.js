@@ -453,7 +453,7 @@ let waTab='robo',botFrom='';const chat=[];
 /* no simulador, as opções numeradas da última resposta viram botões, como a lista do WhatsApp */
 const chatMsg=(m,last)=>m.me?esc(m.t):last?waFmt(m.t).replace(/(?:^|<br>)(\d{1,2})\. ([^<]+)/g,(x,n,t)=>`<button class="copt" data-bot="${n}">${n}. ${t}</button>`):waFmt(m.t);
 const waFmt=t=>esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
-const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Próximo cliente','15 min antes: nome, serviço e observações.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
+const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Chegou a hora do cliente','Na hora marcada o robô pergunta se o cliente veio: 👍, 👎 ou cancelou.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
 function vMensagens(){
   const b=db.bot,tabs=[['robo','Robô'],['msgs','Mensagens automáticas'],['out',`Enviadas (${db.outbox.length})`]];
   const head=`<div class="top"><div><h1>WhatsApp</h1><p>O robô avisa você e o cliente, e aceita comandos por mensagem.</p></div>${waTab==='msgs'?'<div class="acts"><button class="btn btn-primary btn-sm" data-act="msg-save">Salvar mensagens</button></div>':''}</div>
@@ -470,8 +470,9 @@ function vMensagens(){
       <button class="btn btn-ghost btn-sm" data-wa="msgs" style="margin-top:12px">Editar os textos</button></div>
    </div>
    <div class="card box"><h3>Teste o robô <small>como se fosse o WhatsApp</small></h3>
-     <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map((m,i)=>`<div class="cb ${m.me?'me':''}">${chatMsg(m,i===chat.length-1)}</div>`).join(''):'<div class="cb">'+waFmt('Bot:\nEnvie *menu* para escolher uma opção, ou escreva um comando.')+'</div>'}</div>
-     <div class="chips-var" style="margin:10px 0">${['menu','próximo','ok pix','agendar corte Lucas às 15','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
+     <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map((m,i)=>`<div class="cb ${m.me?'me':''}">${chatMsg(m,i===chat.length-1)}</div>`).join(''):'<div class="cb">'+waFmt('Bot:\nEnvie *menu* para escolher uma opção, *agendar* para eu te perguntar passo a passo, ou escreva um comando.')+'</div>'}</div>
+     <div class="chips-var" style="margin:10px 0">${['menu','agendar','próximo','👍','👎','pix','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
+     <button class="btn btn-ghost btn-sm" data-act="bot-due" style="margin-bottom:12px">Simular: chegou a hora do próximo cliente</button>
      <div class="fl" style="margin-bottom:10px"><label>Enviar como</label><select class="inp" id="bot-from"><option value="">Farias (número da equipe)</option><option value="94900001234" ${botFrom?'selected':''}>Número desconhecido (cliente)</option></select></div>
      <div class="fix"><input class="inp" id="bot-in" placeholder="Ex.: agendar corte João às 15" aria-label="Mensagem para o robô" autocomplete="off" ${b.staff?'':'disabled'}><button class="btn btn-primary btn-sm" data-act="bot-send" ${b.staff?'':'disabled'}>Enviar</button></div>
      <p class="hint" style="margin-top:10px">Os comandos mexem na agenda de verdade deste protótipo. O envio pelo WhatsApp real depende de ligar a conta do WhatsApp Business no servidor.</p></div>
@@ -485,6 +486,11 @@ document.addEventListener('change',e=>{if(e.target.id==='bot-from'){botFrom=e.ta
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&db.messages[k]&&$('#pv-'+k))$('#pv-'+k).innerHTML=esc(fillVars(e.target.value))+'<small>agora ✓✓</small>'});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ins]');if(!b)return;const t=$('#'+b.dataset.t),p=t.selectionStart??t.value.length;t.value=t.value.slice(0,p)+b.dataset.ins+t.value.slice(t.selectionEnd??p);t.focus();t.dispatchEvent(new Event('input',{bubbles:true}))});
 ACT['bot-send']=()=>botSend($('#bot-in').value);
+/* na hora marcada o robô pergunta ao responsável se o cliente veio (no servidor isso roda sozinho, a cada minuto) */
+function botTick(force){const m=Bot.tick(force);if(!m){if(force)toast('Não há cliente aguardando hoje para simular');return}chat.push({t:m});
+  if(VIEW==='mensagens'&&waTab==='robo'){if(!$('#modal').classList.contains('open')){render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight}}else toast('Robô: chegou a hora do próximo cliente. Veja em WhatsApp.')}
+ACT['bot-due']=()=>{waTab='robo';botTick(true)};
+setInterval(()=>botTick(false),30000);
 ACT['out-clear']=()=>confirmBox('Limpar mensagens?','Apaga a lista de mensagens geradas. Os agendamentos não mudam.','Limpar',()=>change('outbox',L=>L.splice(0,L.length),'Lista de mensagens do WhatsApp limpa','WhatsApp'));
 ACT['tip-off']=()=>{tipOff=true;try{localStorage.setItem('farias_tip','0')}catch(e){}render()};
 ACT['msg-save']=()=>change('messages',M=>Object.keys(M).forEach(k=>{M[k].txt=$('#m-'+k).value;M[k].on=$('#m-on-'+k).checked}),'Mensagens do WhatsApp atualizadas','Mensagens');

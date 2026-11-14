@@ -101,7 +101,8 @@ Prefere escolher numa lista? Envie *menu*.
 *Agenda*
 *hoje* · *amanhã* · *agenda 20/11* · *semana*
 *livres amanhã* — horários vagos
-*agendar corte João às 15* (hoje) · *agendar João barba amanhã 10*
+*agendar* — o robô pergunta nome, horário e serviço
+*agendar corte João às 15* — tudo de uma vez
 *encaixe João barba* — primeira vaga de hoje
 *remarcar 15:00 para amanhã 16:30*
 *cancelar 15:00* · *cancelar dia amanhã*
@@ -217,26 +218,84 @@ const ALIAS={help:'ajuda','?':'ajuda',comandos:'ajuda',prox:'proximo',proxima:'p
   confirma:'confirmar',conclui:'concluir',concluido:'concluir',finalizar:'concluir',pronto:'ok',feito:'ok',terminei:'ok',falta:'faltou',cancela:'cancelar',desmarcar:'cancelar',bloqueio:'bloquear',desbloqueio:'desbloquear',
   folga:'fechar',reabrir:'abrir',ficha:'cliente',nota:'obs',telefone:'tel',pendente:'pendentes',lembrete:'lembrar',dinheiro:'caixa',faturamento:'caixa',planos:'assinantes',atrasei:'atraso',atrasado:'atraso',dia:'resumo',voltar:'desfazer'};
 
-/* ===== menu "selecione uma opção" e formulários prontos para preencher ===== */
-const MENU=[['Agendar um cliente','f:agendar'],['Próximo cliente','c:proximo'],['Concluir o atendimento atual','m:pagar'],['Agenda de hoje','c:hoje'],['Remarcar um horário','f:remarcar'],['Cancelar um horário','f:cancelar'],['Fechar a agenda','m:fechar'],['Caixa','m:caixa'],['Quem não confirmou','c:pendentes'],['Todos os comandos','c:ajuda']];
+/* ===== menu "selecione uma opção" e conversas guiadas (uma pergunta de cada vez) ===== */
+const MENU=[['Agendar um cliente','w:agendar'],['Próximo cliente','c:proximo'],['Concluir o atendimento atual','m:pagar'],['Agenda de hoje','c:hoje'],['Remarcar um horário','w:remarcar'],['Cancelar um horário','w:cancelar'],['Fechar a agenda','m:fechar'],['Caixa','m:caixa'],['Quem não confirmou','c:pendentes'],['Todos os comandos','c:ajuda']];
 const SUB={
   pagar:['Como o cliente pagou?',[['Pix','c:ok pix'],['Dinheiro','c:ok dinheiro'],['Débito','c:ok debito'],['Crédito','c:ok credito'],['Concluir sem registrar pagamento','c:ok']]],
-  fechar:['Fechar quando?',[['Hoje, o dia todo','c:fechar hoje'],['O resto de hoje, a partir de agora','c:fechar hoje resto'],['Outro dia','f:fechar'],['Reabrir hoje','c:abrir hoje']]],
+  fechar:['Fechar quando?',[['Hoje, o dia todo','c:fechar hoje'],['O resto de hoje, a partir de agora','c:fechar hoje resto'],['Outro dia','w:fechar'],['Reabrir hoje','c:abrir hoje']]],
   caixa:['Caixa de qual período?',[['Hoje','c:caixa'],['Esta semana','c:caixa semana'],['Este mês','c:caixa mes']]]};
-const FORM={
-  agendar:{t:'Novo agendamento',f:[['Nome',''],['Horário',''],['Serviço','corte'],['Dia','hoje']],ex:'Nome: João Silva\nHorário: 15\nServiço: corte\nDia: amanhã',cmd:v=>`agendar ${v.servico||'corte'} ${v.nome||''} ${v.dia||'hoje'} as ${v.horario||''}`,free:t=>'agendar '+t},
-  remarcar:{t:'Remarcar',f:[['Cliente',''],['Novo dia','hoje'],['Novo horário','']],ex:'Cliente: João\nNovo dia: amanhã\nNovo horário: 16',cmd:v=>`remarcar ${v.cliente||''} para ${v.novodia||v.dia||''} as ${v.novohorario||v.horario||''}`,free:t=>'remarcar '+t},
-  cancelar:{t:'Cancelar horário',f:[['Cliente',''],['Dia','hoje']],ex:'Cliente: João\nDia: hoje',cmd:v=>`cancelar ${v.cliente||''} ${v.dia||''}`,free:t=>'cancelar '+t},
-  fechar:{t:'Fechar a agenda',f:[['Dia',''],['A partir de','dia todo'],['Motivo','folga']],ex:'Dia: 20/11\nA partir de: dia todo\nMotivo: feriado',cmd:v=>`fechar ${v.dia||''} ${/\d/.test(v.apartirde||'')?'as '+v.apartirde:''} ${v.motivo||''}`,free:t=>'fechar '+t}};
 const showMenu=(title,items)=>{setSt({menu:items});return `${title}\n`+items.map(([n],i)=>`${i+1}. ${n}`).join('\n')+'\n\nResponda com o número.'};
-const showForm=k=>{setSt({form:k});const F=FORM[k];return `*${F.t}*\nCopie, preencha e envie:\n\n${F.f.map(([l,d])=>`${l}: ${d}`).join('\n')}\n\nExemplo:\n${F.ex}\n\nOu escreva direto, em uma linha.`};
-const act=code=>{const [k,v]=[code[0],code.slice(2)];return k==='f'?showForm(v):k==='m'?showMenu(SUB[v][0],SUB[v][1]):exec(v)};
-/* formulário preenchido: linhas "Campo: valor" viram o comando correspondente */
-function readForm(k,raw){const v={};let n=0;raw.split('\n').forEach(l=>{const m=/^\s*([^:]{2,20}):\s*(.*)$/.exec(l);if(m&&m[2].trim()){v[norm(m[1]).replace(/\s+/g,'')]=m[2].trim();n++}});return exec(n?FORM[k].cmd(v):FORM[k].free(raw))}
+const hh=t=>t.slice(3)==='00'?+t.slice(0,2)+'h':+t.slice(0,2)+'h'+t.slice(3);
+const dayTxt=ds=>ds===TODAY()?'hoje':ds===iso(day0(1))?'amanhã':WDF[new Date(ds+'T00:00').getDay()]+', '+short(ds);
+const YES=/^(sim|s|isso|pode|ok|confirmo|confirma|confirmado)$/,NOPE=/^(nao|n|nao quero|deixa)$/;
+const svcList=()=>services().slice().sort((a,b)=>a.p-b.p);
+/* cada conversa guarda o passo atual e o que já foi respondido; no fim executa a ação */
+const WIZ={
+  agendar:{
+    start(){return ask('agendar','nome',{},'Qual o nome do cliente?')},
+    nome(d,raw){const nm=trimFill(norm(raw));if(nm.length<2)return ask('agendar','nome',d,'Não entendi o nome. Qual o nome do cliente?');
+      const hits=db().clients.filter(c=>norm(c.name).includes(nm)),ex=hits.filter(c=>norm(c.name)===nm),one=ex.length===1?ex[0]:hits.length===1?hits[0]:null;
+      if(one)return this.gotClient(d,one);
+      if(!hits.length)return ask('agendar','novo',{...d,nm:cap(raw.trim().toLowerCase())},`Não achei "${cap(raw.trim().toLowerCase())}" no cadastro. É cliente novo?\nResponda *sim* para cadastrar, ou envie outro nome.`);
+      return ask('agendar','qual',{...d,opts:hits.slice(0,9).map(c=>c.id)},`Qual ${cap(nm)}?\n`+hits.slice(0,9).map((c,i)=>`${i+1}. ${c.name} · ${fone(c.phone)}`).join('\n')+'\n\nResponda com o número ou o nome completo.')},
+    qual(d,raw){const n=norm(raw),c=/^\d$/.test(n)?cli(d.opts[+n-1]):d.opts.map(cli).find(x=>norm(x.name)===n)||(l=>l.length===1?l[0]:null)(d.opts.map(cli).filter(x=>norm(x.name).includes(n)));
+      return c?this.gotClient(d,c):ask('agendar','qual',d,'Não identifiquei. Responda com o número da lista ou o nome completo.')},
+    novo(d,raw){const n=norm(raw);if(YES.test(n))return this.askTime({...d,cid:null,name:d.nm});if(NOPE.test(n))return this.start();return this.nome(d,raw)},
+    gotClient(d,c){if(DB.isBlocked(c)){setSt(null);return `${c.name} está bloqueado para agendar (${c.misses||0} faltas). Libere na ficha do cliente.`}return this.askTime({...d,cid:c.id,name:c.name})},
+    askTime(d,pre){return ask('agendar','horario',d,(pre||`Ok, ${d.name}.`)+' Qual o horário? (Ex.: 15 ou 3. Outro dia: amanhã 15)')},
+    horario(d,raw){const p=bare(parse(raw)),tm=p.times[0],ds=p.date||d.ds||TODAY();if(!tm)return ask('agendar','horario',d,'Não entendi o horário. Envie só a hora, como 15 ou 15:30.');
+      if(closed(ds)||!db().hours[new Date(ds+'T00:00').getDay()])return ask('agendar','horario',d,`A agenda está fechada ${dayTxt(ds)}${closed(ds)?' ('+closed(ds).name+')':''}. Qual outro dia e horário?`);
+      const nd={...d,ds,tm};if(d.sv)return this.finish(nd);
+      return ask('agendar','servico',nd,`Certo, ${hh(tm)}${ds===TODAY()?'':' de '+dayTxt(ds)}. Qual o serviço?\nServiços disponíveis:\n`+svcList().map((s,i)=>`${i+1}. ${s.n} · ${brl(s.p)} · ${s.t} min`).join('\n')+'\n\nResponda com o número ou o nome.')},
+    servico(d,raw){const n=norm(raw).replace(/\s+e\s+/g,' + ').replace(/\s*\+\s*/g,' + '),L=svcList(),sv=/^\d{1,2}$/.test(n)?L[+n-1]:L.find(s=>norm(s.n)===n)||services().find(s=>n.includes(norm(s.n)))||L.find(s=>norm(s.n).includes(n));
+      return sv?this.finish({...d,sv}):ask('agendar','servico',d,'Não achei esse serviço. Responda com o número da lista ou o nome.')},
+    finish(d){const {sv,ds,tm}=d;if(!DB.freeSlots(ds,sv.t).includes(tm)){const f=DB.freeSlots(ds,sv.t);
+        return ask('agendar','horario',d,`${hh(tm)} não está livre ${dayTxt(ds)} para ${sv.n} (${sv.t} min).`+(f.length?`\nLivres: ${f.slice(0,10).map(hh).join(' · ')}\nQual horário?`:'\nNão há vaga nesse dia. Qual outro dia e horário?'))}
+      setSt(null);let c=d.cid?cli(d.cid):null;const isNew=!c;
+      if(isNew){const x=new Date();c={id:'c'+DB.uid(),name:d.name,phone:'',notes:'Cadastrado pelo WhatsApp. Falta o telefone.',blocked:false,misses:0,since:MO[x.getMonth()]+'/'+String(x.getFullYear()).slice(2)}}
+      const usePlan=!isNew&&/^corte( \+ barba)?$/i.test(sv.n)&&!DB.planCheck(c.id,ds,sv.n),aid=DB.uid();
+      mut(['clients','appts'],x=>{if(isNew)x.clients.push(c);x.appts.push({id:aid,date:ds,start:tm,dur:sv.t,cid:c.id,svc:sv.n,price:usePlan?0:sv.p,plan:usePlan,status:'conf',note:'',origin:'whatsapp'})},`${c.name}: ${sv.n} marcado para ${short(ds)} ${tm} pelo WhatsApp`);
+      const sent=c.phone&&DB.notify('confirm',db().appts.find(x=>x.id===aid));
+      return `Combinado! ${c.name} agendado para ${dayTxt(ds)} às ${hh(tm)}.\n${sv.n} · ${usePlan?'pelo plano':brl(sv.p)} · ${sv.t} min.`+(isNew?`\n\nCliente novo, sem telefone. Envie *tel ${first(c).toLowerCase()} 94999990000* para ele receber as mensagens.`:sent?'\n\nO cliente recebeu a confirmação. O link de presença sai 2 h antes.':'')}},
+  cancelar:{
+    start(){return ask('cancelar','quem',{},'Cancelar o horário de quem? Envie o nome do cliente ou a hora. (Ex.: João ou 15)')},
+    quem(d,raw){const r=find(parse(raw),OPEN,'João ou 15');if(r.err)return ask('cancelar','quem',d,r.err.split('\n')[0]+'\nEnvie o nome ou a hora de novo, ou *sair*.');const a=r.a;
+      return ask('cancelar','conf',{aid:a.id},`Cancelar ${a.svc} de ${cname(a.cid)}, ${dayTxt(a.date)} às ${hh(a.start)}?\nResponda *sim* ou *não*.`)},
+    conf(d,raw){const n=norm(raw),a=db().appts.find(x=>x.id===d.aid);setSt(null);if(!YES.test(n)||!a)return 'Ok, não cancelei nada.';return exec(`cancelar ${a.start} ${short(a.date)}`)}},
+  remarcar:{
+    start(){return ask('remarcar','quem',{},'Remarcar o horário de quem? Envie o nome do cliente ou a hora atual. (Ex.: João ou 15)')},
+    quem(d,raw){const r=find(parse(raw),OPEN,'João ou 15');if(r.err)return ask('remarcar','quem',d,r.err.split('\n')[0]+'\nEnvie o nome ou a hora de novo, ou *sair*.');const a=r.a;
+      return ask('remarcar','quando',{aid:a.id},`${cname(a.cid)} está ${dayTxt(a.date)} às ${hh(a.start)} (${a.svc}).\nPara quando? (Ex.: 16, ou amanhã 10)`)},
+    quando(d,raw){const a=db().appts.find(x=>x.id===d.aid);if(!a){setSt(null);return 'Esse horário não existe mais.'}const r=exec(`remarcar ${a.start} ${short(a.date)} para ${raw}`);
+      if(!/^Remarcado/.test(r))return ask('remarcar','quando',d,r.split('\n')[0]+'\nQual outro dia e horário? (ou *sair*)');setSt(null);return r}},
+  fechar:{
+    start(){return ask('fechar','dia',{},'Fechar a agenda de qual dia? (Ex.: hoje, amanhã, 20/11)')},
+    dia(d,raw){const p=parse(raw);if(!p.date)return ask('fechar','dia',d,'Não entendi o dia. Envie hoje, amanhã ou uma data como 20/11.');
+      return ask('fechar','parte',{ds:p.date},`${cap(dayTxt(p.date))}: o dia todo ou a partir de que horas? (Ex.: dia todo, ou 15)`)},
+    parte(d,raw){const p=bare(parse(raw));return ask('fechar','motivo',{...d,tm:p.times[0]||null},'Qual o motivo? (Ex.: feriado, folga, imprevisto)')},
+    motivo(d,raw){setSt(null);return exec(`fechar ${short(d.ds)} ${d.tm?'as '+d.tm:''} ${raw.trim()}`)}}};
+const ask=(w,step,d,q)=>{setSt({wiz:w,step,d});return q};
+const act=code=>{const [k,v]=[code[0],code.slice(2)];return k==='w'?WIZ[v].start():k==='m'?showMenu(SUB[v][0],SUB[v][1]):exec(v)};
 function exec(raw){const n=norm(raw),w=n.split(/\s+/)[0],k=CMD[w]?w:ALIAS[w],rest=raw.replace(/^\S+\s*/,'');
   if(!k)return `Não entendi "${raw}". Envie *menu* para escolher uma opção ou *ajuda* para ver os comandos.`;
   try{return CMD[k](parse(rest),rest)}catch(e){return 'Não consegui fazer isso agora. Tente de novo.'}}
 const isTeam=from=>{if(!from)return true;const d=String(from).replace(/\D/g,'').slice(-11);return db().team.some(u=>u.active&&String(u.phone||'').replace(/\D/g,'').slice(-11)===d)};
+
+/* ===== na hora marcada: o robô pergunta ao responsável se o cliente veio ===== */
+function promptFor(a){a.asked=true;DB.save();setSt({ask:a.id});const c=cli(a.cid)||{};
+  return `Chegou a hora: *${hh(a.start)} · ${cname(a.cid)}*\n${a.svc} · ${a.plan?'assinante':brl(a.price)}${c.notes?'\nObs.: '+c.notes:''}\n\nO cliente veio?\n👍 sim (ou *ok*)\n👎 não veio (ou *faltou*)\n*cancelou* se ele desmarcou`}
+const THUMB_UP=/👍|✅|👌/,THUMB_DOWN=/👎|❌/;
+function onAsk(st,raw,n){const a=db().appts.find(x=>x.id===st.ask);if(!a||!OPEN.includes(a.status))return null;
+  if(THUMB_UP.test(raw)||/^(ok|okay|sim|s|veio|chegou|confirma|confirmo|confirmado|presente|ta aqui|esta aqui)$/.test(n)){
+    mut(['appts'],d=>{d.appts.forEach(x=>{if(x.date===a.date&&x.status==='now')x.status='conf'});d.appts.find(x=>x.id===a.id).status='now'},`${cname(a.cid)}: em atendimento (${a.start})`);setSt({pay:a.id});
+    return `${first(cli(a.cid)||{name:'Cliente'})} na cadeira.\nQuando terminar, `+(a.plan||!a.price?'envie *ok*.':'me diga como foi pago: *pix*, *dinheiro*, *débito* ou *crédito*.')}
+  if(THUMB_DOWN.test(raw)||/^(nao|n|nao veio|faltou|falta|furou)$/.test(n))return exec(`faltou ${a.start} ${short(a.date)}`);
+  if(/^(cancelou|cancelado|cancelar|desmarcou|desmarcado)$/.test(n))return exec(`cancelar ${a.start} ${short(a.date)}`);
+  return null}
+function onPay(st,raw,n){const a=db().appts.find(x=>x.id===st.pay);if(!a||a.status!=='now')return null;const p={rest:n},met=takeMet(p);
+  if(met)return finish(a,met);
+  if(THUMB_UP.test(raw)||/^(ok|okay|pronto|feito|terminei|terminou|acabou|concluido|plano)$/.test(n)){if(a.plan||!a.price)return finish(a,null);return showMenu('Como o cliente pagou?',SUB.pagar[1])}
+  return null}
 
 window.Bot={
   help:HELP,
@@ -248,15 +307,25 @@ window.Bot={
     const out=r=>'Bot:\n'+r;
     if(!db().bot.staff)return out('O robô da equipe está desligado. Ligue em Painel › WhatsApp.');
     const st=getSt();setSt(null);
-    if(!n||['menu','oi','ola','inicio','opcoes','bom dia','boa tarde','boa noite'].includes(n))return out(showMenu('Selecione uma opção:',MENU));
-    if(st&&/^(0|sair|voltar)$/.test(n))return out(showMenu('Selecione uma opção:',MENU));
-    if(st&&st.pick){const i=/^\d$/.test(n)?+n-1:-1,c=i>=0?cli(st.pick[i]):null;if(c)return out(st.cont(c));if(/^\d+$/.test(n)){setSt(st);return out('Responda com um dos números da lista, ou *sair*.')}}
-    if(st&&st.menu&&/^\d{1,2}$/.test(n)){const it=st.menu[+n-1];if(it)return out(act(it[1]));setSt(st);return out('Opção inválida. Responda com um dos números da lista.')}
-    if(st&&st.form&&!CMD[n.split(/\s+/)[0]]&&!ALIAS[n.split(/\s+/)[0]]){const r=readForm(st.form,raw);if(!getSt()&&/^(Faltou|Não achei|\d\d:\d\d não|Use:|Diga)/.test(r))setSt(st);return out(r)}
-    if(/^\d{1,2}$/.test(n))return out(showMenu('Selecione uma opção:',MENU));
-    // formulário enviado fora de hora: reconhece pelos campos
-    if(/^\s*nome\s*:/m.test(n))return out(readForm('agendar',raw));if(/^\s*cliente\s*:/m.test(n))return out(readForm(/novo/.test(n)?'remarcar':'cancelar',raw));
-    return out(exec(raw))},
+    /* a pergunta "o cliente veio?" continua valendo enquanto não for respondida */
+    const keep=r=>{if(!getSt()&&st&&(st.ask||st.pay)){const a=db().appts.find(x=>x.id===(st.ask||st.pay));if(a&&OPEN.includes(a.status))setSt(st)}return out(r)};
+    if(st&&st.wiz){if(/^(0|sair|voltar|cancela|parar)$/.test(n))return out('Ok, parei por aqui. Envie *menu* quando precisar.');return out(WIZ[st.wiz][st.step](st.d,raw))}
+    if(st&&st.ask){const r=onAsk(st,raw,n);if(r)return out(r)}
+    if(st&&st.pay){const r=onPay(st,raw,n);if(r)return out(r)}
+    if(!n||['menu','oi','ola','inicio','opcoes','bom dia','boa tarde','boa noite'].includes(n))return keep(showMenu('Selecione uma opção:',MENU));
+    if(st&&st.pick){const i=/^\d$/.test(n)?+n-1:-1,c=i>=0?cli(st.pick[i]):st.pick.map(cli).find(x=>norm(x.name)===n);if(c)return keep(st.cont(c));if(/^\d+$/.test(n)){setSt(st);return out('Responda com um dos números da lista, ou *sair*.')}}
+    if(st&&st.menu&&/^\d{1,2}$/.test(n)){const it=st.menu[+n-1];if(it)return keep(act(it[1]));setSt(st);return out('Opção inválida. Responda com um dos números da lista.')}
+    if(/^\d{1,2}$/.test(n))return keep(showMenu('Selecione uma opção:',MENU));
+    // comando sem nada depois: o robô conduz pelas perguntas
+    const solo={agendar:'w:agendar',marcar:'w:agendar',remarcar:'w:remarcar',cancelar:'w:cancelar',desmarcar:'w:cancelar',fechar:'m:fechar',concluir:'m:pagar',caixa:'m:caixa'}[n];if(solo&&solo!=='m:caixa')return keep(act(solo));
+    if(THUMB_UP.test(raw))return keep(exec('chegou'));
+    if(THUMB_DOWN.test(raw))return keep('Quem não veio? Envie *faltou 15* (a hora) ou *faltou João*.');
+    return keep(exec(raw))},
+  /* chamado a cada minuto (no servidor, pelo agendador): se chegou a hora de um cliente, devolve a pergunta ao responsável */
+  tick(force){DB.refresh();const b=db().bot;if(!b.staff||b.evNext===false)return null;CUR='equipe';const st=getSt();
+    if(st&&(st.ask||st.pay||st.wiz)){const a=db().appts.find(x=>x.id===(st.ask||st.pay));if(st.wiz||(a&&OPEN.includes(a.status)))return null}
+    const L=dayList(TODAY()).filter(a=>['conf','pend'].includes(a.status)&&(force||(!a.asked&&a.start<=nowHM()))),a=L[0];if(!a)return null;
+    const txt=promptFor(a);DB.notifyStaff('evNext',txt);return 'Bot:\n'+txt},
   next:proximo,daily:()=>agenda(TODAY())
 };
 })();
