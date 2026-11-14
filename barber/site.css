@@ -558,9 +558,9 @@ input,select,textarea{font-family:inherit}
   .lead{font-size:14.5px;margin:14px 0 20px;max-width:none}
   .actions{flex-direction:column;gap:10px}
   .actions .btn{width:100%;padding:12px 18px;font-size:14px}
-  .stats{gap:22px;margin-top:26px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:26px}
   .stats b{font-size:26px}
-  .stats span{font-size:12px;letter-spacing:.14em;margin-top:4px}
+  .stats span{font-size:12px;letter-spacing:.08em;margin-top:4px}
   /* seções */
   section{padding:52px 0}
   .head{margin-bottom:26px}
