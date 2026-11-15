@@ -22,7 +22,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#060607">
+<meta name="theme-color" content="#0b0b0b">
 <link rel="stylesheet" href="site.css">
 </head>
 <body class="pg-agendar">
@@ -58,7 +58,7 @@
       <div class="book-body">
         <div class="pane on" id="p1">
           <div class="svc-tabs" id="svctabs">
-            <button class="on" data-c="cab">Cabelo &amp; barba</button><button data-c="com">Combos</button><button data-c="ext">Tratamentos</button><button data-c="ass">Sou assinante</button>
+            <button class="on" data-c="cab">Cabelo &amp; barba</button><button data-c="com">Combos</button><button data-c="ext">Tratamentos</button>
           </div>
           <p class="svc-hint">Pode escolher mais de um serviço: eles ficam no mesmo horário, um em seguida do outro.</p>
           <div class="svc-list" id="svclist"></div>
@@ -91,6 +91,7 @@
         </div>
         <div class="pane" id="p5">
           <div class="done"><div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div><h3 class="bebas">Horário marcado!</h3><p id="donetxt"></p>
+            <div class="done-acts"><a class="btn btn-primary" href="index.html">Concluir</a><a class="btn btn-ghost" href="assinante.html">Ver meus horários</a></div>
             <div class="wa-demo" id="wademo" hidden><small>Mensagem enviada ao seu WhatsApp (demonstração)</small><div class="wa-b" id="wabubble"></div></div></div>
         </div>
       </div>
@@ -98,7 +99,7 @@
         <div class="sel" id="sel">Nenhum serviço selecionado</div>
         <div style="display:flex;gap:10px">
           <button class="btn btn-ghost btn-sm" id="back" style="display:none">Voltar</button>
-          <button class="btn btn-primary btn-sm" id="next" disabled style="opacity:.5">Continuar</button>
+          <button class="btn btn-primary btn-sm" id="next" disabled>Continuar</button>
         </div>
       </div>
     </div>

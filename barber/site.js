@@ -35,8 +35,8 @@ addEventListener('load',()=>(window.requestIdleCallback||setTimeout)(()=>$$('#me
 const db=DB.data, C=db.content;
 const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'],WDF=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const svcById=k=>db.services.find(s=>s.id===k)||{p:0,t:45,on:false};
-const SVC={cab:[],com:[],ext:[],ass:[{n:'Corte (plano)',base:'Corte',d:'Incluso no seu plano',p:0,t:svcById('corte').t||45,plan:1},{n:'Corte + Barba (plano)',base:'Corte + Barba',d:'Incluso no seu plano',p:0,t:60,plan:1}]};
-db.services.filter(s=>s.on).forEach(s=>{if(SVC[s.cat])SVC[s.cat].push({n:s.n,d:s.d+(s.mp!=null?' · assinante '+brl(s.mp):''),p:s.p,t:s.t,mp:s.mp})});
+const SVC={cab:[],com:[],ext:[]};
+db.services.filter(s=>s.on).forEach(s=>{if(SVC[s.cat])SVC[s.cat].push({id:s.id,n:s.n,d:s.d,p:s.p,t:s.t,mp:s.mp})});
 // dias válidos de plano: todos os planos (inclusive os ocultos da venda, que ainda têm assinantes)
 const PLAN_DAYS=[...new Set(db.plans.flatMap(p=>p.days))];
 const today=new Date();today.setHours(0,0,0,0);
@@ -181,25 +181,26 @@ renderWeek();
 book:if($('#svclist')){
   const st={cat:'cab',items:[],svc:null,day:null,time:null,step:1};
   /* vários serviços no mesmo horário: st.svc é a soma do que foi escolhido (nomes, duração e preço) */
-  const agg=()=>{const I=st.items;st.svc=I.length?{n:I.map(x=>x.n).join(' + '),base:I.map(x=>x.base||x.n).join(' + '),planBase:(I.find(x=>x.plan)||{}).base,t:I.reduce((a,x)=>a+x.t,0),p:I.reduce((a,x)=>a+(x.plan?0:x.p),0),plan:I.some(x=>x.plan)}:null};
+  const agg=()=>{const I=st.items;st.svc=I.length?{n:I.map(x=>x.n).join(' + '),base:I.map(x=>x.base||x.n).join(' + '),planBase:I.filter(x=>x.plan).map(x=>x.base).join(' + ')||undefined,t:I.reduce((a,x)=>a+x.t,0),p:I.reduce((a,x)=>a+(x.plan?0:x.p),0),plan:I.some(x=>x.plan)}:null};
   // quem está agendando: cliente que entrou (ME) ou visitante avulso. A aba do plano só existe para assinante em dia.
   let ME=null;try{ME=db.clients.find(c=>c.id===localStorage.getItem('farias_me'))||null}catch(e){}
   const SUB=ME&&DB.activeSub(ME.id),MEMBER=!!(SUB&&SUB.status==='ok');
-  if(!MEMBER){const t=$('#svctabs [data-c="ass"]');if(t)t.remove()}
+  /* assinante em dia: os serviços que o plano cobre aparecem com o desconto (de R$ 50 por R$ 0), sem aba separada */
+  const PLAN=MEMBER?DB.plan(SUB.plan):null,covers=s=>!!PLAN&&(s.id==='corte'||(s.id==='barba'&&/barba/i.test(PLAN.n)));
+  Object.values(SVC).flat().forEach(s=>{if(covers(s)){s.plan=1;s.base=s.n}});
   if(!ME){try{localStorage.removeItem('farias_me')}catch(e){}location.replace('entrar.html?next=agendar');break book}
   const who=$('#bwho');if(who)who.innerHTML=`Agendando como <b>${esc(ME.name)}</b>${MEMBER?' · assinante '+esc(DB.plan(SUB.plan).n):SUB?` · <a href="assinante.html">assinatura ${SUB.status==='late'?'com pagamento pendente':'pausada'}: regularize para usar o plano</a>`:''} · <button type="button" id="bout">não sou eu</button>`;
   if($('#bout'))$('#bout').onclick=()=>{try{localStorage.removeItem('farias_me')}catch(e){}location.href='entrar.html?next=agendar'};
-  if(MEMBER)st.cat='ass';
   if($('#blead'))$('#blead').textContent=MEMBER?'Escolha o serviço e o melhor horário. O que está no seu plano sai por R$ 0.':'Escolha o serviço e o melhor horário. O pagamento é na barbearia.';
-  const validDay=d=>openDay(d)&&(!st.svc||!st.svc.plan||PLAN_DAYS.includes(d.getDay()));
+  const validDay=d=>openDay(d);
   const dayLabel=i=>{const d=days[i];return `${i===0?'Hoje':WD[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`};
   const codeIns=$$('#code input');codeIns.forEach((el,i)=>{el.setAttribute('aria-label',`Dígito ${i+1} de 6`);if(i===0)el.setAttribute('autocomplete','one-time-code')});
   const phoneNow=()=>$('#btel').value.replace(/\D/g,'');
   const clientNow=()=>db.clients.find(x=>x.phone===phoneNow());
   function renderSvc(){
-    $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.items.some(x=>x.n===s.n)?'on':''}" data-i="${i}" aria-pressed="${st.items.some(x=>x.n===s.n)}"><span><strong>${esc(s.n)}</strong><small>${esc(s.d)} · ${s.t} min</small></span><span class="pr"><b>${s.plan?'Incluso':brl(s.p)}</b>${s.plan?'<small class="mem">R$ 0,00</small>':''}</span></button>`).join('')||'<p style="color:var(--muted)">Nenhum serviço nesta categoria.</p>';
+    $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.items.some(x=>x.n===s.n)?'on':''}" data-i="${i}" aria-pressed="${st.items.some(x=>x.n===s.n)}"><span><strong>${esc(s.n)}</strong><small>${esc(s.d)}${s.mp!=null&&!MEMBER?' · assinante '+brl(s.mp):''} · ${s.t} min</small></span><span class="pr">${s.plan?`<b><s>${brl(s.p)}</s> R$ 0,00</b><small class="mem">pelo seu plano</small>`:s.mp!=null&&MEMBER?`<b><s>${brl(s.p)}</s> ${brl(s.mp)}</b><small class="mem">preço de assinante</small>`:`<b>${brl(s.p)}</b>`}</span></button>`).join('')||'<p style="color:var(--muted)">Nenhum serviço nesta categoria.</p>';
     $$('#svclist .svc').forEach(b=>b.onclick=()=>{const s=SVC[st.cat][b.dataset.i],on=st.items.some(x=>x.n===s.n);
-      st.items=on?st.items.filter(x=>x.n!==s.n):[...st.items.filter(x=>!(s.plan&&x.plan)),s];agg();st.time=null;if(st.day!==null&&!validDay(days[st.day])){st.day=null;st.time=null}renderSvc();update()});
+      st.items=on?st.items.filter(x=>x.n!==s.n):[...st.items,s];agg();st.time=null;if(st.day!==null&&!validDay(days[st.day])){st.day=null;st.time=null}renderSvc();update()});
   }
   $$('#svctabs button').forEach(b=>{b.setAttribute('aria-pressed',b.classList.contains('on'));b.onclick=()=>{st.cat=b.dataset.c;$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b)});renderSvc()}});
   function renderDays(){
@@ -207,7 +208,7 @@ book:if($('#svclist')){
     if(st.day===null||!has(days[st.day])&&!st.time){const f=days.findIndex(has);st.day=f>-1?f:null}
     $('#days').innerHTML=days.map((d,i)=>`<button class="day ${st.day===i?'on':''}" data-i="${i}" aria-pressed="${st.day===i}" ${has(d)?'':'disabled'} title="${!openDay(d)?(holiday(d)?esc(holiday(d).name):'Fechado'):has(d)?'':'Lotado'}"><small>${i===0?'Hoje':WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`).join('');
     $$('#days .day').forEach(b=>b.onclick=()=>{st.day=+b.dataset.i;st.time=null;renderDays();update()});
-    $('#hint').style.display=st.svc&&st.svc.plan?'flex':'none';
+    $('#hint').style.display=st.svc&&st.svc.plan?'flex':'none';if(PLAN)$('#hint').innerHTML=`<i></i>Seu plano vale ${PLAN.days.map(x=>WD[x]).join(', ')}. Nos outros dias o serviço sai pelo valor avulso.`;
     renderSlots();
   }
   function renderSlots(){
@@ -218,9 +219,13 @@ book:if($('#svclist')){
   }
   // preço final: assinante ativo paga o preço especial (mp) nos serviços que têm
   const isMember=()=>{const c=clientNow(),s=c&&DB.activeSub(c.id);return !!(s&&s.status==='ok')};
-  const priceNow=()=>{const m=isMember();return st.items.reduce((a,x)=>a+(x.plan?0:x.mp!=null&&m?x.mp:x.p),0)};
-  const valTxt=()=>st.svc.plan&&!priceNow()?'Incluso no plano':brl(priceNow())+(st.svc.plan?' + plano':'');
+  /* o plano só vale se as regras deixarem naquele dia (dias do plano, saldo do mês, intervalo); senão o serviço sai como avulso */
+  const planOn=()=>!!(st.svc&&st.svc.plan&&!st.perr);
+  const priceNow=()=>{const m=isMember(),pl=!st.perr;return st.items.reduce((a,x)=>a+(x.plan&&pl?0:x.mp!=null&&m?x.mp:x.p),0)};
+  const valTxt=()=>planOn()&&!priceNow()?'R$ 0,00 · pelo plano':brl(priceNow())+(planOn()?' + plano':'');
   function update(){
+    st.perr=st.svc&&st.svc.plan&&st.day!==null?DB.planCheck(ME.id,DB.iso(days[st.day]),st.svc.planBase):null;
+    const nb=$('#bblock2');if(st.step===2&&st.perr){nb.textContent=`${st.perr} Neste dia o valor é ${brl(priceNow())}.`;nb.classList.add('info')}else if(nb.classList.contains('info')){nb.textContent='';nb.classList.remove('info')}
     const ok=(st.step===1&&st.svc)||(st.step===2&&st.time)||(st.step===3&&phoneNow().length===11&&$('#bname').value.trim().length>=2)||(st.step===4&&codeIns.every(x=>x.value));
     const nx=$('#next');nx.disabled=!ok;
     nx.textContent=st.step===3?(ME?'Confirmar agendamento':'Receber código no WhatsApp'):st.step===4?'Confirmar agendamento':'Continuar';
@@ -245,7 +250,7 @@ book:if($('#svclist')){
     if(isNew)c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:mo()};
     const svc=st.svc.base||st.svc.n,ds=DB.iso(days[st.day]);
     const aid=DB.uid();
-    const ok=DB.mutateMany(['clients','appts'],d=>{if(isNew)d.clients.push(c);d.appts.push({id:aid,date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:!!st.svc.plan,status:'pend',note:'',origin:'site'})},
+    const ok=DB.mutateMany(['clients','appts'],d=>{if(isNew)d.clients.push(c);d.appts.push({id:aid,date:ds,start:st.time,dur:st.svc.t,cid:c.id,svc,price:priceNow(),plan:planOn(),status:'pend',note:'',origin:'site'})},
       `Novo agendamento pelo site: ${c.name} · ${svc} em ${ds.slice(8)}/${ds.slice(5,7)} às ${st.time}`,'Agenda','Site');
     // WhatsApp: confirmação com o link individual para o cliente e aviso para o barbeiro
     if(ok){const a=db.appts.find(x=>x.id===aid);lastMsg=DB.notify('confirm',a);
@@ -253,23 +258,13 @@ book:if($('#svclist')){
     return ok;
   }
   let lastMsg=null;
-  function avulsoOf(base){return base==='Corte + Barba'?{n:'Corte + Barba',d:'Avulso',p:svcById('corte').p+svcById('barba').p,t:60}:{...(SVC.cab.find(x=>x.n===svcById('corte').n)||{n:'Corte',p:svcById('corte').p,t:45})}}
-  function planFail(msg,box='#bblock'){
-    const av=avulsoOf(st.svc.planBase);
-    $(box).innerHTML=`${esc(msg)}<span class="bfix"><button type="button" class="btn btn-primary btn-sm" id="bav">Agendar como avulso · ${brl(av.p)}</button><a class="btn btn-ghost btn-sm" href="index.html#planos">Conhecer os planos</a></span>`;
-    $('#bav').onclick=()=>{st.items=[av,...st.items.filter(x=>!x.plan&&x.n!==av.n)];agg();st.cat='cab';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='cab');x.setAttribute('aria-pressed',x.dataset.c==='cab')});
-      if(!DB.freeSlots(DB.iso(days[st.day]),av.t).includes(st.time)){st.step=2;st.time=null;renderDays()}
-      $(box).textContent='';renderSvc();update()};
-  }
-  $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';
+  $('#next').onclick=()=>{$('#bblock').textContent='';$('#bblock2').textContent='';$('#bblock2').classList.remove('info');
     if(st.step===3||st.step===4){DB.refresh();const c=clientNow();
       const back=()=>{if(st.step===4){st.step=3;update()}};
       if(DB.isBlocked(c)){back();$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Farias pelo WhatsApp.';return}
-      if(st.svc.plan){const err=c?DB.planCheck(c.id,DB.iso(days[st.day]),st.svc.planBase):'Este número não tem assinatura ativa.';if(err){back();planFail(err);return}}}
+}
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
     if(st.step===1)renderDays();
-    // assinante: as regras do plano (dias, saldo, intervalo) são conferidas já ao escolher o horário, não no fim
-    if(st.step===2&&st.svc.plan&&ME){DB.refresh();const err=DB.planCheck(ME.id,DB.iso(days[st.day]),st.svc.planBase);if(err){planFail(err,'#bblock2');return}}
     // quem já entrou não precisa confirmar o WhatsApp de novo
     if(st.step===3&&ME){if(!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
       if(!saveBooking()){$('#bblock').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Farias.';return}
@@ -284,7 +279,6 @@ book:if($('#svclist')){
   // vindo da página de horários: ?d=índice&t=HH:MM (validado)
   const q=new URLSearchParams(location.search);
   if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.items=SVC.cab[0]?[SVC.cab[0]]:[];agg();st.cat='cab';if(st.svc){st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}}
-  if(MEMBER&&!q.has('d')){st.cat='ass';$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x.dataset.c==='ass');x.setAttribute('aria-pressed',x.dataset.c==='ass')})}
   if(ME){$('#bname').value=ME.name;$('#btel').value=maskPhone(ME.phone);$('#bname').readOnly=$('#btel').readOnly=true;const n=$('#bnote');if(n)n.textContent='Seus dados vêm do seu cadastro. A confirmação chega no seu WhatsApp.'}
   renderSvc();update();
   // outra aba mudou a agenda: atualiza os horários livres
@@ -340,7 +334,7 @@ if($('#cform')){
 /* ===== animações de entrada ===== */
 (()=>{
   if(reduce||!('IntersectionObserver' in window))return;
-  const groups=['.head','.page-top>*','.steps>.step','.barber','.switch','.plans>.plan','.notes>.note','.book','.hrs>div:first-child>*','.feats>.feat-c','.week','.wrow','.gal>.gi','.cta','.foot>div','.reviews>.rev','.faq-i','.ccard','.cgrid>*','.hours-card','.gfilters'];
+  const groups=['.stats>div','.legal>*','.bwho','.head','.page-top>*','.steps>.step','.barber','.switch','.plans>.plan','.notes>.note','.book','.hrs>div:first-child>*','.feats>.feat-c','.week','.wrow','.gal>.gi','.cta','.foot>div','.reviews>.rev','.faq-i','.ccard','.cgrid>*','.hours-card','.gfilters'];
   groups.forEach(sel=>$$(sel).forEach((el,i)=>{el.classList.add('rv');el.style.setProperty('--d',(Math.min(i,5)*0.05)+'s')}));
   const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const el=e.target;el.classList.add('in');io.unobserve(el);setTimeout(()=>{el.classList.remove('rv','in');el.style.removeProperty('--d')},900)}}),{threshold:.05});
   $$('.rv').forEach(el=>io.observe(el));

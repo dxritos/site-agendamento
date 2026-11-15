@@ -209,3 +209,6 @@ if(!me().name||/^novo cliente$/i.test(me().name)){modal(`<h3 id="mt">Como podemo
   $('#nm-ok').onclick=()=>{const v=$('#nm').value.trim();if(v.length<2)return toast('Digite seu nome');closeModal();act('clients',L=>{L.find(x=>x.id===ME).name=v},`${v}: nome cadastrado`,'Clientes')}}
 
 }
+
+/* cabeçalho transparente no topo, sólido ao rolar */
+{const hd=document.querySelector('header');if(hd){const onS=()=>hd.classList.toggle('scrolled',scrollY>10);onS();addEventListener('scroll',onS,{passive:true})}}
