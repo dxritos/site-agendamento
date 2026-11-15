@@ -200,7 +200,7 @@ book:if($('#svclist')){
   function renderSvc(){
     $('#svclist').innerHTML=SVC[st.cat].map((s,i)=>`<button class="svc ${st.items.some(x=>x.n===s.n)?'on':''}" data-i="${i}" aria-pressed="${st.items.some(x=>x.n===s.n)}"><span><strong>${esc(s.n)}</strong><small>${esc(s.d)}${s.mp!=null&&!MEMBER?' · assinante '+brl(s.mp):''} · ${s.t} min</small></span><span class="pr">${s.plan?`<b><s>${brl(s.p)}</s> R$ 0,00</b><small class="mem">pelo seu plano</small>`:s.mp!=null&&MEMBER?`<b><s>${brl(s.p)}</s> ${brl(s.mp)}</b><small class="mem">preço de assinante</small>`:`<b>${brl(s.p)}</b>`}</span></button>`).join('')||'<p style="color:var(--muted)">Nenhum serviço nesta categoria.</p>';
     $$('#svclist .svc').forEach(b=>b.onclick=()=>{const s=SVC[st.cat][b.dataset.i],on=st.items.some(x=>x.n===s.n);
-      st.items=on?st.items.filter(x=>x.n!==s.n):[...st.items,s];agg();st.time=null;if(st.day!==null&&!validDay(days[st.day])){st.day=null;st.time=null}renderSvc();update()});
+      st.items=on?st.items.filter(x=>x.n!==s.n):[...st.items,s];agg();if(!st.fixed)st.time=null;renderSvc();update()});
   }
   $$('#svctabs button').forEach(b=>{b.setAttribute('aria-pressed',b.classList.contains('on'));b.onclick=()=>{st.cat=b.dataset.c;$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b)});renderSvc()}});
   function renderDays(){
@@ -232,6 +232,10 @@ book:if($('#svclist')){
     nx.style.display=st.step===5?'none':'';
     $('#back').style.display=st.step>1&&st.step<5?'':'none';
     const vs=Math.min(st.step,3);
+    // vindo da página de horários o dia e a hora já estão escolhidos: a etapa "Dia e horário" some
+    {const B=$$('#bsteps div');B[1].hidden=!!st.fixed;B[2].querySelector('i').textContent=st.fixed?'2':'3';$('#bsteps').style.gridTemplateColumns=st.fixed?'1fr 1fr':'';
+     const w=$('#bfix');if(w){w.hidden=!st.fixed;if(st.fixed)w.innerHTML=`Horário escolhido: <b>${dayLabel(st.day)} às ${esc(st.time)}</b> · <button type="button" id="bchg">trocar horário</button>`;
+      if($('#bchg'))$('#bchg').onclick=()=>{st.fixed=false;st.time=null;if(st.svc){renderDays();st.step=2}update()}}}
     $$('#bsteps div').forEach((el,i)=>{el.classList.toggle('on',i+1===vs&&st.step<5);el.classList.toggle('ok',i+1<vs||st.step===5);el.setAttribute('aria-current',i+1===vs&&st.step<5?'step':'false')});
     [1,2,3,4,5].forEach(n=>$('#p'+n).classList.toggle('on',n===st.step));
     $('#sel').innerHTML=st.svc?`<b>${esc(st.svc.n)}</b> · ${valTxt()} · ${st.svc.t} min${st.time?` · ${dayLabel(st.day)} às ${esc(st.time)}`:''}`:'Nenhum serviço selecionado';
@@ -264,6 +268,9 @@ book:if($('#svclist')){
       if(DB.isBlocked(c)){back();$('#bblock').textContent='Agendamento online indisponível para este número. Fale com o Farias pelo WhatsApp.';return}
 }
     if(st.step===4&&!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
+    if(st.step===1&&st.fixed){
+      if(DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=3;update();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'});return}
+      const t0=st.time;st.fixed=false;st.time=null;renderDays();st.step=2;update();$('#bblock2').textContent=`Às ${t0} não cabem ${st.svc.t} min de atendimento. Escolha outro horário.`;return}
     if(st.step===1)renderDays();
     // quem já entrou não precisa confirmar o WhatsApp de novo
     if(st.step===3&&ME){if(!DB.freeSlots(DB.iso(days[st.day]),st.svc.t).includes(st.time)){st.step=2;st.time=null;renderSlots();update();$('#bblock2').textContent='Esse horário acabou de ser ocupado. Escolha outro.';return}
@@ -271,14 +278,15 @@ book:if($('#svclist')){
       st.step=5;update();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'});return}
     if(st.step===4&&!saveBooking()){$('#bblock2').textContent='Não foi possível salvar o agendamento neste aparelho. Libere espaço do navegador ou fale com o Farias.';return}
     st.step++;if(st.step===4)codeIns.forEach(x=>x.value='');update();if(st.step===4)codeIns[0].focus();if(innerWidth<720)$('.book').scrollIntoView({behavior:reduce?'auto':'smooth'})};
-  $('#back').onclick=()=>{st.step--;update()};
+  $('#back').onclick=()=>{st.step=st.fixed&&st.step===3?1:st.step-1;update()};
   codeIns.forEach((el,i)=>{el.oninput=()=>{el.value=el.value.replace(/\D/g,'').slice(-1);if(el.value&&i<5)codeIns[i+1].focus();update()};
     el.onkeydown=e=>{if(e.key==='Backspace'&&!el.value&&i>0)codeIns[i-1].focus()}});
   $('#btel').oninput=e=>{e.target.value=maskPhone(e.target.value);update()};
   $('#bname').oninput=update;
   // vindo da página de horários: ?d=índice&t=HH:MM (validado)
   const q=new URLSearchParams(location.search);
-  if(q.has('d')){const d=+q.get('d');if(days[d]&&openDay(days[d])){st.items=SVC.cab[0]?[SVC.cab[0]]:[];agg();st.cat='cab';if(st.svc){st.day=d;const t=q.get('t')||'';st.time=/^\d{2}:\d{2}$/.test(t)&&slotsFor(days[d],st.svc.t).includes(t)?t:null;st.step=2;renderSvc();renderDays()}}}
+  if(q.has('d')){const d=+q.get('d'),t=q.get('t')||'';if(days[d]&&openDay(days[d])){st.day=d;
+    if(/^\d{2}:\d{2}$/.test(t)&&DB.freeSlots(DB.iso(days[d]),5).includes(t)){st.time=t;st.fixed=true}}}
   if(ME){$('#bname').value=ME.name;$('#btel').value=maskPhone(ME.phone);$('#bname').readOnly=$('#btel').readOnly=true;const n=$('#bnote');if(n)n.textContent='Seus dados vêm do seu cadastro. A confirmação chega no seu WhatsApp.'}
   renderSvc();update();
   // outra aba mudou a agenda: atualiza os horários livres

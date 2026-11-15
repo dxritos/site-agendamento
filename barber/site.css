@@ -60,7 +60,7 @@ header{position:sticky;top:0;z-index:50;background:rgba(0,0,0,.96);border-bottom
 .stats span{display:block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:6px}
 .brand-card{aspect-ratio:1/1.1;border-radius:32px;border:1px solid var(--line-2);background:radial-gradient(circle at 50% 35%,#3d070d,#0b0b0b 72%);display:grid;place-items:center;box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.04)}
 .brand-in{text-align:center}
-.big-mono{width:230px;height:230px;margin:0 auto 26px;border-radius:50%;border:3px solid #d4d4d8;display:grid;place-items:center;background:radial-gradient(circle at 32% 28%,#202350,#000000 75%);box-shadow:0 0 0 10px rgba(207,214,211,.05),0 20px 60px rgba(0,0,0,.6)}
+.big-mono{width:230px;height:230px;margin:0 auto 26px;border-radius:50%;border:3px solid #d4d4d8;display:grid;place-items:center;background:radial-gradient(circle at 32% 28%,#3d070d,#000000 75%);box-shadow:0 0 0 10px rgba(207,214,211,.05),0 20px 60px rgba(0,0,0,.6)}
 .big-mono span{font-family:"Bebas Neue";font-size:120px;line-height:1;background:linear-gradient(180deg,#fff,#b8b3ab);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.02em}
 .brand-in h3{font-family:"Bebas Neue";font-weight:400;font-size:54px;letter-spacing:.08em;line-height:1;background:linear-gradient(180deg,#fafafa,#8a8a93);-webkit-background-clip:text;background-clip:text;color:transparent}
 .brand-in p{font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:var(--teal);margin-top:8px}
@@ -99,7 +99,7 @@ section{padding:96px 0}
 .switch button.on{background:var(--teal-bg);color:var(--teal-2);box-shadow:inset 0 0 0 1px var(--teal-d)}
 .plans{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;max-width:900px;margin:0 auto}
 .plan{position:relative;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:30px;display:flex;flex-direction:column}
-.plan.hot{border-color:var(--teal-d);background:linear-gradient(180deg,#1a2449,var(--card) 60%)}
+.plan.hot{border-color:var(--teal-d);background:linear-gradient(180deg,#3d070d,var(--card) 60%)}
 .badge{position:absolute;top:-11px;left:30px;background:var(--teal);color:#ffffff;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:4px 11px;border-radius:999px}
 .plan h3{font-family:"Bebas Neue";font-weight:400;font-size:32px;letter-spacing:.02em;line-height:1}
 .plan .sub{color:var(--muted);font-size:14px;margin:6px 0 22px}
@@ -551,7 +551,7 @@ input,select,textarea{font-family:inherit}
   .hero{padding:28px 0 44px}
   .hero-grid{gap:0}
   .hero .brand-card{display:none}
-  .hero-grid>div:first-child::before{content:"FB";display:grid;place-items:center;width:58px;height:58px;margin:0 0 14px;border-radius:50%;border:1.5px solid #cfd6d3;font-family:"Bebas Neue";font-size:26px;color:#e8eaf6;background:radial-gradient(circle at 32% 28%,#252866,#030308 75%)}
+  .hero-grid>div:first-child::before{content:"FB";display:grid;place-items:center;width:58px;height:58px;margin:0 0 14px;border-radius:50%;border:1.5px solid #cfd6d3;font-family:"Bebas Neue";font-size:26px;color:#e8eaf6;background:radial-gradient(circle at 32% 28%,#3d070d,#0b0b0b 75%)}
   .pill{font-size:12px;padding:4px 10px;margin-bottom:14px;letter-spacing:.12em}
   .pill svg{width:11px;height:11px}
   .hero h1{font-size:44px}
@@ -737,7 +737,7 @@ body{background:radial-gradient(1100px 560px at 50% -8%,rgba(139,13,26,.34),rgba
 .prof-b{border-color:rgba(245,242,237,.18)}
 .menu a:hover,.menu a.on,.barber .role,.foot ul a:hover,.crumb a:hover{color:var(--teal-2)}
 /* cabeçalho: quase transparente no topo (só a linha), sólido ao rolar */
-header{background:rgba(11,11,11,.12)!important;border-bottom:1px solid rgba(245,242,237,.08)!important;box-shadow:none;transition:background .35s,box-shadow .35s,backdrop-filter .35s}
+header{background:rgba(11,11,11,0)!important;border-bottom:1px solid rgba(245,242,237,.07)!important;box-shadow:none;transition:background .35s,box-shadow .35s,backdrop-filter .35s}
 header.scrolled{background:rgba(11,11,11,.9)!important;box-shadow:0 10px 30px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .mtop{background:rgba(11,11,11,.94)!important}
 /* movimento e relevo */
@@ -750,3 +750,6 @@ header.scrolled{background:rgba(11,11,11,.9)!important;box-shadow:0 10px 30px rg
 .wrow{transition:background .2s}.ccard,.rev,.faq-i{transition:border-color .25s,transform .25s,box-shadow .25s}
 .book{box-shadow:0 24px 70px rgba(0,0,0,.5),0 0 60px rgba(139,13,26,.10)}
 .cf-card{animation:pop .5s cubic-bezier(.2,.7,.2,1) both}
+/* o brilho do topo passa por trás do cabeçalho transparente */
+main>.glow:first-child::before{top:-66px}
+.chip.c-info{color:#d6cfc4;background:rgba(245,242,237,.08)}

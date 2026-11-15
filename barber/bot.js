@@ -278,8 +278,69 @@ const WIZ={
 const ask=(w,step,d,q)=>{setSt({wiz:w,step,d});return q};
 const act=code=>{const [k,v]=[code[0],code.slice(2)];return k==='w'?WIZ[v].start():k==='m'?showMenu(SUB[v][0],SUB[v][1]):exec(v)};
 function exec(raw){const n=norm(raw),w=n.split(/\s+/)[0],k=CMD[w]?w:ALIAS[w],rest=raw.replace(/^\S+\s*/,'');
-  if(!k)return `Não entendi "${raw}". Envie *menu* para escolher uma opção ou *ajuda* para ver os comandos.`;
-  try{return CMD[k](parse(rest),rest)}catch(e){return 'Não consegui fazer isso agora. Tente de novo.'}}
+  const g=k||guess(w);
+  if(!g)return /^(obrigad\w*|valeu|vlw|show|blz|beleza|top)$/.test(n)?'Por nada!':/^(sim|s|nao|n|ok)$/.test(n)?'Não há nada aguardando resposta. Envie *menu* para escolher uma opção.':`Não entendi "${raw}".
+Envie *menu* para escolher uma opção ou *ajuda* para ver os comandos.`;
+  try{return CMD[g](parse(rest),rest)}catch(e){return 'Não consegui fazer isso agora. Tente de novo.'}}
+/* distância de edição, para entender comando com erro de digitação ("agendr", "proxmo") */
+const lev=(a,b)=>{const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]};
+const guess=w=>{if(w.length<4)return null;const all=[...Object.keys(CMD),...Object.keys(ALIAS)],lim=w.length>=7?2:1,hit=all.map(k=>[k,lev(w,k)]).filter(x=>x[1]<=lim).sort((x,y)=>x[1]-y[1]||y[0].length-x[0].length)[0];return hit?(CMD[hit[0]]?hit[0]:ALIAS[hit[0]]):null};
+
+/* ===== quem escreve e não é da equipe: respostas objetivas, sem mexer na agenda de outros clientes ===== */
+const telKey=x=>String(x||'').replace(/\D/g,'').slice(-11);
+function clientBot(raw,n,from){
+  const key=telKey(from),c=db().clients.find(x=>x.phone&&telKey(x.phone)===key)||null;CUR='c'+key;const st=getSt();setSt(null);
+  const site=DB.site(),t=TODAY(),up=c?db().appts.filter(a=>a.cid===c.id&&OPEN.includes(a.status)&&a.date>=t).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)):[];
+  const when=a=>`${a.svc}, ${dayTxt(a.date)} às ${hh(a.start)}`,mins=a=>(new Date(a.date+'T'+a.start+':00')-Date.now())/6e4,lim=db().settings.cancelUntil??120;
+  const tell=(ev,txt)=>DB.notifyStaff(ev,txt),who=c?c.name:'Número '+fone(key);
+  const hi=c?`Olá, ${first(c)}! Aqui é o assistente da Farias Barbearia.`:(db().messages.welcome||{}).txt?db().messages.welcome.txt.replace(/\{site\}/g,site):'Olá! Aqui é o assistente da Farias Barbearia.';
+  const menu=pre=>{setSt({cmenu:1});return `${pre||hi}\n\nComo posso ajudar?\n1. Agendar um horário\n2. Meus horários\n3. Remarcar ou cancelar\n4. Preços e planos\n5. Horário e endereço\n6. Falar com o barbeiro\n\nResponda com o número.`};
+  const A={
+    agendar(){let free='';for(let i=0;i<7&&!free;i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)free=`\nPróximas vagas (${dayTxt(ds)}): ${f.slice(0,5).map(hh).join(' · ')}`}
+      return `Para agendar é rápido pelo site, você escolhe o serviço e o horário:\n${site}agendar.html${free}`},
+    meus(){return up.length?`Seus horários:\n`+up.map(a=>`• ${when(a)}${a.status==='pend'?' (falta confirmar)':''}`).join('\n')+`\n\nPara confirmar, remarcar ou cancelar: ${DB.link(up[0])}`:`Você não tem horário marcado${c?'':' neste número'}.\nPara agendar: ${site}agendar.html`},
+    confirmar(){const a=up.find(x=>x.status==='pend');if(!a)return up.length?`Seu horário já está confirmado: ${when(up[0])}. Até lá!`:A.meus();
+      mut(['appts'],d=>{d.appts.find(x=>x.id===a.id).status='conf'},`${c.name}: presença confirmada pelo WhatsApp (${short(a.date)} ${a.start})`);tell('evConfirm',`Presença confirmada: ${c.name} · ${a.svc} · ${short(a.date)} às ${a.start}.`);
+      return `Presença confirmada: ${when(a)}. Até lá!`},
+    cancelar(){if(!up.length)return A.meus();const a=up[0];
+      if(mins(a)<lim){tell('evContact',`${c.name} quer cancelar ${a.svc} de ${short(a.date)} às ${a.start}, mas já passou do prazo. Fale com ele.`);return `Faltam menos de ${DB.cancelText()} para ${when(a)}, então não consigo cancelar por aqui. Já avisei o barbeiro, ele fala com você.`}
+      setSt({ccancel:a.id});return `Cancelar ${when(a)}?\nResponda *sim* ou *não*.`+(up.length>1?`\n\nSeus outros horários: ${DB.link(up[1])}`:'')},
+    remarcar(){return up.length?`Para remarcar ${when(up[0])}, escolha o novo dia e horário por aqui:\n${DB.link(up[0])}`:A.meus()},
+    atraso(){const a=up.find(x=>x.date===t);tell('evContact',`${who} avisou atraso: "${raw.slice(0,140)}"${a?' (horário das '+a.start+')':''}`);const tol=db().settings.tolerance;
+      return `Avisei o barbeiro.`+(tol?` A tolerância é de ${tol} minutos; depois disso o horário pode ser liberado.`:'')},
+    precos(){const L=db().services.filter(s=>s.on).sort((x,y)=>x.p-y.p);return `Nossos preços:\n`+L.map(s=>`• ${s.n}: ${brl(s.p)}`).join('\n')+`\n\nNo plano mensal o corte sai por R$ 0. Planos a partir de ${brl(Math.min(...db().plans.filter(x=>x.on).map(x=>x.p)))}/mês: ${site}index.html#planos`},
+    planos(){const s=c&&DB.activeSub(c.id);if(s)return `Seu plano: ${DB.plan(s.plan).n} · ${({ok:'em dia',late:'pagamento pendente',paused:'pausado'})[s.status]}.\nPara ver, trocar ou regularizar: ${site}entrar.html`;
+      return `Planos mensais:\n`+db().plans.filter(x=>x.on).map(x=>`• ${x.n}: ${brl(x.p)}/mês`).join('\n')+`\n\nPara assinar: ${site}index.html#planos`},
+    funcionamento(){const H=db().hours,d=day0().getDay(),cl=closed(t),ord=[1,2,3,4,5,6,0];
+      return `Horário de funcionamento:\n`+ord.map(k=>`• ${cap(WDF[k])}: ${H[k]?H[k][0]+' às '+H[k][1]:'fechado'}`).join('\n')+`\n\nHoje: ${cl?'fechado ('+cl.name+')':H[d]?'aberto das '+H[d][0]+' às '+H[d][1]:'fechado'}.\nEndereço: ${db().content.address}`},
+    endereco(){return `Estamos em: ${db().content.address}\nMapa: https://maps.google.com/?q=${encodeURIComponent(db().content.address)}`},
+    pagamento(){return `O atendimento avulso é pago na barbearia: Pix, dinheiro, débito ou crédito.\nA mensalidade do plano é cobrada automaticamente; para regularizar: ${site}entrar.html`},
+    humano(){tell('evContact',`${who} pediu para falar com você: "${raw.slice(0,160)}"`);return 'Avisei o barbeiro. Ele responde assim que terminar o atendimento.'},
+    obrigado(){return 'Por nada! Qualquer coisa é só chamar.'}};
+  if(st&&st.ccancel){const a=db().appts.find(x=>x.id===st.ccancel);
+    if(a&&OPEN.includes(a.status)&&(/^(sim|s|pode|isso|confirmo|confirma|ok|quero)$/.test(n)||THUMB_UP.test(raw))){mut(['appts'],d=>{d.appts.find(x=>x.id===a.id).status='cancel'},`${c.name}: horário de ${short(a.date)} ${a.start} cancelado pelo WhatsApp do cliente`);DB.data.outbox=db().outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));DB.save();
+      tell('evCancel',`Cancelado pelo cliente: ${c.name} · ${a.svc} · ${short(a.date)} às ${a.start}. O horário ficou livre.`);return `Cancelado: ${when(a)}.\nQuando quiser marcar outro: ${site}agendar.html`}
+    if(/^(nao|n|deixa|esquece)$/.test(n)||THUMB_DOWN.test(raw))return 'Ok, seu horário continua marcado.'}
+  if(st&&st.cmenu&&/^[1-6]$/.test(n))return [A.agendar,A.meus,()=>up.length?`Para remarcar ou cancelar ${when(up[0])}:\n${DB.link(up[0])}`:A.meus(),()=>A.precos(),()=>A.funcionamento(),A.humano][+n-1]();
+  if(!n||/^(oi+|ola|opa|eai|e ai|bom dia|boa tarde|boa noite|menu|inicio|ajuda|help|comecar|\?)$/.test(n))return menu();
+  const has=re=>re.test(' '+n+' ');
+  if(has(/ (cancelar|cancela|cancelo|desmarcar|desmarca|nao vou|nao posso ir|nao consigo ir|nao vou poder) /))return c?A.cancelar():A.meus();
+  if(has(/ (remarcar|remarca|mudar|trocar|adiar|outro horario|outro dia|reagendar) /))return A.remarcar();
+  if(has(/ (atras\w*|vou chegar|chego em|to chegando|estou chegando|a caminho|transito) /))return A.atraso();
+  if(c&&(THUMB_UP.test(raw)||/^(sim|s|confirmo|confirmar|confirma|confirmado|ok|vou sim|estarei la|pode confirmar)$/.test(n)))return A.confirmar();
+  if(has(/ (meu horario|meus horarios|meu agendamento|que horas e|quando e|tenho horario|minha agenda) /))return A.meus();
+  if(has(/ (plano|planos|assinatura|assinar|clube|mensal|mensalidade) /))return A.planos();
+  if(has(/ (preco|precos|valor|valores|quanto|custa|tabela) /))return A.precos();
+  if(has(/ (pix|pagamento|pagar|cartao|boleto|debito|credito) /))return A.pagamento();
+  if(has(/ (endereco|onde fica|onde e|localizacao|local|como chegar|mapa) /))return A.endereco();
+  if(has(/ (funciona|funcionamento|aberto|abre|fecha|atende|atendem|expediente) /))return A.funcionamento();
+  if(has(/ (agendar|agenda|marcar|marca|vaga|vagas|horario|horarios|cortar|corte|barba|encaixe) /))return A.agendar();
+  if(has(/ (atendente|humano|pessoa|barbeiro|falar com|ligar|ligacao|farias|reclamacao|problema) /))return A.humano();
+  if(has(/ (obrigad\w*|valeu|vlw|brigad\w*|show|blz|beleza|top|tmj) /)||/^(ok|certo|ta bom|tudo bem)$/.test(n)||THUMB_UP.test(raw))return A.obrigado();
+  if(/^(sim|s|nao|n|ok)$/.test(n)||THUMB_DOWN.test(raw))return menu('Não há nada aguardando sua resposta.');
+  tell('evContact',`Mensagem de ${who}: "${raw.slice(0,200)}"`);
+  return menu('Não entendi sua mensagem, mas já repassei para o barbeiro.')}
+
 const isTeam=from=>{if(!from)return true;const d=String(from).replace(/\D/g,'').slice(-11);return db().team.some(u=>u.active&&String(u.phone||'').replace(/\D/g,'').slice(-11)===d)};
 
 /* ===== na hora marcada: o robô pergunta ao responsável se o cliente veio ===== */
@@ -303,7 +364,7 @@ window.Bot={
   /* devolve a resposta do robô. `from` é o número de quem escreveu (vazio = equipe, no simulador).
      Toda resposta começa com "Bot:" em uma linha própria. */
   run(text,from){DB.refresh();const raw=String(text||'').trim(),n=norm(raw);
-    if(!isTeam(from))return DB.welcome();
+    if(!isTeam(from))return db().bot.client?'Bot:\n'+clientBot(raw,n,from):DB.welcome();
     CUR=from?String(from).replace(/\D/g,''):'equipe';
     const out=r=>'Bot:\n'+r;
     if(!db().bot.staff)return out('O robô da equipe está desligado. Ligue em Painel › WhatsApp.');
