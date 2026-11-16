@@ -370,7 +370,7 @@ function clientCore(raw,n,from){
     codigo(){if(has(/ (nao pedi|nao fui eu|nao solicitei|quem pediu|nao reconheco) /)){tell('evContact',`${who} recebeu um código de acesso que diz não ter pedido.`);
         return 'Pode ignorar: sem o código ninguém entra na sua conta. Nunca passe o código para ninguém, nem para a gente.'}
       return `O código chega aqui no WhatsApp quando você entra pelo site: ${site}entrar.html\nNão chegou? Na tela do código, toque em "Reenviar". Nunca passe o código para ninguém.`},
-    dados(){tellC(`${who} pediu a exclusão dos dados pessoais (LGPD). Responder em até 15 dias.`);
+    dados(){tellC(`${who} pediu a exclusão dos dados pessoais. Responder em até 15 dias.`);
       return `Pedido registrado. O responsável pela barbearia vai confirmar que o número é seu e responder em até 15 dias. Horários futuros serão cancelados.\nComo tratamos seus dados: ${site}privacidade.html`},
     meusdados(){if(!c)return 'Não encontrei cadastro neste número.';return `Seu cadastro:\nNome: ${c.name}\nWhatsApp: ${fone(c.phone)}${c.bairro?'\nBairro: '+c.bairro:''}${c.birth?'\nNascimento: '+c.birth.split('-').reverse().join('/'):''}\n\nPara corrigir algo, responda aqui o que mudou que eu repasso para o barbeiro.`},
     elogio(){tell('evContact',`Elogio de ${who}: "${raw.slice(0,200)}"`);return 'Que bom ler isso! Obrigado, vou repassar para o barbeiro.'},
