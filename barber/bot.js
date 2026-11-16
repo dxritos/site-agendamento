@@ -262,8 +262,13 @@ const CMD={
     return `*Assinantes*\nEm dia: ${ok.length} · ${brl(ok.reduce((t,s)=>t+DB.subPrice(s),0))} por mês\nPausados: ${pa.length}\nPagamento pendente: ${late.length}`+(late.length?'\n'+late.map(s=>`${cname(s.cid)} · ${DB.plan(s.plan).n} · ${brl(DB.subPrice(s))}`).join('\n')+'\n\nEnvie *cobrar* para avisar os atrasados.':'')},
   cobrar(){if(!canFin())return FIN_DENY;const L=db().subs.filter(s=>s.status==='late'),S=L.filter(s=>{const c=cli(s.cid);return c&&DB.sendClient(c,'cobranca',`${first(c)}, o pagamento do plano ${DB.plan(s.plan).n} (${brl(DB.subPrice(s))}) está pendente. Regularize para continuar usando: ${location.origin+location.pathname.replace(/[^/]*$/,'')}entrar.html`)});
     return L.length?`Cobrança enviada para ${S.length} de ${L.length}: ${L.map(s=>cname(s.cid)).join(', ')}.`:'Nenhum assinante com pagamento pendente.'},
-  aviso(p,raw){const off=!raw.trim()||/^(off|desligar|tirar|remover)$/.test(norm(raw));
-    mut(['content'],d=>{d.content.notice_on=!off;if(!off)d.content.notice=raw.trim()},off?'Aviso do site desligado pelo WhatsApp':`Aviso do site: ${raw.trim()}`,'Conteúdo');return off?'Aviso do site desligado.':`Aviso no topo do site: "${raw.trim()}"\nPara tirar: *aviso off*`},
+  aviso(p,raw){const off=!raw.trim()||/^(off|desligar|tirar|remover)$/.test(norm(raw));const txt=off?'':cleanAviso(raw);if(!off&&txt.length<3)return 'Qual o texto do aviso? Ex.: *aviso Fechado no sábado*';
+    mut(['content'],d=>{d.content.notice_on=!off;if(!off)d.content.notice=txt},off?'Aviso do site desligado pelo WhatsApp':`Aviso do site: ${txt}`,'Conteúdo');if(off)return 'Aviso do site desligado.';
+    /* aviso de fechamento: a agenda continua aberta até alguém fechar, então o robô oferece fechar junto */
+    const nt=norm(txt),pd=parse(txt).date||TODAY(),resto=/resto do dia|a partir de agora|mais cedo|hoje a tarde|esta tarde/.test(nt),fz=/fechad|nao abr|nao vamos abrir|sem atendimento|folga/.test(nt);
+    let extra='';if(fz&&!closed(pd)){setSt({menu:[[resto?'Sim, fechar o resto de hoje':`Sim, fechar ${dayTxt(pd)}`,'c:fechar '+(resto?'hoje resto':short(pd))],['Não, só o aviso','c:nada']]});extra=`\n\nA agenda continua aberta para agendamentos. Fechar também?\n1. ${resto?'Sim, fechar o resto de hoje':'Sim, fechar '+dayTxt(pd)}\n2. Não, só o aviso`}
+    return `Aviso no topo do site: "${txt}"\nPara tirar: *aviso off*`+extra},
+  nada(){return 'Ok, a agenda continua aberta.'},
   confirmados(p){const ds=p.date||iso(day0(1)),L=dayList(ds).filter(a=>a.status==='conf');return L.length?`*Confirmados em ${short(ds)} (${L.length})*\n`+L.map(line).join('\n'):`Ninguém confirmou ainda para ${short(ds)}.`},
   horario(p){bare(p);const r=find(p,null,'quem vem às 15',true);if(r.err)return r.err;const a=r.a,c=cli(a.cid)||{};return `${line(a)}${c.phone?'\nTelefone: '+fone(c.phone):''}${c.notes?'\nObs.: '+c.notes:''}`},
   fila(){const L=dayList(TODAY()).filter(a=>OPEN.includes(a.status));if(!L.length)return 'Não há mais clientes hoje.';
@@ -367,6 +372,9 @@ const WIZ={
 const ask=(w,step,d,q)=>{let back=WZPREV;while(back&&back.step===step&&back.wiz===w)back=back.back;setSt({wiz:w,step,d,q,back:back||null});return q+(back?'\n\n00. Voltar\n0. Menu':'\n\n0. Menu')};
 const act=code=>{const [k,v]=[code[0],code.slice(2)];return k==='w'?WIZ[v].start():k==='m'?showMenu(SUB[v][0],SUB[v][1]):exec(v)};
 /* frases do dia a dia da equipe viram comandos: "joão faltou", "quem é o próximo", "quanto fiz hoje", "agenda de sexta" */
+/* texto do aviso sem "de que", "dizendo que", aspas; começa com maiúscula e termina com ponto */
+function cleanAviso(t){let x=String(t).trim().replace(/^["'“”]+|["'“”]+$/g,'');for(let i=0;i<3;i++)x=x.replace(/^(?:no site|no topo|pros clientes|para os clientes|aos clientes)\s*/i,'').replace(/^(?:de que|que|dizendo(?: que)?|falando(?: que)?|avisando(?: que)?|informando(?: que)?|sobre|com o texto|com|:|-)\s*/i,'').trim();
+  x=x.replace(/^["'“”]+|["'“”]+$/g,'').trim();if(!x)return '';x=x[0].toUpperCase()+x.slice(1);return /[.!?]$/.test(x)?x:x+'.'}
 function staffNL(raw){const n=norm(raw).replace(/[?!.,]/g,' ').replace(/\s+/g,' ').trim(),r0=String(raw).trim();let m;
   /* comandos com texto livre: usa a mensagem original para manter acentos e maiúsculas */
   if((m=/^(?:manda|envia|mande|envie)\s+(?:uma\s+)?(?:mensagem|msg|recado)\s+(?:pro|pra|para|ao|à|a)\s+(?:o\s+|a\s+)?(.+)$/i.exec(r0)))return 'responder '+(m[1].includes(':')?m[1]:m[1].replace(/^(\S+)\s+(?:que\s+|dizendo\s+)?/,'$1: '));
@@ -375,7 +383,8 @@ function staffNL(raw){const n=norm(raw).replace(/[?!.,]/g,' ').replace(/\s+/g,' 
   if((m=/^(?:o |a )?(?:cliente |ele |ela )?(?:pagou|recebi|recebido|pago|foi)(?: \d+(?: reais)?)?\s+(?:no|na|em|com|de|via|pelo)?\s*(pix|dinheiro|debito|credito|cartao)/.exec(n)))return 'ok '+(m[1]==='cartao'?'credito':m[1]);
   if(/^(nao pagou( ainda)?|vai pagar depois|paga depois|fiado|pendurou|ficou devendo|sem pagamento)$/.test(n))return 'ok';
   if(/^(fechou|fecha|fechar|encerra|encerrar|finaliza|finalizar|conclui|concluir) (o )?atendimento$/.test(n))return 'ok';
-  if((m=/^(?:coloca|bota|poe|põe|publica|posta)\s+(?:um\s+)?aviso(?:\s+no\s+site)?:?\s+(.+)$/i.exec(r0)))return 'aviso '+m[1];
+  if((m=/^(?:coloca|colocar|bota|botar|poe|põe|por|publica|posta|adiciona|cria|faz|faça)\s+(?:um\s+)?aviso(?:\s+(?:no|do)\s+site)?:?\s+(.+)$/i.exec(r0)))return 'aviso '+m[1];
+  if((m=/^(?:avisa|avise|informa|informe)\s+(?:no\s+site|os\s+clientes|aos\s+clientes|pros\s+clientes)\s+(?:que\s+)?(.+)$/i.exec(r0)))return 'aviso '+m[1];
   if((m=/^(?:vou atrasar|vou me atrasar|estou atrasado|to atrasado|atrasei|atrasado|vou chegar atrasado)(?: uns| cerca de| uns| mais ou menos)? (\d{1,3})/.exec(n)))return 'atraso '+m[1];
   if(/^(avisa|avise|manda aviso)( que)? (vou|to|estou) (atrasar|atrasado)/.test(n))return 'atraso';
   if((m=/^(?:qual )?(?:o )?(?:telefone|numero|whats|zap|contato) d[oa]s? (.+)$/.exec(n)))return 'cliente '+m[1];
