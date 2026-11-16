@@ -39,7 +39,7 @@ function render(){
     $('#no').onclick=()=>{mode='view';msg=null;render()};
     $('#yes').onclick=()=>{const x=appt();if(!x||!pick.time)return render();
       if(!DB.freeSlots(pick.date,x.dur,x.id).includes(pick.time)){pick.time=null;msg={t:'Esse horário acabou de ser ocupado. Escolha outro.',bad:true};return render()}
-      const old=`${short(x.date)} ${x.start}`;save(x,y=>{y.date=pick.date;y.start=pick.time;y.status='conf'},`${c.name}: remarcou de ${old} para ${short(pick.date)} ${pick.time} pelo link do WhatsApp`);
+      const old=`${short(x.date)} ${x.start}`;save(x,y=>{y.date=pick.date;y.start=pick.time;y.status='conf';y.cmovedAt=Date.now()},`${c.name}: remarcou de ${old} para ${short(pick.date)} ${pick.time} pelo link do WhatsApp`);
       const y=appt();DB.notify('move',y);DB.notifyStaff('evCancel',`Remarcado pelo cliente: ${c.name} · ${y.svc} · de ${old} para ${short(y.date)} às ${y.start}.`);mode='view';msg={t:'Horário remarcado e confirmado.'};render()};return}
   mode='view';
   let acts='';
@@ -49,7 +49,7 @@ function render(){
   box.innerHTML=`${head}${a.status==='cancel'?'<p>Este horário foi cancelado e não está mais reservado.</p>':active?`<p>${a.status==='pend'?'Confirme sua presença para garantir o horário.':'Tudo certo, te esperamos no horário.'}</p>`:''}${rows}${note}<div class="cf-acts">${acts}</div>${late}`;
   if($('#ok'))$('#ok').onclick=()=>{const x=appt();if(!x)return render();save(x,y=>{y.status='conf'},`${c.name}: presença confirmada pelo link do WhatsApp (${short(x.date)} ${x.start})`);
     DB.notifyStaff('evConfirm',`Presença confirmada: ${c.name} · ${x.svc} · ${short(x.date)} às ${x.start}.`);msg={t:'Presença confirmada. Até lá!'};render()};
-  if($('#mv'))$('#mv').onclick=()=>{mode='move';msg=null;pick={date:null,time:null};render()};
+  if($('#mv'))$('#mv').onclick=()=>{const why=DB.clientMoveBlock(appt());if(why){msg={t:why,bad:true};return render()}mode='move';msg=null;pick={date:null,time:null};render()};
   if($('#cn'))$('#cn').onclick=()=>{mode='cancel';msg=null;render()};
   if($('#ics'))$('#ics').onclick=()=>{const s=dOf(a),e=new Date(s.getTime()+a.dur*6e4),f=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Farias Barbearia//PT','BEGIN:VEVENT','UID:'+a.id+'@fariasbarbearia','DTSTAMP:'+f(new Date()),'DTSTART:'+f(s),'DTEND:'+f(e),'SUMMARY:'+a.svc+' — Farias Barbearia','LOCATION:'+String(db.content.address||'').replace(/[,;]/g,'\\$&'),'BEGIN:VALARM','TRIGGER:-PT2H','ACTION:DISPLAY','DESCRIPTION:Horário na Farias Barbearia','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');

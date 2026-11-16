@@ -234,6 +234,24 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pchk:has(input:checked){border-color:var(--line-2);color:var(--txt)}
 td small{margin-top:2px}
 @media(max-width:560px){.pgrid{grid-template-columns:1fr}.sbox{padding:18px}}
+/* status do horário */
+.stc{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:5px 11px 5px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;letter-spacing:.01em}
+.stc svg{width:14px;height:14px;flex:none}
+.s-pend{color:#f5cf5b;background:rgba(242,201,76,.13);border-color:rgba(242,201,76,.38)}
+.s-conf{color:#72d69d;background:rgba(80,190,125,.13);border-color:rgba(80,190,125,.38)}
+.s-moved{color:#c6a6f2;background:rgba(170,130,230,.14);border-color:rgba(170,130,230,.4)}
+.s-now{color:#fff;background:var(--teal);border-color:var(--teal);animation:stPulse 1.8s infinite}
+.s-done{color:#c9c9c9;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+.s-cancel{color:#ef8585;background:rgba(228,109,109,.1);border-color:rgba(228,109,109,.38)}
+.s-miss{color:#ef8585;background:transparent;border:1px dashed rgba(228,109,109,.6)}
+@keyframes stPulse{0%,100%{box-shadow:0 0 0 0 rgba(200,50,63,.55)}50%{box-shadow:0 0 0 6px rgba(200,50,63,0)}}
+@media (prefers-reduced-motion:reduce){.s-now{animation:none}}
+.ti{border-left:4px solid transparent;padding-left:12px}
+.ti.st-pend{border-left-color:#f2c94c}.ti.st-conf{border-left-color:#50be7d}.ti.st-moved{border-left-color:#aa82e6}.ti.st-now{border-left-color:var(--teal)}
+.ti.st-done{border-left-color:rgba(255,255,255,.16)}.ti.st-miss{border-left-color:#e46d6d}.ti.st-cancel{border-left-color:rgba(228,109,109,.55)}.ti.st-cancel strong{text-decoration:line-through}
+.stleg{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px}.stleg .stc{font-size:11px;padding:3px 8px 3px 7px;font-weight:600}.stleg .stc svg{width:12px;height:12px}.stleg .s-now{animation:none}
+.nx-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ev.pend{border-left-style:dashed}.ev.moved{box-shadow:inset 0 0 0 1px rgba(170,130,230,.65)}
 </style>
 </head>
 <body>

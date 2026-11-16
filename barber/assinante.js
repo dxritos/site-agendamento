@@ -175,6 +175,7 @@ function moveAppt(id){
   DB.refresh();const a=db.appts.find(x=>x.id===id);if(!a)return;
   if(blocked())return toast('Fale com o Farias para alterar seus horários.');
   if(!canChange(a))return toast('Prazo para alterar encerrado. Fale com o Farias.');
+  {const why=DB.clientMoveBlock(a);if(why)return toast(why)}
   // dias possíveis: com horário livre e, se for do plano, dentro de todas as regras do plano
   const ok=ds=>DB.freeSlots(ds,a.dur,a.id).length&&(!a.plan||!DB.planCheck(ME,ds,a.svc,a.id));
   const days=Array.from({length:14},(_,i)=>DB.iso(addD(today,i))).filter(ok);
@@ -188,7 +189,7 @@ function moveAppt(id){
   $('#ok').onclick=()=>{if(!time)return;DB.refresh();
     if(!DB.freeSlots(sel,a.dur,a.id).includes(time))return toast('Esse horário acabou de ser ocupado. Escolha outro.'),draw();
     if(a.plan){const err=DB.planCheck(ME,sel,a.svc,a.id);if(err)return toast(err)}
-    closeModal();act('appts',L=>{const x=L.find(y=>y.id===id);x.date=sel;x.start=time;x.status='conf'},`${me().name}: remarcou de ${fmtD(a.date)} ${a.start} para ${fmtD(sel)} ${time}`,'Agenda')};
+    closeModal();act('appts',L=>{const x=L.find(y=>y.id===id);x.date=sel;x.start=time;x.status='conf';x.cmovedAt=Date.now()},`${me().name}: remarcou de ${fmtD(a.date)} ${a.start} para ${fmtD(sel)} ${time}`,'Agenda')};
 }
 
 /* ===== render ===== */

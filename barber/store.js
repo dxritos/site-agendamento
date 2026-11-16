@@ -170,7 +170,10 @@ window.DB={
   mutateMany(keys,fn,desc,area,who){
     this.refresh();
     const before={};keys.forEach(k=>before[k]=JSON.stringify(this.data[k]));
+    const prevA=keys.includes('appts')?new Map((this.data.appts||[]).map(a=>[a.id,a.date+' '+a.start])):null;
     fn(this.data);
+    /* horário que mudou de dia/hora fica marcado como reagendado */
+    if(prevA)(this.data.appts||[]).forEach(a=>{const o=prevA.get(a.id);if(o&&o!==a.date+' '+a.start&&a.status!=='block'){a.moved=true;a.movedAt=Date.now()}});
     /* todo horário novo ganha na hora o código do link individual (antes só ganhava ao recarregar a página) */
     (this.data.appts||[]).forEach(a=>{if(!a.tok&&a.status!=='block')a.tok=tok()});
     this._log({id:uid(),t:Date.now(),who:who||'Farias',area:area||'Geral',desc,keys:before,key:keys.join(',')});
@@ -213,6 +216,9 @@ window.DB={
   img:{get:id=>imgs[id]||null,set(id,url){imgs[id]=url;try{localStorage.setItem(IMGKEY,JSON.stringify(imgs));return true}catch(e){delete imgs[id];return false}},del(id){delete imgs[id];try{localStorage.setItem(IMGKEY,JSON.stringify(imgs))}catch(e){}}},
 
   /* ===== WhatsApp: links individuais e caixa de saída (o envio real é feito pelo servidor) ===== */
+  /* o cliente remarca no máximo 1 vez a cada 2 h (Configurações › moveCooldown). null = pode; texto = motivo */
+  clientMoveBlock(a){const cd=(this.data.settings.moveCooldown||120)*6e4;if(!a||!a.cmovedAt||Date.now()-a.cmovedAt>=cd)return null;const nx=new Date(a.cmovedAt+cd),hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    return `Você já remarcou este horário às ${hm(new Date(a.cmovedAt))}. Uma nova remarcação fica liberada a partir das ${hm(nx)}.`},
   link(a){return location.origin+location.pathname.replace(/[^/]*$/,'')+'confirmar.html?t='+a.tok},
   byToken(t){return /^[a-z2-9]{15}$/.test(t||'')?this.data.appts.find(a=>a.tok===t)||null:null},
   site(){return location.origin+location.pathname.replace(/[^/]*$/,'')},

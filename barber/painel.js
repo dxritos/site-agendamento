@@ -84,6 +84,11 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g
 
 /* ================= HOJE ================= */
 const ST={done:['Concluído','c-dim'],now:['Em atendimento','c-ok'],conf:['Confirmado','c-info'],pend:['Aguardando','c-warn'],miss:['Faltou','c-bad'],cancel:['Cancelado','c-dim'],block:['Bloqueado','c-dim']};
+/* status em destaque: cor, ícone e faixa lateral. Reagendado = confirmado/aguardando que mudou de dia ou hora */
+const STK=a=>a.status==='block'?'block':['conf','pend'].includes(a.status)&&a.moved?'moved':a.status;
+const STX={pend:['Aguardando','s-pend','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],conf:['Confirmado','s-conf','<path d="M20 6L9 17l-5-5"/>'],moved:['Reagendado','s-moved','<path d="M4 11a8 8 0 0 1 14-4l2 2M20 4v5h-5M20 13a8 8 0 0 1-14 4l-2-2M4 20v-5h5"/>'],now:['Em atendimento','s-now','<path d="M6 3l12 9-5 1 3 6-2 1-3-6-4 4z"/>'],done:['Concluído','s-done','<path d="M20 6L9 17l-5-5"/>'],cancel:['Cancelado','s-cancel','<path d="M18 6L6 18M6 6l12 12"/>'],miss:['Faltou','s-miss','<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>']};
+const stChip=a=>{const k=STK(a),x=STX[k];if(!x)return '';return `<span class="stc ${x[1]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">${x[2]}</svg>${x[0]}${k==='moved'&&a.status==='pend'?' · aguardando':''}</span>`};
+const stLegend=()=>`<div class="stleg" aria-label="Legenda dos status">${['pend','conf','moved','now','done','cancel'].map(k=>`<span class="stc ${STX[k][1]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">${STX[k][2]}</svg>${STX[k][0]}</span>`).join('')}</div>`;
 let tipOff=false;try{tipOff=localStorage.getItem('farias_tip')==='0'}catch(e){}
 function vHoje(){
   const list=db.appts.filter(a=>a.date===TODAY&&a.status!=='cancel').sort((a,b)=>a.start.localeCompare(b.start));
@@ -95,9 +100,9 @@ function vHoje(){
   const hr=new Date().getHours();
   // próximo cliente: quem está em atendimento ou o primeiro ainda não atendido
   const open=svc.filter(a=>['conf','pend','now'].includes(a.status)),nx=open.find(a=>a.status==='now')||open[0];
-  const later=list.filter(a=>a!==nx&&!['done','miss'].includes(a.status)),past=list.filter(a=>['done','miss'].includes(a.status));
+  const later=list.filter(a=>a!==nx&&!['done','miss'].includes(a.status)),past=list.filter(a=>['done','miss'].includes(a.status)),canc=db.appts.filter(a=>a.date===TODAY&&a.status==='cancel').sort((a,b)=>a.start.localeCompare(b.start));
   const c=nx&&client(nx.cid)||{};
-  const nextCard=nx?`<div class="card nextc"><div class="eyebrow">${nx.status==='now'?'Em atendimento':'Próximo cliente'}</div>
+  const nextCard=nx?`<div class="card nextc"><div class="nx-top"><div class="eyebrow">${nx.status==='now'?'Em atendimento':'Próximo cliente'}</div>${stChip(nx)}</div>
      <div class="nx-main"><div class="nx-h">${nx.start}</div><div><strong>${esc(cname(nx.cid))}</strong><span>${esc(nx.svc)} · ${nx.plan?'Assinante':money(nx.price)} · ${nx.dur} min${nx.status==='pend'?' · <span class="up-w">ainda não confirmou</span>':''}</span>${c.notes?`<p class="nx-note">${esc(c.notes)}</p>`:''}</div></div>
      <div class="nx-acts"><button class="btn btn-primary" data-st="done" data-id="${nx.id}">Concluir atendimento</button>${nx.status==='pend'?`<button class="btn btn-ghost" data-st="conf" data-id="${nx.id}">Confirmar presença</button>`:''}<button class="btn btn-danger" data-st="miss" data-id="${nx.id}">Faltou</button><button class="btn btn-ghost" data-edit="${nx.id}">Editar</button></div></div>`
     :`<div class="card nextc"><div class="eyebrow">Próximo cliente</div><p class="empty">${hol?'Feriado: barbearia fechada.':svc.length?'Todos os clientes de hoje já foram atendidos.':'Nenhum horário marcado para hoje.'}</p></div>`;
@@ -112,8 +117,9 @@ function vHoje(){
   ${tipOff?'':`<div class="card tip"><div><b>Por onde começar</b><ol><li>Veja aqui quem é o próximo cliente.</li><li>Terminou o corte? Toque em <b>Concluir atendimento</b>.</li><li>Cliente ligou? Use <b>Novo horário</b>.</li></ol><span>Financeiro, serviços, site e configurações ficam em <b>Mais</b>, no menu.</span></div><button class="btn btn-ghost btn-sm" data-act="tip-off">Entendi</button></div>`}
   <div class="g21">
     <div>${nextCard}
-      <div class="card box"><h3>${nx?'Depois':'Agenda de hoje'} <small>${plural(later.filter(a=>a.status!=='block').length,'cliente','clientes')}</small></h3>${later.length?later.map(apptRow).join(''):'<p class="empty">Ninguém mais na fila hoje.</p>'}
-        ${past.length?`<details class="pastd"><summary>Já atendidos hoje (${past.length})</summary>${past.map(apptRow).join('')}</details>`:''}</div>
+      <div class="card box"><h3>${nx?'Depois':'Agenda de hoje'} <small>${plural(later.filter(a=>a.status!=='block').length,'cliente','clientes')}</small></h3>${stLegend()}${later.length?later.map(apptRow).join(''):'<p class="empty">Ninguém mais na fila hoje.</p>'}
+        ${past.length?`<details class="pastd"><summary>Já atendidos hoje (${past.length})</summary>${past.map(apptRow).join('')}</details>`:''}
+        ${canc.length?`<details class="pastd"><summary>Cancelados hoje (${canc.length})</summary>${canc.map(apptRow).join('')}</details>`:''}</div>
     </div>
     <div>
       <div class="card box"><h3>Hoje em números</h3>
@@ -128,9 +134,9 @@ function vHoje(){
 function apptRow(a){
   if(a.status==='block')return `<div class="ti done"><div class="h">${a.start}</div><div class="inf"><strong>Bloqueado</strong><span>${esc(a.note||'Horário bloqueado')} · ${a.dur} min</span></div><div class="r"><button class="btn btn-ghost btn-sm" data-edit="${a.id}">Editar</button></div></div>`;
   const act=a.status==='pend'?`<button class="btn btn-ghost btn-sm" data-st="conf" data-id="${a.id}">Confirmar</button>`:['conf','now'].includes(a.status)?`<button class="btn btn-ghost btn-sm" data-st="done" data-id="${a.id}">Concluir</button>`:'';
-  return `<div class="ti ${a.status==='done'||a.status==='miss'?'done':''} ${a.status==='now'?'now':''}"><div class="h">${a.start}</div>
+  return `<div class="ti st-${STK(a)} ${a.status==='done'||a.status==='miss'||a.status==='cancel'?'done':''} ${a.status==='now'?'now':''}"><div class="h">${a.start}</div>
    <div class="inf"><strong>${esc(cname(a.cid))}</strong><span>${esc(a.svc)} · ${a.plan?'<span style="color:var(--teal-2)">Assinante</span>':money(a.price)}${a.note?' · '+esc(a.note):''}</span></div>
-   <div class="r"><span class="chip ${ST[a.status][1]}">${ST[a.status][0]}</span>${act}<button class="btn btn-ghost btn-sm" data-edit="${a.id}" aria-label="Editar horário de ${esc(cname(a.cid))}">Editar</button></div></div>`;
+   <div class="r">${stChip(a)}${act}<button class="btn btn-ghost btn-sm" data-edit="${a.id}" aria-label="Editar horário de ${esc(cname(a.cid))}">Editar</button></div></div>`;
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-st]');if(b){const a=db.appts.find(x=>x.id===b.dataset.id);const st=b.dataset.st;
@@ -164,7 +170,7 @@ function vAgenda(){
     db.appts.filter(x=>x.date===ds&&x.status!=='cancel').forEach(x=>{
       const top=(DB.toMin(x.start)/60-H0)*PX+1,ht=Math.max(x.dur/60*PX-3,20);
       const cls=x.status==='block'?'block':x.status==='miss'?'miss':x.plan?'plan':'avl';
-      ev+=`<button class="ev ${cls} ${x.status==='done'?'done':''}" style="top:${top}px;height:${ht}px" data-edit="${x.id}"><b>${x.start} ${x.status==='block'?'Bloqueado':esc(cname(x.cid))}</b>${ht>30?esc(x.status==='block'?(x.note||''):x.svc):''}</button>`});
+      ev+=`<button class="ev ${cls} ${x.status==='done'?'done':''} ${x.status==='pend'?'pend':''} ${STK(x)==='moved'?'moved':''}" style="top:${top}px;height:${ht}px" data-edit="${x.id}"><b>${x.start} ${x.status==='block'?'Bloqueado':esc(cname(x.cid))}</b>${ht>30?esc(x.status==='block'?(x.note||''):x.svc):''}</button>`});
     cal+=`<div class="dcol" style="height:${(H1-H0)*PX}px">${ev}</div>`;
   });
   return `<div class="top"><div><h1>Agenda</h1><p>${days[0].getDate()} de ${MOF[days[0].getMonth()]} a ${days[5].getDate()} de ${MOF[days[5].getMonth()]}</p></div>
