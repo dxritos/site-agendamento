@@ -123,6 +123,8 @@ function ensure(d){let ch=false;
   if(!d.bot){d.bot={staff:true,client:true,evNew:true,evCancel:true,evNext:true,evDaily:true};ch=true}
   if(!Array.isArray(d.outbox)){d.outbox=[];ch=true}
   if(!Array.isArray(d.contacts)){d.contacts=[];ch=true}
+  if(!Array.isArray(d.convos)){d.convos=[];ch=true}
+  if(!d.bot.nextNotify){d.bot.nextNotify='ask';ch=true}
   if(!Array.isArray(d.settings.bairros)){d.settings.bairros=['Centro'];ch=true}
   const M=d.messages,add=(k,v)=>{if(!M[k]){M[k]=v;ch=true}};
   const CONFIRM_NEW='Fala, {nome}! Seu horário está marcado: {servico} em {data} às {hora}. Duas horas antes eu te mando o link para confirmar presença.';
@@ -133,6 +135,7 @@ function ensure(d){let ch=false;
   if(M.thanks.txt==='Valeu, {nome}! Obrigado pela preferência. Quando quiser marcar de novo: {site}'){M.thanks.txt=THANKS;M.thanks.name='Agradecimento ao concluir (pede uma nota)';ch=true}
   add('welcome',{on:true,name:'Boas-vindas (quem escreve para o robô)',txt:'Olá! Aqui é o atendimento automático da Farias Barbearia. Para agendar, remarcar ou conhecer os planos, acesse: {site}'});
   add('move',{on:true,name:'Horário remarcado',txt:'{nome}, seu horário foi remarcado para {data} às {hora}. Para confirmar, remarcar ou cancelar: {link}'});
+  add('next',{on:true,name:'Você é o próximo (ao concluir o atendimento anterior)',txt:'{nome}, você é o próximo! Seu horário de {servico} é às {hora}. Pode vir para a barbearia.'});
   add('cancel',{on:true,name:'Cancelamento',txt:'{nome}, seu horário de {data} às {hora} foi cancelado. Quando quiser, marque outro: {link}'});
   (d.appts||[]).forEach(a=>{if(!a.tok&&a.status!=='block'){a.tok=tok();ch=true}});
   /* permissões passam a ser de cada pessoa; as funções viram modelos prontos */

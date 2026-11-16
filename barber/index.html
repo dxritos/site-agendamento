@@ -261,9 +261,7 @@
     <div class="eyebrow">Assinatura</div>
     <h3 id="mtitle">Plano</h3>
     <div class="msum"><span style="color:var(--muted)">Valor mensal</span><b id="mprice">R$ 0</b></div>
-    <label class="t">Seus dados</label>
-    <input class="inp" id="sname" placeholder="Nome completo" aria-label="Nome completo" autocomplete="name">
-    <input class="inp" id="stel" inputmode="numeric" aria-label="WhatsApp com DDD" autocomplete="tel-national" placeholder="WhatsApp — (94) 9 0000-0000">
+    <p class="swho" id="swho"></p>
     <label class="t" style="margin-top:8px">Dia da cobrança</label>
     <div class="opts"><div class="opt on">Dia 01</div><div class="opt">Dia 07</div></div>
     <label class="t">Forma de pagamento</label>
@@ -271,6 +269,13 @@
     <p style="font-size:12px;color:var(--dim);margin:2px 0 10px">Ao assinar, você concorda com a <a href="privacidade.html" style="color:var(--teal-2)">Política de Privacidade</a>.</p>
     <p class="berr" id="serr"></p>
     <button class="btn btn-primary btn-pay" id="mconfirm" data-paybtn data-payic="pix">Confirmar assinatura</button>
+  </div>
+  <div class="mbox" id="m3" style="display:none">
+    <button class="x" data-close>&times;</button>
+    <div class="eyebrow">Assinatura</div>
+    <h3>Você já tem um plano ativo</h3>
+    <p id="m3txt"></p>
+    <a href="assinante.html" class="btn btn-primary" style="margin-top:18px">Ir para minha área</a>
   </div>
   <div class="mbox done" id="m2" style="display:none">
     <div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div>

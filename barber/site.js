@@ -132,20 +132,28 @@ if(modal){
   $$('#modal .x').forEach(x=>x.setAttribute('aria-label','Fechar'));
   let curPlan=null,closeA11y=null;
   const closeModal=()=>{modal.classList.remove('open');if(closeA11y){const c=closeA11y;closeA11y=null;c()}};
-  document.addEventListener('click',e=>{const b=e.target.closest('[data-plan]');if(!b)return;
-    curPlan=db.plans.find(p=>p.n===b.dataset.plan&&p.on)||null;
-    $('#mtitle').textContent=b.dataset.plan;$('#mprice').textContent=brl(+b.dataset.price);$('#serr').textContent='';
-    $('#m1').style.display='';$('#m2').style.display='none';modal.classList.add('open');closeA11y=modalA11y(modal.querySelector('.mbox:not([style*="none"])')||modal,()=>modal.classList.remove('open'))});
+  /* assinar exige login: sem sessão vai para a entrada e volta aqui com o plano escolhido */
+  const meNow=()=>{try{DB.refresh();return db.clients.find(c=>c.id===localStorage.getItem('farias_me'))||null}catch(e){return null}};
+  const dmy=ds=>ds?ds.split('-').reverse().join('/'):'—';
+  let ME_S=null;
+  const openPlan=p=>{if(!p)return;const me=meNow();
+    if(!me){location.href='entrar.html?next=assinar&plano='+encodeURIComponent(p.id);return}
+    ME_S=me;curPlan=p;const s=DB.activeSub(me.id);['m1','m2','m3'].forEach(k=>$('#'+k).style.display='none');
+    if(s){const pl=DB.plan(s.plan),st={ok:'em dia',late:'com pagamento pendente',paused:'pausado'}[s.status]||'';
+      $('#m3txt').innerHTML=`O número ${esc(maskPhone(me.phone||''))} já tem o plano <b>${esc(pl.n)}</b>, ${st}.<br>`+(s.cancelAt?`O plano termina em <b>${dmy(s.cancelAt)}</b> (cancelamento agendado).`:`${s.paidUntil?`Pago até <b>${dmy(s.paidUntil)}</b>. `:''}Próxima cobrança: <b>${dmy(DB.nextBill(s))}</b>.`)+'<br>Para trocar de plano, use a sua área.';
+      $('#m3').style.display=''}
+    else{$('#mtitle').textContent=p.n;$('#mprice').textContent=brl(p.p);$('#serr').textContent='';$('#swho').innerHTML=`Assinando como <b>${esc(me.name)}</b> · ${esc(maskPhone(me.phone||''))}`;$('#m1').style.display=''}
+    modal.classList.add('open');closeA11y=modalA11y(modal.querySelector('.mbox:not([style*="none"])')||modal,()=>modal.classList.remove('open'))};
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-plan]');if(!b)return;openPlan(db.plans.find(p=>p.n===b.dataset.plan&&p.on)||null)});
+  {const qa=new URLSearchParams(location.search).get('assinar');if(qa){history.replaceState(null,'',location.pathname+'#planos');const p=db.plans.find(x=>x.id===qa&&x.on);if(p)setTimeout(()=>openPlan(p),50)}}
   modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-close]'))closeModal()});
-  $('#stel').oninput=e=>{e.target.value=maskPhone(e.target.value)};
   $('#mconfirm').onclick=()=>{
-    const name=$('#sname').value.trim(),phone=$('#stel').value.replace(/\D/g,'');
-    if(name.length<2)return $('#serr').textContent='Digite seu nome.';
-    if(phone.length!==11)return $('#serr').textContent='WhatsApp inválido. Use DDD + 9 dígitos.';
+    if(!ME_S)return location.href='entrar.html?next=assinar'+(curPlan?'&plano='+encodeURIComponent(curPlan.id):'');
+    const name=ME_S.name,phone=String(ME_S.phone||'').replace(/\D/g,'');
     if(!curPlan)return $('#serr').textContent='Plano indisponível. Atualize a página.';
     DB.refresh();let c=db.clients.find(x=>x.phone===phone);
     if(DB.isBlocked(c))return $('#serr').textContent='Não foi possível assinar por este número. Fale com o Farias pelo WhatsApp.';
-    if(c&&DB.activeSub(c.id))return $('#serr').innerHTML='Este número já tem assinatura. <a href="entrar.html" style="color:var(--teal-2)">Entre na sua área</a> para trocar de plano.';
+    if(c&&DB.activeSub(c.id))return openPlan(curPlan);
     const day=$$('#m1 .opts')[0].querySelector('.opt.on').textContent.includes('07')?7:1,met=$$('#m1 .opts')[1].querySelector('.opt.on').dataset.payic==='pix'?'Pix automático':'Cartão';
     const isNew=!c;if(isNew)c={id:'c'+DB.uid(),name,phone,notes:'',blocked:false,misses:0,since:mo()};
     const ok=DB.mutateMany(['clients','subs','tx'],d=>{

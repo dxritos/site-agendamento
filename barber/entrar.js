@@ -4,9 +4,10 @@ const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setT
 // marca o campo inválido e leva o foco até ele
 const bad=el=>{el.setAttribute("aria-invalid","true");el.focus();el.addEventListener("input",()=>el.removeAttribute("aria-invalid"),{once:true})};
 // vindo do "Agendar": mostra a opção de seguir sem login e, depois de entrar, volta para o agendamento
-const Q=new URLSearchParams(location.search),NEXT=Q.get('next')==='agendar';
+const Q=new URLSearchParams(location.search),NEXT=Q.get('next')==='agendar',SUBS=Q.get('next')==='assinar',PLANO=/^[\w-]{1,40}$/.test(Q.get('plano')||'')?Q.get('plano'):'';
 const fwd=()=>{const p=new URLSearchParams();['d','t'].forEach(k=>{const v=Q.get(k)||'';if(/^[\d:]{1,5}$/.test(v))p.set(k,v)});const q=p.toString();return 'agendar.html'+(q?'?'+q:'')};
-const dest=()=>NEXT?fwd():'assinante.html';
+const dest=()=>NEXT?fwd():SUBS?'index.html'+(PLANO?'?assinar='+encodeURIComponent(PLANO):'')+'#planos':'assinante.html';
+if(SUBS){$('.roles').hidden=true;$('#s1-t').textContent='Entre para assinar';$('#s1-l').textContent='Digite seu WhatsApp. Enviamos um código, sem senha. Depois você confirma o plano escolhido.'}
 if(NEXT){$('.roles').hidden=true;$('#s1-t').textContent='Entre para agendar';$('#s1-l').textContent='Digite seu WhatsApp. Enviamos um código, sem senha. Se for sua primeira vez, fazemos seu cadastro na hora.'}
 // bairros para a pesquisa do cadastro: lista do painel + os já usados por outros clientes
 $('#bairros').innerHTML=[...new Set([...(DB.data.settings.bairros||[]),...DB.data.clients.map(c=>c.bairro).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(b=>`<option value="${String(b).replace(/[&<>"]/g,'')}">`).join('');

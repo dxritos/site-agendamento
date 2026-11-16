@@ -737,7 +737,7 @@ body{background:radial-gradient(1100px 560px at 50% -8%,rgba(139,13,26,.34),rgba
 .prof-b{border-color:rgba(245,242,237,.18)}
 .menu a:hover,.menu a.on,.barber .role,.foot ul a:hover,.crumb a:hover{color:var(--teal-2)}
 /* cabeçalho: quase transparente no topo (só a linha), sólido ao rolar */
-header{background:rgba(11,11,11,0)!important;border-bottom:1px solid rgba(245,242,237,.07)!important;box-shadow:none;transition:background .35s,box-shadow .35s,backdrop-filter .35s}
+header{background:rgba(11,11,11,0)!important;border-bottom:0!important;box-shadow:none;transition:background .35s,box-shadow .35s,backdrop-filter .35s}
 header.scrolled{background:rgba(11,11,11,.9)!important;box-shadow:0 10px 30px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .mtop{background:rgba(11,11,11,.94)!important}
 /* movimento e relevo */
@@ -753,3 +753,5 @@ header.scrolled{background:rgba(11,11,11,.9)!important;box-shadow:0 10px 30px rg
 /* o brilho do topo passa por trás do cabeçalho transparente */
 main>.glow:first-child::before{top:-66px}
 .chip.c-info{color:#d6cfc4;background:rgba(245,242,237,.08)}
+/* assinatura: quem está assinando (logado) */
+.swho{font-size:14px;color:var(--muted);margin:4px 0 14px}.swho b{color:var(--text,#f5f2ed)}

@@ -62,10 +62,14 @@ const I={
  historico:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
  config:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>'};
 /* o dia a dia fica à vista; o resto abre em "Mais" (lembra se ficou aberto) */
+/* área do desenvolvedor: backup, transferência, exportações e limpeza. No protótipo abre com ?dev (vale até fechar a aba);
+   no sistema definitivo fica atrás da conta de desenvolvedor, conferida no servidor */
+const DEV=(()=>{try{if(new URLSearchParams(location.search).has('dev'))sessionStorage.setItem('farias_dev','1');return sessionStorage.getItem('farias_dev')==='1'}catch(e){return false}})();
+I.dev='<path d="M8 6l-6 6 6 6M16 6l6 6-6 6M14 4l-4 16"/>';
 const PRIMARY=[['hoje','Hoje'],['agenda','Agenda'],['clientes','Clientes'],['assinantes','Assinantes']];
-const MORE=[['Negócio',[['financeiro','Financeiro'],['servicos','Serviços e planos']]],['Comunicação',[['mensagens','WhatsApp'],['conteudo','Site']]],['Sistema',[['equipe','Equipe'],['historico','Histórico'],['config','Configurações']]]];
+const MORE=[['Negócio',[['financeiro','Financeiro'],['servicos','Serviços e planos']]],['Comunicação',[['mensagens','WhatsApp'],['conteudo','Site']]],['Sistema',[['equipe','Equipe'],['historico','Histórico'],['config','Configurações'],...(DEV?[['dev','Desenvolvedor']]:[])]]];
 let moreOpen=false;try{moreOpen=localStorage.getItem('farias_more')==='1'}catch(e){}
-let VIEW=(location.hash||'#hoje').slice(1);if(!/^[a-z]+$/.test(VIEW)||!document.getElementById('v-'+VIEW))VIEW='hoje';
+let VIEW=(location.hash||'#hoje').slice(1);if(!/^[a-z]+$/.test(VIEW)||!document.getElementById('v-'+VIEW)||(VIEW==='dev'&&!DEV))VIEW='hoje';
 function renderNav(){
   const late=db.subs.filter(s=>s.status==='late').length,inMore=MORE.some(([,it])=>it.some(([k])=>k===VIEW)),open=moreOpen||inMore;
   const tab=([k,n])=>`<button class="tab ${k===VIEW?'on':''}" data-go="${k}"${k===VIEW?' aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${I[k]}</svg>${n}${k==='assinantes'&&late?`<span class="cnt">${late}</span>`:''}</button>`;
@@ -74,8 +78,8 @@ function renderNav(){
   $('#snav').innerHTML=h;$('#mnav').innerHTML=h;
 }
 document.addEventListener('click',e=>{if(!e.target.closest('[data-more]'))return;const inMore=MORE.some(([,it])=>it.some(([k])=>k===VIEW));moreOpen=inMore?true:!moreOpen;try{localStorage.setItem('farias_more',moreOpen?'1':'0')}catch(x){}renderNav()});
-function go(k){if(!VIEWS[k])k='hoje';if(VIEW!==k)history.pushState(null,'','#'+k);VIEW=k;render();scrollTo(0,0)}
-addEventListener('hashchange',()=>{const k=(location.hash||'#hoje').slice(1);if(/^[a-z]+$/.test(k)&&VIEWS[k]&&k!==VIEW){VIEW=k;render()}});
+function go(k){if(!VIEWS[k]||(k==='dev'&&!DEV))k='hoje';if(VIEW!==k)history.pushState(null,'','#'+k);VIEW=k;render();scrollTo(0,0)}
+addEventListener('hashchange',()=>{const k=(location.hash||'#hoje').slice(1);if(/^[a-z]+$/.test(k)&&VIEWS[k]&&k!==VIEW&&(k!=='dev'||DEV)){VIEW=k;render()}});
 document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);if(g.dataset.filter){subFilter=g.dataset.filter;render()}}});
 
 /* ================= HOJE ================= */
@@ -273,7 +277,7 @@ let subFilter='all',subQ='';
 const SS={ok:['Ativo','c-ok'],late:['Pendente','c-bad'],paused:['Pausado','c-warn'],off:['Cancelado','c-dim']};
 function vAssinantes(){
   const rows=db.subs.filter(s=>(subFilter==='all'||s.status===subFilter)&&cname(s.cid).toLowerCase().includes(subQ));
-  return `<div class="top"><div><h1>Assinantes</h1><p>Cobrança automática. Use "Gerenciar" para qualquer correção.</p></div><div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-sub">Exportar planilha</button><button class="btn btn-primary btn-sm" data-act="new-sub">+ Nova assinatura</button></div></div>
+  return `<div class="top"><div><h1>Assinantes</h1><p>Cobrança automática. Use "Gerenciar" para qualquer correção.</p></div><div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-sub">Exportar planilha</button><button class="btn btn-ghost btn-sm" data-act="imp-sub">Importar assinantes</button><button class="btn btn-primary btn-sm" data-act="new-sub">+ Nova assinatura</button></div></div>
   <div class="pcards">${db.plans.map(p=>{const L=db.subs.filter(s=>s.plan===p.id&&s.status==='ok'),n=L.length;return `<div class="card pc"><small>${esc(p.n)}${p.on?'':' (fora da venda)'}</small><b>${n}</b><span>${money0(L.reduce((t,s)=>t+price(s),0))}/mês</span></div>`}).join('')}</div>
   <div class="card box"><div class="filters">${[['all','Todos'],['ok','Ativos'],['late','Pendentes'],['paused','Pausados'],['off','Cancelados']].map(([k,n])=>`<button class="fbtn ${subFilter===k?'on':''}" data-sf="${k}">${n}</button>`).join('')}<input class="inp search" id="sub-q" placeholder="Buscar assinante…" value="${esc(subQ)}"></div>
   <div class="tw"><table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th><th>Uso no mês</th><th>Próx. cobrança</th><th>Forma</th><th class="r">Ações</th></tr></thead><tbody>
@@ -321,10 +325,40 @@ function gerSub(id){
   if($('#s-cancel-now'))$('#s-cancel-now').onclick=()=>confirmBox('Encerrar agora?',`${esc(nm)} perde os benefícios hoje, sem esperar ${fmtD(s.cancelAt)}.`,'Encerrar agora',()=>change('subs',L=>{const x=L.find(y=>y.id===id);x.status='off';x.cancelAt=null},`${nm}: assinatura encerrada`,'Assinaturas'));
   if($('#s-cancel'))$('#s-cancel').onclick=()=>{const end=nextBill(s);confirmBox('Cancelar assinatura?',`${esc(nm)} mantém os benefícios até o fim do ciclo atual (${fmtD(end)}). Nenhuma nova cobrança é feita.`,'Cancelar no fim do ciclo',()=>change('subs',L=>{const x=L.find(y=>y.id===id);x.cancelAt=st==='ok'?end:null;if(st!=='ok')x.status='off';x.nextPlan=null},`${nm}: ${st==='ok'?'cancelamento agendado para '+fmtD(end):'assinatura cancelada'}`,'Assinaturas'))};
 }
-ACT['new-sub']=()=>{modal(`<h3>Nova assinatura</h3><p>Para cliente que assinou no balcão. O link de pagamento vai pelo WhatsApp.</p><div class="form"><div class="fl"><label>Cliente</label><select class="inp" id="ns-cli">${clientOpts()}</select></div><div class="two"><div class="fl"><label>Plano</label><select class="inp" id="ns-plan">${db.plans.filter(p=>p.on).map(p=>`<option value="${p.id}">${esc(p.n)} · ${money0(p.p)}</option>`).join('')}</select></div><div class="fl"><label>Dia da cobrança</label><select class="inp" id="ns-day"><option value="1">Dia 01</option><option value="7" selected>Dia 07</option></select></div></div></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="ns-save">Criar e enviar link</button></div>`);
-  $('#ns-save').onclick=()=>{const cid=$('#ns-cli').value,pl=DB.plan($('#ns-plan').value);DB.refresh();if(DB.activeSub(cid))return toast('Esse cliente já tem assinatura ativa');closeModal();
-    mutMany(['subs','tx'],d=>{const v={plan:pl.id,price:pl.p,status:'ok',used:0,credit:0,creditMonth:null,day:+$('#ns-day').value,method:'Pix automático',pausedUntil:null,courtesyUntil:null,exempt:false,cancelAt:null,nextPlan:null,paidUntil:DB.addMonth(TODAY)};const old=d.subs.find(x=>x.cid===cid);if(old)Object.assign(old,v);else d.subs.push({id:'a'+DB.uid(),cid,since:MO[today.getMonth()]+'/'+String(today.getFullYear()).slice(2),...v});
-      d.tx.unshift({id:DB.uid(),date:TODAY,cid,desc:'Plano '+pl.n,method:'Pix automático',value:pl.p,kind:'plano',status:'ok'})},`Nova assinatura: ${cname(cid)} · ${pl.n} (${money(pl.p)})`,'Assinaturas')}};
+ACT['new-sub']=()=>{modal(`<h3>Nova assinatura</h3><p>Para cliente que assinou no balcão. O link de pagamento vai pelo WhatsApp.</p><div class="form"><div class="fl"><label>Cliente</label><select class="inp" id="ns-cli">${clientOpts()}</select></div><div class="two"><div class="fl"><label>Plano</label><select class="inp" id="ns-plan">${db.plans.filter(p=>p.on).map(p=>`<option value="${p.id}">${esc(p.n)} · ${money0(p.p)}</option>`).join('')}</select></div><div class="fl"><label>Dia da cobrança</label><select class="inp" id="ns-day"><option value="1">Dia 01</option><option value="7" selected>Dia 07</option></select></div></div><div class="two"><div class="fl"><label>Início</label><input class="inp" type="date" id="ns-start" value="${TODAY}"></div><div class="fl"><label>Pago até</label><input class="inp" type="date" id="ns-until" value="${DB.addMonth(TODAY)}"></div></div><label class="pchk"><input type="checkbox" id="ns-charge" checked><span>Lançar o pagamento de hoje no financeiro</span></label><p class="hint">Cliente que já pagava antes do sistema: ajuste o início e até quando está pago, e desmarque o lançamento.</p></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="ns-save">Criar assinatura</button></div>`);
+  $('#ns-save').onclick=()=>{const cid=$('#ns-cli').value,pl=DB.plan($('#ns-plan').value),st=$('#ns-start').value,un=$('#ns-until').value,charge=$('#ns-charge').checked;DB.refresh();if(DB.activeSub(cid))return toast('Esse cliente já tem assinatura ativa');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(st))return fieldErr('#ns-start','Informe o início');if(!/^\d{4}-\d{2}-\d{2}$/.test(un)||un<st)return fieldErr('#ns-until','Data igual ou depois do início');closeModal();
+    mutMany(['subs','tx'],d=>{const v={plan:pl.id,price:pl.p,status:un<TODAY?'late':'ok',used:0,credit:0,creditMonth:null,day:+$('#ns-day').value,method:'Pix automático',pausedUntil:null,courtesyUntil:null,exempt:false,cancelAt:null,nextPlan:null,paidUntil:un,started:st,since:monthLabel(st)};const old=d.subs.find(x=>x.cid===cid);if(old)Object.assign(old,v);else d.subs.push({id:'a'+DB.uid(),cid,...v});
+      if(charge)d.tx.unshift({id:DB.uid(),date:TODAY,cid,desc:'Plano '+pl.n,method:'Pix automático',value:pl.p,kind:'plano',status:'ok'})},`Nova assinatura: ${cname(cid)} · ${pl.n} (início ${fmtD(st)}, pago até ${fmtD(un)})`,'Assinaturas')}};
+const monthLabel=ds=>MO[+ds.slice(5,7)-1]+'/'+ds.slice(2,4);
+/* importação de quem já era assinante antes do sistema: planilha com início e até quando está pago */
+const nrm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+const pDate=v=>{v=String(v||'').trim();let m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v);if(m)return v;m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})$/.exec(v);if(!m)return null;const y=m[3].length===2?'20'+m[3]:m[3],r=`${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;return isNaN(new Date(r+'T00:00'))?null:r};
+function parseSubs(txt){const lines=txt.replace(/^\ufeff/,'').split(/\r?\n/).filter(l=>l.trim());if(!lines.length)return [];
+  const dl=[';','\t',','].sort((a,b)=>lines[0].split(b).length-lines[0].split(a).length)[0];if(/nome/i.test(lines[0]))lines.shift();const seen=new Set();
+  return lines.map((l,i)=>{const f=l.split(dl).map(x=>x.trim().replace(/^"|"$/g,'')),[nome,tel,pn,ini,fim,dia,forma]=f,errs=[];
+    let ph=String(tel||'').replace(/\D/g,'');if(ph.length>11&&ph.startsWith('55'))ph=ph.slice(2);
+    const pl=db.plans.find(p=>nrm(p.n)===nrm(pn)||p.id===pn)||db.plans.find(p=>nrm(pn)&&nrm(p.n).includes(nrm(pn)));
+    const st=pDate(ini),en=pDate(fim),c=db.clients.find(x=>String(x.phone||'').replace(/\D/g,'')===ph);
+    if(!nome||nome.length<2)errs.push('nome');if(ph.length!==11)errs.push('telefone com DDD');if(!pl)errs.push('plano "'+(pn||'')+'" não existe');if(!st)errs.push('início');if(!en)errs.push('fim');if(st&&en&&en<st)errs.push('fim antes do início');
+    if(c&&DB.activeSub(c.id))errs.push('já tem plano ativo');if(seen.has(ph))errs.push('telefone repetido na planilha');seen.add(ph);
+    const d=+String(dia||'').replace(/\D/g,'');return {line:i+1,nome,ph,pl,st,en,c,day:[1,7].includes(d)?d:(st&&+st.slice(8)<=4?1:7),method:/cart/i.test(forma||'')?'Cartão':'Pix automático',errs}})}
+ACT['imp-sub']=()=>{modal(`<h3>Importar assinantes</h3><p>Para quem já era assinante antes do sistema. Cole as linhas da planilha ou escolha o arquivo CSV. Colunas, nesta ordem:</p>
+  <p class="hint"><b>nome; telefone; plano; início; fim; dia da cobrança; forma</b><br>Datas como 15/10/2026. Fim = até quando já está pago. Dia da cobrança 1 ou 7 e forma (Pix ou Cartão) são opcionais. Cliente que ainda não existe é cadastrado.</p>
+  <div class="form"><textarea class="inp" id="is-txt" rows="6" placeholder="João Silva;94991234567;Corte Ilimitado;15/10/2026;15/12/2026;7;Pix"></textarea>
+  <div class="acts"><label class="btn btn-ghost btn-sm">Escolher arquivo CSV<input type="file" accept=".csv,.txt" hidden id="is-file"></label><button class="btn btn-ghost btn-sm" id="is-model">Baixar modelo</button><button class="btn btn-ghost btn-sm" id="is-prev">Conferir</button></div><div id="is-out"></div></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="is-go" disabled>Importar</button></div>`,true);
+  let rows=[];const prev=()=>{rows=parseSubs($('#is-txt').value);const ok=rows.filter(r=>!r.errs.length);
+    $('#is-out').innerHTML=rows.length?`<div class="tw"><table><thead><tr><th>Linha</th><th>Cliente</th><th>Plano</th><th>Início</th><th>Pago até</th><th>Situação</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.line}</td><td>${esc(r.nome||'—')}<small>${esc(phoneFmt(r.ph))}${r.c?' · já cadastrado':' · novo'}</small></td><td>${r.pl?esc(r.pl.n):'—'}</td><td>${r.st?r.st.split('-').reverse().join('/'):'—'}</td><td>${r.en?r.en.split('-').reverse().join('/'):'—'}</td><td>${r.errs.length?'<span class="chip c-bad">Corrigir: '+esc(r.errs.join(', '))+'</span>':r.en<TODAY?'<span class="chip c-warn">Vencida: entra como pendente</span>':'<span class="chip c-ok">Pronta</span>'}</td></tr>`).join('')}</tbody></table></div><p class="hint" style="margin-top:8px">${ok.length} de ${rows.length} prontas para importar. Linhas com erro ficam de fora.</p>`:'<p class="hint">Nenhuma linha.</p>';
+    $('#is-go').disabled=!ok.length;$('#is-go').textContent=ok.length?`Importar ${ok.length}`:'Importar'};
+  $('#is-prev').onclick=prev;$('#is-txt').oninput=()=>{$('#is-go').disabled=true};
+  $('#is-file').onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>2e6)return toast('Arquivo grande demais (máx. 2 MB)');const rd=new FileReader();rd.onload=()=>{$('#is-txt').value=rd.result;prev()};rd.readAsText(f)};
+  $('#is-model').onclick=()=>download('modelo-assinantes.csv',csv(['nome','telefone','plano','inicio','fim','dia','forma'],[['João Silva','94991234567',(db.plans[0]||{n:''}).n,'15/10/2026','15/12/2026','7','Pix']]),'text/csv');
+  $('#is-go').onclick=()=>{const ok=rows.filter(r=>!r.errs.length);if(!ok.length)return;closeModal();
+    mutMany(['clients','subs'],d=>{ok.forEach(r=>{let c=d.clients.find(x=>String(x.phone||'').replace(/\D/g,'')===r.ph);
+      if(!c){c={id:'c'+DB.uid(),name:r.nome,phone:r.ph,bairro:'',birth:null,source:'Importado',notes:'Importado com assinatura.',blocked:false,misses:0,since:monthLabel(r.st)};d.clients.push(c)}
+      const v={plan:r.pl.id,price:r.pl.p,status:r.en<TODAY?'late':'ok',used:0,credit:0,creditMonth:null,day:r.day,method:r.method,pausedUntil:null,courtesyUntil:null,exempt:false,cancelAt:null,nextPlan:null,paidUntil:r.en,started:r.st,since:monthLabel(r.st)};
+      const old=d.subs.find(x=>x.cid===c.id);if(old)Object.assign(old,v);else d.subs.push({id:'a'+DB.uid(),cid:c.id,...v})})},`${plural(ok.length,'assinante importado','assinantes importados')} da planilha`,'Assinaturas')}};
 ACT['exp-sub']=()=>download('assinantes-farias.csv',csv(['Cliente','Plano','Status','Dia','Forma','Desde'],db.subs.map(s=>[cname(s.cid),(plan(s.plan)||{}).n,(SS[s.status]||['?'])[0],s.day,s.method,s.since])),'text/csv');
 
 /* ================= FINANCEIRO ================= */
@@ -470,7 +504,8 @@ function vMensagens(){
   return head+`<div class="g11">
    <div>
     <div class="card box"><h3>Robô da equipe ${sw('bt-staff',b.staff)}</h3><p class="hint">Avisos e comandos no WhatsApp do barbeiro. Desligue se a recepção cuida da agenda.</p>
-      ${EV.map(([k,n,d])=>`<div class="set"><div>${n}<small>${d}</small></div>${sw('bt-'+k,b[k]!==false,!b.staff)}</div>`).join('')}</div>
+      ${EV.map(([k,n,d])=>`<div class="set"><div>${n}<small>${d}</small></div>${sw('bt-'+k,b[k]!==false,!b.staff)}</div>`).join('')}
+      <div class="set"><div>Avisar o próximo cliente<small>Ao concluir um atendimento, o cliente seguinte recebe "você é o próximo" no WhatsApp.</small></div><select class="inp" id="bt-nextNotify" style="max-width:190px">${[['ask','O robô pergunta'],['auto','Automático'],['off','Não avisar']].map(([v,l])=>`<option value="${v}" ${(b.nextNotify||'ask')===v?'selected':''}>${l}</option>`).join('')}</select></div></div>
     <div class="card box"><h3>Mensagens para o cliente ${sw('bt-client',b.client)}</h3><p class="hint">Confirmação ao marcar, lembretes e um link só dele para confirmar presença, remarcar ou cancelar sem login. O painel registra quem alterou.</p>
       <button class="btn btn-ghost btn-sm" data-wa="msgs" style="margin-top:12px">Editar os textos</button></div>
    </div>
@@ -478,7 +513,7 @@ function vMensagens(){
      <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map((m,i)=>`<div class="cb ${m.me?'me':''}">${chatMsg(m,i===chat.length-1)}</div>`).join(''):'<div class="cb">'+waFmt('Bot:\nEnvie *menu* para escolher uma opção, *agendar* para eu te perguntar passo a passo, ou escreva um comando.')+'</div>'}</div>
      <div class="chips-var" style="margin:10px 0">${['menu','agendar','próximo','👍','👎','pix','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
      <button class="btn btn-ghost btn-sm" data-act="bot-due" style="margin-bottom:12px">Simular: chegou a hora do próximo cliente</button>
-     <div class="fl" style="margin-bottom:10px"><label>Enviar como</label><select class="inp" id="bot-from"><option value="">Farias (número da equipe)</option><option value="${esc((db.clients.find(c=>c.phone)||{}).phone||'')}" ${botFrom&&botFrom!=='94900001234'?'selected':''}>Cliente cadastrado (${esc((db.clients.find(c=>c.phone)||{name:'—'}).name)})</option><option value="94900001234" ${botFrom==='94900001234'?'selected':''}>Número desconhecido</option></select></div>
+     <div class="fl" style="margin-bottom:10px"><label>Enviar como</label><select class="inp" id="bot-from"><option value="">Farias (número da equipe)</option><option value="@barbeiro" ${botFrom==='@barbeiro'?'selected':''}>Barbeiro da equipe (sem acesso ao financeiro)</option><option value="${esc((db.clients.find(c=>c.phone)||{}).phone||'')}" ${botFrom&&botFrom!=='94900001234'&&botFrom!=='@barbeiro'?'selected':''}>Cliente cadastrado (${esc((db.clients.find(c=>c.phone)||{name:'—'}).name)})</option><option value="94900001234" ${botFrom==='94900001234'?'selected':''}>Número desconhecido</option></select></div>
      <div class="fix"><input class="inp" id="bot-in" placeholder="Ex.: agendar corte João às 15" aria-label="Mensagem para o robô" autocomplete="off" ${b.staff?'':'disabled'}><button class="btn btn-primary btn-sm" data-act="bot-send" ${b.staff?'':'disabled'}>Enviar</button></div>
      <p class="hint" style="margin-top:10px">Os comandos mexem na agenda de verdade deste protótipo. O envio pelo WhatsApp real depende de ligar a conta do WhatsApp Business no servidor.</p></div>
   </div>`;
@@ -486,7 +521,8 @@ function vMensagens(){
 function botSend(t){t=(t||'').trim();if(!t)return;chat.push({me:1,t},{t:Bot.run(t,botFrom)});if(chat.length>40)chat.splice(0,chat.length-40);render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight;const i=$('#bot-in');if(i)i.focus()}
 document.addEventListener('click',e=>{const w=e.target.closest('[data-wa]');if(w){waTab=w.dataset.wa;render();return}const q=e.target.closest('[data-bot]');if(q)botSend(q.dataset.bot)});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='bot-in'){e.preventDefault();botSend(e.target.value)}});
-document.addEventListener('change',e=>{if(e.target.id==='bot-from'){botFrom=e.target.value;return}const m=/^bt-(\w+)$/.exec(e.target.id||'');if(!m)return;const k=m[1],on=e.target.checked,nm=k==='staff'?'Robô da equipe':k==='client'?'Mensagens para o cliente':'Aviso "'+(EV.find(x=>x[0]===k)||[,k])[1]+'"';
+document.addEventListener('change',e=>{if(e.target.id==='bot-from'){botFrom=e.target.value;return}
+  if(e.target.id==='bt-nextNotify'){const v=e.target.value;change('bot',B=>{B.nextNotify=v},'Aviso ao próximo cliente: '+({ask:'o robô pergunta',auto:'automático',off:'desligado'})[v],'WhatsApp');return}const m=/^bt-(\w+)$/.exec(e.target.id||'');if(!m)return;const k=m[1],on=e.target.checked,nm=k==='staff'?'Robô da equipe':k==='client'?'Mensagens para o cliente':'Aviso "'+(EV.find(x=>x[0]===k)||[,k])[1]+'"';
   change('bot',B=>{B[k]=on},`${nm}: ${on?'ligado':'desligado'}`,'WhatsApp')});
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&db.messages[k]&&$('#pv-'+k))$('#pv-'+k).innerHTML=esc(fillVars(e.target.value))+'<small>agora ✓✓</small>'});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ins]');if(!b)return;const t=$('#'+b.dataset.t),p=t.selectionStart??t.value.length;t.value=t.value.slice(0,p)+b.dataset.ins+t.value.slice(t.selectionEnd??p);t.focus();t.dispatchEvent(new Event('input',{bubbles:true}))});
@@ -562,7 +598,7 @@ function closedList(){const L=db.holidays.filter(h=>h.date>=TODAY).map(h=>({k:'h
 const closedNow=()=>closedList().filter(x=>x.now).map(x=>({...x,label:'A agenda de hoje está fechada'+(x.k==='b'?' '+x.label.split(' · ')[1]:'')+'. '}));
 function vConfig(){
   const s=db.settings,sel=(id,opts,v)=>`<select class="inp" id="${id}">${opts.map(([val,l])=>`<option value="${val}" ${+val===+v?'selected':''}>${l}</option>`).join('')}</select>`;
-  return `<div class="top"><div><h1>Configurações</h1><p>Regras da agenda, feriados e backup.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="cfg-save">Salvar alterações</button></div></div>
+  return `<div class="top"><div><h1>Configurações</h1><p>Regras da agenda, feriados e bairros.</p></div><div class="acts"><button class="btn btn-primary btn-sm" data-act="cfg-save">Salvar alterações</button></div></div>
   <div class="g11">
    <div>
     <div class="card box"><h3>Horário de funcionamento</h3>${[1,2,3,4,5,6,0].map(d=>{const h=db.hours[d];return `<div class="hrow"><span>${WDF[d]}</span><select class="inp" id="h-a-${d}" ${h?'':'disabled'}>${timeOpts(h?h[0]:'09:00',6*60,22*60,30)}</select><select class="inp" id="h-b-${d}" ${h?'':'disabled'}>${timeOpts(h?h[1]:'19:00',6*60,23*60,30)}</select>${sw('h-on-'+d,!!h)}</div>`}).join('')}
@@ -588,8 +624,6 @@ function vConfig(){
      <div class="set"><div>Faltas sem aviso<small>Bloqueia agendamento online após</small></div>${sel('cf-noShow',[[2,'2 faltas'],[3,'3 faltas'],[5,'5 faltas'],[99,'Nunca bloquear']],s.noShow)}</div></div>
     <div class="card box"><h3>Bairros do cadastro <small>pesquisa do cliente novo</small></h3><p class="hint" style="margin-bottom:10px">Um bairro por linha. O cliente pesquisa nessa lista ao se cadastrar, e pode digitar outro se não achar.</p>
      <textarea class="inp" id="cf-bairros" rows="5" placeholder="Centro">${esc((s.bairros||[]).join('\n'))}</textarea></div>
-    <div class="card box"><h3>Backup dos dados</h3><p class="hint" style="margin-bottom:14px">Baixe uma cópia de tudo (clientes, agenda, financeiro, conteúdo) ou restaure um backup.</p>
-     <div class="acts"><button class="btn btn-ghost btn-sm" data-act="bk-exp">Baixar backup</button><label class="btn btn-ghost btn-sm">Restaurar backup<input type="file" accept=".json" hidden id="bk-imp"></label>${new URLSearchParams(location.search).has('demo')?'<button class="btn btn-danger btn-sm" data-act="bk-reset">Voltar aos dados de exemplo</button>':''}</div></div>
    </div>
   </div>`;
 }
@@ -633,7 +667,39 @@ Object.assign(ACT,{
 });
 
 /* ================= render ================= */
-const VIEWS={hoje:vHoje,agenda:vAgenda,clientes:vClientes,assinantes:vAssinantes,financeiro:vFinanceiro,servicos:vServicos,conteudo:vConteudo,mensagens:vMensagens,equipe:vEquipe,historico:vHistorico,config:vConfig};
+/* ================= DESENVOLVEDOR ================= */
+const kb=k=>{try{return Math.round(((localStorage.getItem(k)||'').length*2)/1024)}catch(e){return 0}};
+function vDev(){const n=(k)=>(db[k]||[]).length;
+  return `<div class="top"><div><h1>Desenvolvedor</h1><p>Backup, transferência para outro sistema, exportações e limpeza. A equipe da barbearia não vê esta área.</p></div></div>
+  <div class="alert info" style="margin-bottom:16px"><div><b>Protótipo</b><span>Aqui a área abre com <code>?dev</code> no endereço. No sistema definitivo ela só abre com a conta de desenvolvedor, conferida no servidor, e cada ação fica registrada.</span></div></div>
+  <div class="g11"><div>
+   <div class="card box"><h3>Backup e transferência</h3><p class="hint" style="margin-bottom:14px">Arquivo completo (clientes, agenda, assinaturas, financeiro, conteúdo, conversas). Serve para restaurar ou entregar os dados a outro desenvolvedor. O token do Instagram não vai no arquivo.</p>
+    <div class="acts"><button class="btn btn-primary btn-sm" data-act="bk-exp">Baixar backup completo</button><label class="btn btn-ghost btn-sm">Restaurar backup<input type="file" accept=".json" hidden id="bk-imp"></label></div></div>
+   <div class="card box"><h3>Exportar planilhas</h3><p class="hint" style="margin-bottom:14px">CSV que abre no Excel ou Google Planilhas.</p>
+    <div class="acts"><button class="btn btn-ghost btn-sm" data-act="exp-cli">Clientes</button><button class="btn btn-ghost btn-sm" data-act="exp-sub">Assinantes</button><button class="btn btn-ghost btn-sm" data-act="exp-tx">Financeiro</button><button class="btn btn-ghost btn-sm" data-act="dev-appts">Agenda</button></div></div>
+   <div class="card box"><h3>Conversas do robô <small>${n('convos')} guardadas</small></h3><p class="hint" style="margin-bottom:14px">Mensagem recebida, assunto entendido e resposta. Base para treinar ou avaliar um atendimento com IA no futuro.</p>
+    <div class="acts"><button class="btn btn-ghost btn-sm" data-act="dev-conv-json">Baixar JSON</button><button class="btn btn-ghost btn-sm" data-act="dev-conv-csv">Baixar CSV</button><button class="btn btn-ghost btn-sm" data-act="dev-conv-top">Assuntos mais comuns</button></div></div>
+  </div><div>
+   <div class="card box"><h3>Armazenamento</h3>
+    <div class="set"><div>Dados<small>Banco do protótipo neste navegador</small></div><b>${kb('farias_db_v1')} KB</b></div>
+    <div class="set"><div>Fotos</div><b>${kb('farias_img_v1')} KB</b></div>
+    <div class="set"><div>Registros</div><span>${n('clients')} clientes · ${n('appts')} horários · ${n('subs')} assinaturas · ${n('tx')} lançamentos · ${n('outbox')} mensagens · ${n('log')} no histórico</span></div></div>
+   <div class="card box"><h3>Limpeza</h3>
+    <div class="acts"><button class="btn btn-ghost btn-sm" data-act="dev-clr" data-k="outbox">Limpar mensagens enviadas</button><button class="btn btn-ghost btn-sm" data-act="dev-clr" data-k="convos">Limpar conversas do robô</button><button class="btn btn-ghost btn-sm" data-act="dev-clr" data-k="log">Limpar histórico</button></div></div>
+   <div class="card box"><h3>Zona de perigo</h3><p class="hint" style="margin-bottom:14px">Baixe um backup antes. Não dá para desfazer.</p>
+    <div class="acts"><button class="btn btn-danger btn-sm" data-act="bk-reset">Voltar aos dados de exemplo</button><button class="btn btn-danger btn-sm" data-act="dev-wipe">Apagar todos os dados</button></div></div>
+  </div></div>`}
+Object.assign(ACT,{
+  'dev-appts':()=>download(`agenda-${TODAY}.csv`,csv(['Data','Início','Duração (min)','Cliente','Serviço','Valor','Plano','Status','Origem'],db.appts.filter(a=>a.status!=='block').map(a=>[a.date,a.start,a.dur,cname(a.cid),a.svc,a.price,a.plan?'sim':'não',a.status,a.origin||''])),'text/csv'),
+  'dev-conv-json':()=>download(`conversas-robo-${TODAY}.json`,JSON.stringify(db.convos||[],null,1),'application/json'),
+  'dev-conv-csv':()=>download(`conversas-robo-${TODAY}.csv`,csv(['Data','Número','Quem','Cliente','Mensagem','Assunto','Resposta'],(db.convos||[]).map(x=>[new Date(x.t).toLocaleString('pt-BR'),x.num,x.role,x.cid?cname(x.cid):'',x.text,x.intent,x.reply])),'text/csv'),
+  'dev-conv-top':()=>{const by={};(db.convos||[]).filter(x=>x.role==='cliente').forEach(x=>by[x.intent]=(by[x.intent]||0)+1);const L=Object.entries(by).sort((a,b)=>b[1]-a[1]);
+    modal(`<h3>Assuntos dos clientes</h3><p>O que os clientes mais perguntam ao robô. "nao_entendido" mostra o que ainda falta ensinar.</p><div class="hist-mini">${L.map(([k,v])=>`<div><span>${esc(k)}</span><b>${v}</b></div>`).join('')||'<p class="empty">Nenhuma conversa ainda.</p>'}</div><div class="mact"><button class="btn btn-primary" data-close>Fechar</button></div>`)},
+  'dev-clr':b=>{const k=b.dataset.k,nm={outbox:'mensagens enviadas',convos:'conversas do robô',log:'histórico'}[k];confirmBox('Limpar '+nm+'?','Os registros são apagados deste navegador.','Limpar',()=>{DB.data[k]=[];DB.save();render();toast('Limpo: '+nm)})},
+  'dev-wipe':()=>{modal(`<h3>Apagar todos os dados?</h3><p>Clientes, agenda, assinaturas, financeiro, mensagens e conversas são apagados. Serviços, planos, horários e textos do site ficam. Digite <b>APAGAR</b> para confirmar.</p><div class="form"><input class="inp" id="wipe-in" autocomplete="off"></div><div class="mact"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-danger" id="wipe-ok">Apagar tudo</button></div>`);
+    $('#wipe-ok').onclick=()=>{if($('#wipe-in').value.trim()!=='APAGAR')return fieldErr('#wipe-in','Digite APAGAR');const d=DB.data;['clients','subs','appts','tx','log','outbox','contacts','convos'].forEach(k=>d[k]=[]);d.gallery.forEach(g=>{if(g.img){DB.img.del(g.img);g.img=null}});DB.save();location.reload()}}
+});
+const VIEWS={hoje:vHoje,agenda:vAgenda,clientes:vClientes,assinantes:vAssinantes,financeiro:vFinanceiro,servicos:vServicos,conteudo:vConteudo,mensagens:vMensagens,equipe:vEquipe,historico:vHistorico,config:vConfig,dev:vDev};
 function render(){renderNav();$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+VIEW));$('#v-'+VIEW).innerHTML=VIEWS[VIEW]();a11y($('#v-'+VIEW));$$('tr.click').forEach(t=>{t.tabIndex=0})}
 /* outra aba (site ou área do cliente) gravou: atualiza a tela se nenhuma janela estiver aberta */
 window.onDBChange=()=>{if(!$('#modal').classList.contains('open'))render()};
