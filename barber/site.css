@@ -755,3 +755,5 @@ main>.glow:first-child::before{top:-66px}
 .chip.c-info{color:#d6cfc4;background:rgba(245,242,237,.08)}
 /* assinatura: quem está assinando (logado) */
 .swho{font-size:14px;color:var(--muted);margin:4px 0 14px}.swho b{color:var(--text,#f5f2ed)}
+/* breadcrumb dentro da primeira seção: o brilho do fundo começa atrás do cabeçalho, sem faixa escura */
+.page-first>.crumb-wrap{padding-top:0;margin-bottom:26px}
