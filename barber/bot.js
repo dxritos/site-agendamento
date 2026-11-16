@@ -491,19 +491,19 @@ function clientCore(raw,n,from){
     agendar(){const p=parse(n),per=periodOf(n),bd=bound(n),tm=p.times[0],exact=tm&&!bd?tm:null,go=`\nPara agendar: ${site}agendar.html`;
       if(/\b(agora|daqui a pouco|ainda hoje|hoje ainda|ja ja)\b/.test(n)&&!p.date)p.date=t;
       /* "qualquer horário", "o primeiro livre": responde direto com a próxima vaga */
-      if(/\b(proximo|primeiro|mais cedo|qualquer|preferencia|tanto faz)\b/.test(n)&&!p.date&&!tm&&!per){for(let i=0;i<7;i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)return `O próximo horário livre é ${dayTxt(ds)} às ${hh(f[0])}. 😉\n\n`+CB.svc({ds,tm:f[0],sv:svcPick(n)})}return `Sem vagas nos próximos 7 dias.\nPara ver todos os horários: ${site}horarios.html`}
+      if(/\b(proximo|primeiro|mais cedo|qualquer|preferencia|tanto faz)\b/.test(n)&&!p.date&&!tm&&!per){for(let i=0;i<DB.horizon();i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)return `O próximo horário livre é ${dayTxt(ds)} às ${hh(f[0])}. 😉\n\n`+CB.svc({ds,tm:f[0],sv:svcPick(n)})}return `Sem vagas nos próximos 7 dias.\nPara ver todos os horários: ${site}horarios.html`}
       /* "e de tarde?" depois de perguntar de um dia: continua no mesmo dia */
       const pd=p.date||(st&&st.cdate&&(per||tm)?st.cdate:null);
       if(pd||tm||per){const opn=ds=>!closed(ds)&&db().hours[new Date(ds+'T00:00').getDay()];
         const ok=x=>{const m=DB.toMin(x);if(per&&(m<per[0]||m>=per[1]))return false;if(tm&&bd==='after'&&x<tm)return false;if(tm&&bd==='before'&&x>=tm)return false;return true};
         const lbl=(per?' '+per[2]:'')+(tm&&bd?(bd==='after'?' depois das ':' antes das ')+hh(tm):'');
         if(pd&&!opn(pd))return `Não abrimos ${dayTxt(pd)}${closed(pd)?' ('+closed(pd).name+')':''}.\nPara ver outros dias: ${site}horarios.html`;
-        for(const ds of pd?[pd]:Array.from({length:7},(_,i)=>iso(day0(i)))){if(!opn(ds))continue;const f=DB.freeSlots(ds,45);
+        for(const ds of pd?[pd]:Array.from({length:DB.horizon()},(_,i)=>iso(day0(i)))){if(!opn(ds))continue;const f=DB.freeSlots(ds,45);
           if(exact){if(f.includes(exact))return `${hh(exact)} ${dayTxt(ds)} está livre! 😉\n\n`+CB.svc({ds,tm:exact,sv:svcPick(n)});if(pd){const g=f.filter(ok);setSt({cdate:ds});return `${hh(exact)} ${dayTxt(ds)} não está livre.`+(f.length?` Livres: ${f.slice(0,6).map(hh).join(' · ')}`:'')+go}continue}
           const g=f.filter(ok);if(g.length)return CB.hora({ds,slots:g.slice(0,9),lbl,sv:svcPick(n)})
           if(pd){setSt({cdate:ds});return `Sem vagas ${dayTxt(ds)}${lbl}.`+(f.length?` Livres no dia: ${f.slice(0,6).map(hh).join(' · ')}`:'')+go}}
-        return `Sem vagas${lbl} nos próximos 7 dias.\nPara ver todos os horários: ${site}horarios.html`}
-      let free='';for(let i=0;i<7&&!free;i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)free=`\nPróximas vagas (${dayTxt(ds)}): ${f.slice(0,5).map(hh).join(' · ')}`}
+        return `Sem vagas${lbl} nos próximos ${DB.horizon()} dias.\nPara ver todos os horários: ${site}horarios.html`}
+      let free='';for(let i=0;i<DB.horizon()&&!free;i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)free=`\nPróximas vagas (${dayTxt(ds)}): ${f.slice(0,5).map(hh).join(' · ')}`}
       if(!free)return `Não há vagas nos próximos 7 dias.\nPara ver todos os horários: ${site}horarios.html`;const sv0=svcPick(n);
       return /(agendar|marcar|marca|agenda pra|me agenda|quero cortar|preciso cortar)/.test(n)?'Vamos agendar! 😉\n\n'+CB.start({sv:sv0}):CB.dia({sv:sv0,avail:1})},
     meus(){return up.length?(up.length===1?`Você está marcado para ${dayTxt(up[0].date)} às ${hh(up[0].start)} · ${up[0].svc}${up[0].status==='pend'?' (falta confirmar)':' (confirmado 👍)'}.`:`Você tem ${up.length} horários marcados:\n`+up.map(a=>`• ${cap(dayTxt(a.date))} às ${hh(a.start)} · ${a.svc}${a.status==='pend'?' (falta confirmar)':''}`).join('\n'))+`\n\nPara confirmar, remarcar ou cancelar: ${DB.link(up[0])}`:`Você não tem horário marcado${c?'':' neste número'}.\nPara agendar: ${site}agendar.html`},
@@ -526,7 +526,8 @@ function clientCore(raw,n,from){
       /* perguntou de um dia ("abre sábado?", "amanhã abre?"): responde só aquele dia */
       if(pd){const w=new Date(pd+'T00:00').getDay(),h=closed(pd);return h?`${cap(dayTxt(pd))} estamos fechados (${h.name}).`:H[w]?`${cap(dayTxt(pd))} abrimos das ${H[w][0]} às ${H[w][1]}.`:`${cap(dayTxt(pd))} não abrimos.`}
       return `Horário de funcionamento:\n`+ord.map(k=>`• ${cap(WDF[k])}: ${H[k]?H[k][0]+' às '+H[k][1]:'fechado'}`).join('\n')+`\n\nHoje: ${cl?'fechado ('+cl.name+')':H[d]?'aberto das '+H[d][0]+' às '+H[d][1]:'fechado'}.\nEndereço: ${db().content.address}`},
-    endereco(){return `Estamos em: ${db().content.address}\nMapa: https://maps.google.com/?q=${encodeURIComponent(db().content.address)}`},
+    /* com as coordenadas cadastradas, vai também a localização do WhatsApp (o servidor envia [[loc:...]] como mensagem de localização pela uazapi) */
+    endereco(){const g=DB.geo(),C=db().content;return `Estamos em: ${C.address}`+(g?`\n[[loc:${g.lat},${g.lng}]]`:`\nMapa: https://maps.google.com/?q=${encodeURIComponent(C.address)}`)},
     pagamento(){return `O atendimento avulso é pago na barbearia: Pix, dinheiro, débito ou crédito.\nA mensalidade do plano é cobrada automaticamente; para regularizar: ${site}entrar.html`},
     humano(){tellC(`${who} pediu para falar com você: "${raw.slice(0,160)}"`);return 'Avisei o barbeiro. 👍 Ele responde assim que terminar o atendimento.'},
     gerirPlano(){const s=c&&DB.activeSub(c.id);if(!s)return `Não encontrei plano ativo neste número.\nPara conhecer os planos: ${site}index.html#planos`;
@@ -666,12 +667,13 @@ function clientCore(raw,n,from){
       /* "barba sexta 15h": a mensagem também trouxe outro dia ou hora */
       const p0=/^\d{1,2}$/.test(n)?{date:null,times:[]}:parse(n);if(p0.date){if(!opn(p0.date))return `Não abrimos ${dayTxt(p0.date)}${closed(p0.date)?' ('+closed(p0.date).name+')':''}.\n\n`+CB.dia({...d,sv:sv.n,ds:null,tm:null});return p0.times[0]?CB.hR({...d,sv:sv.n,ds:p0.date},p0.times[0]):CB.hora({...d,sv:sv.n,ds:p0.date,slots:null})}
       if(p0.times[0]&&d.ds)return CB.hR({...d,sv:sv.n},p0.times[0]);return CB.svc({...d,sv:sv.n})},
-    dia(d){const sv=svObj(d.sv)||{n:'atendimento',t:30},days=[];for(let i=0;i<21&&days.length<6;i++){const ds=iso(day0(i));if(opn(ds)&&DB.freeSlots(ds,sv.t,d.move).length)days.push(ds)}
-      if(!days.length)return `Não há vagas para ${sv.n} nos próximos dias. Avisei o barbeiro.`+(tellC(`${who} não achou vaga para ${sv.n}.`)?'':'');
+    dia(d){const sv=svObj(d.sv)||{n:'atendimento',t:30},days=[],HZ=DB.horizon(),ok=ds=>opn(ds)&&DB.freeSlots(ds,sv.t,d.move).length;let i=d.off||0;for(;i<HZ&&days.length<6;i++){const ds=iso(day0(i));if(ok(ds))days.push(ds)}
+      let more=false;for(let j=i;j<HZ&&!more;j++)if(ok(iso(day0(j))))more=true;
+      if(!days.length)return `Não há vagas para ${sv.n} nos próximos ${HZ} dias. Avisei o barbeiro.`+(tellC(`${who} não achou vaga para ${sv.n}.`)?'':'');
       /* cada dia já mostra os primeiros horários livres */
       const prev=x=>{const f=DB.freeSlots(x,sv.t,d.move);return f.slice(0,3).map(hh).join(', ')+(f.length>3?` (+${f.length-3})`:'')};
-      return CB.ask('diaR',{...d,days},(d.avail?'Horários disponíveis:':'Qual dia?')+'\n'+days.map((x,i)=>`${i+1}. ${cap(dayTxt(x))} · ${prev(x)}`).join('\n')+`\n\n${d.avail?'Quer agendar? Responda com o número do dia.':'Responda com o número (ou escreva, como "sexta à tarde").'}`)},
-    diaR(d){const p0=parse(n),sv0=svcPick(n);if(sv0)d={...d,sv:sv0};let ds=/^\d$/.test(n)?d.days[+n-1]:p0.date;if(!ds)return /^\d+$/.test(n)?CB.ask('diaR',d,'Responda com um dos números da lista.'):null;
+      return CB.ask('diaR',{...d,days,next:more?i:null},(d.avail?'Horários disponíveis:':'Qual dia?')+'\n'+days.map((x,k)=>`${k+1}. ${cap(dayTxt(x))} · ${prev(x)}`).join('\n')+(more?'\n7. Ver mais dias ›':'')+`\n\n${d.avail?'Quer agendar? Responda com o número do dia.':'Responda com o número (ou escreva, como "sexta à tarde").'}`)},
+    diaR(d){if(/^(7|mais|mais dias|ver mais|ver mais dias|proximos|proxima semana)$/.test(n)&&d.next!=null)return CB.dia({...d,off:d.next,days:null});const p0=parse(n),sv0=svcPick(n);if(sv0)d={...d,sv:sv0};let ds=/^\d$/.test(n)?d.days[+n-1]:p0.date;if(!ds)return /^\d+$/.test(n)?CB.ask('diaR',d,'Responda com um dos números da lista.'):null;
       if(!opn(ds))return CB.ask('diaR',d,`Não abrimos ${dayTxt(ds)}. Escolha outro dia da lista.`);const per=periodOf(n),tm=p0.times[0];return tm?CB.hR({...d,ds},tm):CB.hora({...d,ds,per})},
     hora(d){const sv=svObj(d.sv)||{t:30};let f=DB.freeSlots(d.ds,sv.t,d.move);if(d.per)f=f.filter(x=>DB.toMin(x)>=d.per[0]&&DB.toMin(x)<d.per[1]);if(d.slots)f=d.slots.filter(x=>f.includes(x));
       if(!f.length)return d.days?CB.ask('diaR',d,`Sem vagas ${dayTxt(d.ds)}${d.per?' '+d.per[2]:''}. Escolha outro dia:\n`+d.days.map((x,i)=>`${i+1}. ${cap(dayTxt(x))}`).join('\n')+'\n\nResponda com o número.'):CB.dia(d);

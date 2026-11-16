@@ -124,6 +124,9 @@ function ensure(d){let ch=false;
   if(!Array.isArray(d.outbox)){d.outbox=[];ch=true}
   if(!Array.isArray(d.contacts)){d.contacts=[];ch=true}
   if(!Array.isArray(d.convos)){d.convos=[];ch=true}
+  /* quantos dias à frente o cliente pode agendar; o site mostra de 7 em 7 com setas */
+  if(!d.settings.horizon){d.settings.horizon=28;ch=true}
+  if(d.content.maploc===undefined){d.content.maploc='-6.0697, -49.9026';ch=true}
   if(!d.bot.nextNotify){d.bot.nextNotify='ask';ch=true}
   /* bairros de Parauapebas (editáveis em Painel › Configurações) */
   const BAIRROS=['Alto Bonito','Altamira','Amazonas','Apoena','Bairro da Paz','Beira Rio I','Beira Rio II','Bela Vista','Caetanópolis','Carajás (Núcleo Urbano)','Casas Populares I','Casas Populares II','Centro','Cidade Jardim','Cidade Nova','Esplanada','Guanabara','Ipiranga','Jardim América','Jardim Canadá','Jardim Planalto','Liberdade I','Liberdade II','Linha Verde','Maranhão','Minas Gerais','Morada Nova','Nova Carajás','Nova Vida','Novo Brasil','Novo Horizonte','Novo Viver','Palmares II','Parque dos Carajás','Primavera','Residencial Bethânia','Rio Verde','Talismã','Tropical','União','Vale do Sol','Vila Rica','Vila Sansão','VS-10'];
@@ -219,6 +222,9 @@ window.DB={
   /* o cliente remarca no máximo 1 vez a cada 2 h (Configurações › moveCooldown). null = pode; texto = motivo */
   clientMoveBlock(a){const cd=(this.data.settings.moveCooldown||120)*6e4;if(!a||!a.cmovedAt||Date.now()-a.cmovedAt>=cd)return null;const nx=new Date(a.cmovedAt+cd),hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
     return `Você já remarcou este horário às ${hm(new Date(a.cmovedAt))}. Uma nova remarcação fica liberada a partir das ${hm(nx)}.`},
+  horizon(){return Math.max(7,Math.min(90,+this.data.settings.horizon||28))},
+  /* coordenadas do mapa a partir do link do Google Maps ou de "lat, long" */
+  geo(){const s=String(this.data.content.maploc||'');const m=/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/.exec(s)||/[?&](?:q|ll|query)=(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/.exec(s)||/^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/.exec(s);return m?{lat:+m[1],lng:+m[2]}:null},
   link(a){return location.origin+location.pathname.replace(/[^/]*$/,'')+'confirmar.html?t='+a.tok},
   byToken(t){return /^[a-z2-9]{15}$/.test(t||'')?this.data.appts.find(a=>a.tok===t)||null:null},
   site(){return location.origin+location.pathname.replace(/[^/]*$/,'')},

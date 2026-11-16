@@ -174,7 +174,7 @@ function vAgenda(){
     cal+=`<div class="dcol" style="height:${(H1-H0)*PX}px">${ev}</div>`;
   });
   return `<div class="top"><div><h1>Agenda</h1><p>${days[0].getDate()} de ${MOF[days[0].getMonth()]} a ${days[5].getDate()} de ${MOF[days[5].getMonth()]}</p></div>
-   <div class="acts"><button class="btn btn-ghost btn-sm" data-act="wk" data-d="-1">‹ Anterior</button><button class="btn btn-ghost btn-sm" data-act="wk" data-d="0">Hoje</button><button class="btn btn-ghost btn-sm" data-act="wk" data-d="1">Próxima ›</button><button class="btn btn-ghost btn-sm" data-act="block">Bloquear horário</button><button class="btn btn-primary btn-sm" data-act="new-appt">+ Encaixe</button></div></div>
+   <div class="acts"><button class="btn btn-ghost btn-sm" data-act="wk" data-d="-1">‹ Anterior</button><button class="btn btn-ghost btn-sm" data-act="wk" data-d="0">Hoje</button><button class="btn btn-ghost btn-sm" data-act="wk" data-d="1">Próxima ›</button><button class="btn btn-ghost btn-sm" data-act="exp-img">Exportar horários livres</button><button class="btn btn-ghost btn-sm" data-act="block">Bloquear horário</button><button class="btn btn-primary btn-sm" data-act="new-appt">+ Encaixe</button></div></div>
   <div class="card box"><div class="legend" style="margin-bottom:14px"><span><i style="background:var(--teal)"></i>Assinante</span><span><i style="background:var(--info)"></i>Avulso</span><span><i style="background:var(--bad)"></i>Faltou</span><span><i style="background:var(--dim)"></i>Bloqueado</span><span class="hint">Clique num horário para editar, remarcar ou cancelar.</span></div>
   <div class="cal-wrap"><div class="cal">${cal}</div></div></div>`;
 }
@@ -443,6 +443,7 @@ function vConteudo(){
   ${sec('contato',`<div class="card box sbox"><h3>Contato</h3><p class="hint">Aparece no rodapé, na página de contato e nos botões de WhatsApp.</p><div class="form">
      <div class="two"><div class="fl"><label>WhatsApp (com 55 e DDD)</label><input class="inp" id="k-wa" inputmode="numeric" value="${esc(c.wa)}"></div><div class="fl"><label>Telefone exibido</label><input class="inp" id="k-phone" value="${esc(c.phone)}"></div></div>
      <div class="fl"><label>Endereço</label><input class="inp" id="k-address" value="${esc(c.address)}"></div>
+     <div class="fl"><label>Localização no mapa</label><input class="inp" id="k-maploc" value="${esc(c.maploc||'')}" placeholder="Cole o link do Google Maps ou -6.0697, -49.9026"><p class="hint" style="margin-top:6px">Com isso o robô envia a localização do WhatsApp (o pino no mapa) quando o cliente pede o endereço. ${DB.geo()?'✓ Localização válida.':'Ainda sem localização válida: o robô manda só o link do mapa.'}</p></div>
      <div class="fl"><label>Instagram (sem @)</label><input class="inp" id="k-instagram" value="${esc(c.instagram)}"></div></div>${pub}</div>`)}
   ${sec('faq',`<div class="card box sbox"><h3>Perguntas frequentes <button class="btn btn-ghost btn-sm" data-act="faq-add">+ Pergunta</button></h3><p class="hint">Aparecem no fim da página inicial.</p>
      <div class="list-ed" id="faq-ed">${db.faq.map((f,i)=>`<div class="li-ed sp" data-fid="${f.id}"><div class="li-h"><b>Pergunta ${i+1}</b><button class="btn btn-danger btn-sm" data-act="faq-rm" data-id="${f.id}">Remover</button></div><div class="fl"><label>Pergunta</label><input class="inp" value="${esc(f.q)}" data-f="q"></div><div class="fl"><label>Resposta</label><textarea class="inp" data-f="a" rows="3">${esc(f.a)}</textarea></div></div>`).join('')||'<p class="empty">Nenhuma pergunta.</p>'}</div>
@@ -467,9 +468,9 @@ Object.assign(ACT,{
       st.textContent=j.username?`Conectado a @${j.username} (${j.media_count||0} publicações).`:'Token inválido ou expirado'+(j.error&&j.error.message?': '+j.error.message:'.')}catch(e){st.textContent='Não foi possível falar com o Instagram agora.'}},
   'ig-save':()=>{const on=$('#ig-on').checked,t=$('#ig-token').value.trim();if(on&&!t)return toast('Para ligar, cole o token de acesso.');try{sessionStorage.removeItem('farias_ig')}catch(e){}
     change('content',c=>{c.ig_on=on;c.ig_token=t},on?'Instagram ligado na galeria':'Instagram desligado na galeria','Conteúdo')},
-  'save-content':()=>{const keys=['notice','hero_tag','hero_t1','hero_t2','hero_lead','about','wa','phone','address','instagram'];const nv={};keys.forEach(k=>nv[k]=$('#k-'+k).value);nv.notice_on=$('#k-notice_on').checked;nv.wa=nv.wa.replace(/\D/g,'');
+  'save-content':()=>{const keys=['notice','hero_tag','hero_t1','hero_t2','hero_lead','about','wa','phone','address','maploc','instagram'];const nv={};keys.forEach(k=>nv[k]=$('#k-'+k).value);nv.notice_on=$('#k-notice_on').checked;nv.wa=nv.wa.replace(/\D/g,'');
     const changed=Object.keys(nv).filter(k=>nv[k]!==db.content[k]);if(!changed.length)return toast('Nada foi alterado');
-    const L={notice:'aviso',notice_on:'aviso',hero_tag:'etiqueta',hero_t1:'título',hero_t2:'título',hero_lead:'texto da home',about:'sobre',wa:'WhatsApp',phone:'telefone',address:'endereço',instagram:'Instagram'};
+    const L={notice:'aviso',notice_on:'aviso',hero_tag:'etiqueta',hero_t1:'título',hero_t2:'título',hero_lead:'texto da home',about:'sobre',wa:'WhatsApp',maploc:'localização',phone:'telefone',address:'endereço',instagram:'Instagram'};
     change('content',c=>Object.assign(c,nv),`Site atualizado: ${[...new Set(changed.map(k=>L[k]))].join(', ')}`,'Conteúdo')},
   'faq-add':()=>{const f={id:DB.uid(),q:'Nova pergunta',a:'Resposta'};change('faq',L=>{L.splice(0,L.length,...readList('#faq-ed .li-ed','fid',['q','a']));L.push(f)},'Pergunta adicionada ao FAQ','Conteúdo')},
   'faq-rm':b=>change('faq',L=>{L.splice(0,L.length,...readList('#faq-ed .li-ed','fid',['q','a']).filter(x=>x.id!==b.dataset.id))},'Pergunta removida do FAQ','Conteúdo'),
@@ -493,7 +494,9 @@ const SAMPLE={site:'farias.bar',nome:'Lucas',servico:'Corte + Barba',data:'14/11
 const fillVars=t=>'Bot:\n'+t.replace(/\{(\w+)\}/g,(m,k)=>SAMPLE[k]??m);
 let waTab='robo',botFrom='';const chat=[];
 /* no simulador, as opções numeradas da última resposta viram botões, como a lista do WhatsApp */
-const chatMsg=(m,last)=>m.me?esc(m.t):last?waFmt(m.t).replace(/(?:^|<br>)(\d{1,2})\. ([^<]+)/g,(x,n,t)=>`<button class="copt" data-bot="${n}">${n}. ${t}</button>`):waFmt(m.t);
+/* [[loc:lat,lng]] = mensagem de localização do WhatsApp (no servidor vira o envio de localização da uazapi) */
+const locCard=t=>t.replace(/(?:<br>)?\[\[loc:(-?[\d.]+),(-?[\d.]+)\]\]/g,(x,la,lo)=>`<a class="locc" href="https://maps.google.com/?q=${la},${lo}" target="_blank" rel="noopener"><span class="locmap" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></span><b>Farias Barbearia</b><small>${esc(db.content.address)}</small><em>Localização · toque para abrir</em></a>`);
+const chatMsg=(m,last)=>m.me?esc(m.t):locCard(last?waFmt(m.t).replace(/(?:^|<br>)(\d{1,2})\. ([^<]+)/g,(x,n,t)=>`<button class="copt" data-bot="${n}">${n}. ${t}</button>`):waFmt(m.t));
 const waFmt=t=>esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
 const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Chegou a hora do cliente','Na hora marcada o robô pergunta se o cliente veio: veio, não veio ou cancelou.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
 function vMensagens(){
@@ -631,6 +634,7 @@ function vConfig(){
      <div class="set"><div>Antecedência mínima<small>Para o cliente agendar</small></div>${sel('cf-minAdv',[[0,'Nenhuma'],[30,'30 min'],[60,'1 hora'],[120,'2 horas']],s.minAdv)}</div>
      <div class="set"><div>Cancelar ou remarcar até<small>Antes do horário</small></div>${sel('cf-cancelUntil',[[0,'Sem prazo (até a hora marcada)'],[60,'1 hora'],[120,'2 horas'],[240,'4 horas'],[1440,'24 horas']],s.cancelUntil)}</div>
      <div class="set"><div>Tolerância de atraso<small>Depois disso o horário pode ser liberado</small></div>${sel('cf-tolerance',[[0,'Nenhuma'],[10,'10 min'],[15,'15 min'],[20,'20 min']],s.tolerance)}</div>
+     <div class="set"><div>Agenda aberta para<small>Até quantos dias à frente o cliente agenda (site e robô)</small></div>${sel('cf-horizon',[[14,'2 semanas'],[28,'4 semanas'],[60,'2 meses'],[90,'3 meses']],s.horizon||28)}</div>
      <div class="set"><div>Faltas sem aviso<small>Bloqueia agendamento online após</small></div>${sel('cf-noShow',[[2,'2 faltas'],[3,'3 faltas'],[5,'5 faltas'],[99,'Nunca bloquear']],s.noShow)}</div></div>
     <div class="card box"><h3>Bairros do cadastro <small>pesquisa do cliente novo</small></h3><p class="hint" style="margin-bottom:10px">Um bairro por linha. O cliente pesquisa nessa lista ao se cadastrar, e pode digitar outro se não achar.</p>
      <textarea class="inp" id="cf-bairros" rows="5" placeholder="Centro">${esc((s.bairros||[]).join('\n'))}</textarea></div>
@@ -651,7 +655,7 @@ Object.assign(ACT,{
     if(hit.length&&!ACT._cfgOk){return confirmBox('Clientes fora do novo horário',`${plural(hit.length,'horário marcado fica','horários marcados ficam')} fora do novo funcionamento: ${hit.slice(0,4).map(a=>esc(cname(a.cid))+' '+fmtD(a.date)+' '+a.start).join(', ')}${hit.length>4?'…':''}. Eles continuam na agenda: avise e remarque.`,'Salvar assim mesmo',()=>{ACT._cfgOk=true;ACT['cfg-save']();ACT._cfgOk=false},false)}
     if(ch.length)DB.mutate('hours',H=>Object.assign(H,hrs),`Horário de funcionamento alterado: ${ch.join(', ')}`,'Configurações');
     const lunch=lunchV;if(JSON.stringify(lunch)!==JSON.stringify(db.lunch)){DB.mutateMany(['lunch'],d=>{d.lunch=lunch},lunch?`Almoço: ${lunch.join(' – ')}`:'Almoço removido','Configurações');ch.push('almoço')}
-    const ns={...db.settings};['step','minAdv','cancelUntil','tolerance','noShow'].forEach(k=>ns[k]=+$('#cf-'+k).value);ns.bairros=[...new Set($('#cf-bairros').value.split('\n').map(x=>x.trim()).filter(Boolean))];
+    const ns={...db.settings};['step','minAdv','cancelUntil','tolerance','noShow','horizon'].forEach(k=>ns[k]=+$('#cf-'+k).value);ns.bairros=[...new Set($('#cf-bairros').value.split('\n').map(x=>x.trim()).filter(Boolean))];
     if(JSON.stringify(ns)!==JSON.stringify(db.settings)){DB.mutate('settings',S=>Object.assign(S,ns),'Regras da agenda alteradas','Configurações');ch.push('regras')}
     DB.save();render();toast(ch.length?'Configurações salvas':'Nada foi alterado')},
   'close-add':()=>{const when=$('#cl-when').value,why=$('#cl-txt').value.trim()||$('#cl-why').value,kill=$('#cl-cancel').checked,OPENS=['conf','pend','now'];
@@ -677,6 +681,51 @@ Object.assign(ACT,{
 });
 
 /* ================= render ================= */
+/* ================= EXPORTAR HORÁRIOS LIVRES (imagem para status, Instagram ou grupo) ================= */
+const EXF={story:[1080,1920,'Story / status (1080×1920)'],feed:[1080,1350,'Feed retrato (1080×1350)'],quad:[1080,1080,'Quadrado (1080×1080)']};
+let exImg=null;const exLogo=()=>exImg||(exImg=new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src='logo-h.webp'}));
+function exDays(per){const n=per==='hoje'?1:per==='amanha'?1:7,st0=per==='amanha'?1:0;return Array.from({length:n},(_,i)=>DB.iso(addD(today,st0+i)))}
+async function drawAvail(cv,o){const [W,H]=EXF[o.fmt],x=cv.getContext('2d');cv.width=W;cv.height=H;
+  try{await Promise.all([document.fonts.load('80px "Bebas Neue"'),document.fonts.load('600 40px Inter'),document.fonts.load('40px Inter')])}catch(e){}
+  const BG='#0b0b0b',RED='#8b0d1a',RED2='#e8606b',TXT='#f5f2ed',MUT='#a9a29a';
+  x.fillStyle=BG;x.fillRect(0,0,W,H);let g=x.createRadialGradient(W/2,0,10,W/2,0,W*0.9);g.addColorStop(0,'rgba(139,13,26,.55)');g.addColorStop(1,'rgba(139,13,26,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  const P=72;let y=P;const logo=await exLogo();if(logo){const lw=H<1400?300:360,lh=lw*logo.height/logo.width;x.drawImage(logo,(W-lw)/2,y,lw,lh);y+=lh+28}
+  const days=exDays(o.per),sv=db.services.find(s=>s.n===o.svc)||{t:45,n:'Corte'},list=days.map(ds=>{const h=db.holidays.find(z=>z.date===ds),open=!!db.hours[new Date(ds+'T00:00').getDay()]&&!h;return {ds,h,open,f:open?DB.freeSlots(ds,sv.t):[]}});
+  x.textAlign='center';x.fillStyle=TXT;x.font='96px "Bebas Neue"';x.fillText('HORÁRIOS DISPONÍVEIS',W/2,y+80);y+=110;
+  const lab=ds=>{const d=new Date(ds+'T00:00');return (ds===TODAY?'Hoje':ds===DB.iso(addD(today,1))?'Amanhã':WDF[d.getDay()][0].toUpperCase()+WDF[d.getDay()].slice(1))+` · ${d.getDate()}/${String(d.getMonth()+1).padStart(2,'0')}`};
+  x.fillStyle=MUT;x.font='34px Inter';x.fillText(`${sv.n} · ${sv.t} min`,W/2,y+10);y+=56;
+  /* tamanho dos chips conforme o espaço: no quadrado com 7 dias tudo fica menor */
+  const footH=150,avail=H-y-footH,rows=list.length;let fs=rows===1?44:36,ch=rows===1?84:60,gap=rows===1?18:12,rowH=rows===1?avail:Math.min(240,avail/rows);
+  const fitChips=(arr,w)=>{x.font=`600 ${fs}px Inter`;const out=[];let line=[],lw=0;for(const t of arr){const cw=x.measureText(t).width+44;if(lw+cw>w&&line.length){out.push(line);line=[];lw=0}line.push([t,cw]);lw+=cw+gap}if(line.length)out.push(line);return out};
+  const rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath()};
+  /* pouca altura por dia (quadrado/feed com 7 dias): dia à esquerda e horários na mesma linha */
+  if(rows>1&&rowH<150){const LW=300,cfs=Math.min(30,Math.floor(rowH*0.36)),cch=Math.min(50,rowH-16),cg=10;
+    for(const d of list){const cy=y+rowH/2;x.textAlign='left';x.fillStyle=TXT;x.font=`${Math.min(44,rowH*0.5)}px "Bebas Neue"`;x.fillText(lab(d.ds).toUpperCase(),P,cy+Math.min(44,rowH*0.5)*0.35);
+      if(!d.open||!d.f.length){x.fillStyle=MUT;x.font=`${cfs}px Inter`;x.fillText(!d.open?(d.h?`Fechado · ${d.h.name}`:'Fechado'):'Sem horários livres',P+LW,cy+cfs*0.35)}
+      else{x.font=`600 ${cfs}px Inter`;let X=P+LW;const maxX=W-P,T=d.f.map(t=>t.replace(':00','h').replace(':','h'));let shown=0;
+        for(const t of T){const cw=x.measureText(t).width+32,rest=T.length-shown-1,need=rest>0?x.measureText(`+${rest}`).width+20:0;if(X+cw+(rest>0?need+cg:0)>maxX)break;rr(X,cy-cch/2,cw,cch,cch/2);x.fillStyle='rgba(139,13,26,.28)';x.fill();x.strokeStyle='rgba(232,96,107,.6)';x.lineWidth=2;x.stroke();x.fillStyle=TXT;x.textAlign='center';x.fillText(t,X+cw/2,cy+cfs*0.36);x.textAlign='left';X+=cw+cg;shown++}
+        if(shown<T.length){x.fillStyle=RED2;x.font=`600 ${cfs}px Inter`;x.fillText(`+${T.length-shown}`,X+4,cy+cfs*0.36)}}
+      x.fillStyle='rgba(245,242,237,.07)';x.fillRect(P,y+rowH-1,W-2*P,1);y+=rowH}
+  }else
+  for(const d of list){const top=y;x.textAlign='left';x.fillStyle=TXT;x.font=`${rows===1?64:48}px "Bebas Neue"`;x.fillText(lab(d.ds).toUpperCase(),P,y+(rows===1?56:42));y+=rows===1?84:60;
+    if(!d.open||!d.f.length){x.fillStyle=MUT;x.font=`${fs}px Inter`;x.fillText(!d.open?(d.h?`Fechado · ${d.h.name}`:'Fechado'):'Sem horários livres',P,y+fs);y=Math.max(y+fs+24,top+rowH);continue}
+    const maxLines=Math.max(1,Math.floor((top+rowH-y)/(ch+gap)));let lines=fitChips(d.f.map(t=>t.replace(':00','h').replace(':','h')),W-2*P);let extra=0;
+    if(lines.length>maxLines){const keep=lines.slice(0,maxLines);const shown=keep.flat().length-1;extra=d.f.length-shown;keep[keep.length-1].pop();lines=keep}
+    for(const ln of lines){let X=P;for(const [t,cw] of ln){rr(X,y,cw,ch,ch/2);x.fillStyle='rgba(139,13,26,.28)';x.fill();x.strokeStyle='rgba(232,96,107,.6)';x.lineWidth=2;x.stroke();x.fillStyle=TXT;x.textAlign='center';x.font=`600 ${fs}px Inter`;x.fillText(t,X+cw/2,y+ch/2+fs*0.36);x.textAlign='left';X+=cw+gap}y+=ch+gap}
+    if(extra>0){x.fillStyle=RED2;x.font=`600 ${fs*0.8}px Inter`;x.fillText(`+${extra} horários`,P,y+fs*0.8);y+=fs+14}
+    y=Math.max(y+10,top+rowH)}
+  x.textAlign='center';x.fillStyle=RED;x.fillRect(P,H-footH+10,W-2*P,3);x.fillStyle=TXT;x.font='600 38px Inter';x.fillText(`Agende pelo WhatsApp ${db.content.phone||''}`,W/2,H-footH+76);x.fillStyle=MUT;x.font='30px Inter';x.fillText(location.host?location.host+'/barber/agendar.html':'',W/2,H-footH+122)}
+ACT['exp-img']=()=>{modal(`<h3>Exportar horários livres</h3><p>Gera uma imagem com os horários disponíveis para postar no status, Instagram ou grupos.</p>
+  <div class="form"><div class="three"><div class="fl"><label>Período</label><select class="inp" id="ex-per"><option value="hoje">Hoje</option><option value="amanha">Amanhã</option><option value="sete" selected>Próximos 7 dias</option></select></div>
+  <div class="fl"><label>Serviço (duração)</label><select class="inp" id="ex-svc">${db.services.filter(s=>s.on).map(s=>`<option ${/^corte$/i.test(s.n)?'selected':''}>${esc(s.n)}</option>`).join('')}</select></div>
+  <div class="fl"><label>Formato</label><select class="inp" id="ex-fmt">${Object.entries(EXF).map(([k,v])=>`<option value="${k}">${v[2]}</option>`).join('')}</select></div></div>
+  <div class="expv"><canvas id="ex-cv" aria-label="Prévia da imagem"></canvas></div></div>
+  <div class="mact"><button class="btn btn-ghost" data-close>Fechar</button>${navigator.share?'<button class="btn btn-ghost" id="ex-share">Compartilhar</button>':''}<button class="btn btn-primary" id="ex-dl">Baixar imagem (PNG)</button></div>`,true);
+  const o=()=>({per:$('#ex-per').value,svc:$('#ex-svc').value,fmt:$('#ex-fmt').value}),draw=()=>drawAvail($('#ex-cv'),o());draw();['#ex-per','#ex-svc','#ex-fmt'].forEach(q=>$(q).onchange=draw);
+  const blob=()=>new Promise(r=>$('#ex-cv').toBlob(r,'image/png')),name=()=>`horarios-${o().per}-${TODAY}.png`;
+  $('#ex-dl').onclick=async()=>{const b=await blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name();a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);toast('Imagem baixada')};
+  if($('#ex-share'))$('#ex-share').onclick=async()=>{const b=await blob(),f=new File([b],name(),{type:'image/png'});try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:'Horários disponíveis'});else toast('Este aparelho não compartilha imagens. Use Baixar.')}catch(e){}}};
+
 /* ================= DESENVOLVEDOR ================= */
 const kb=k=>{try{return Math.round(((localStorage.getItem(k)||'').length*2)/1024)}catch(e){return 0}};
 function vDev(){const n=(k)=>(db[k]||[]).length;

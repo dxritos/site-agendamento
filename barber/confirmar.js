@@ -5,6 +5,7 @@ const $=s=>document.querySelector(s),db=DB.data;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],WDF=['domingo','segunda','terça','quarta','quinta','sexta','sábado'],MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const NF=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+let mPg=null;
 const TOKEN=new URLSearchParams(location.search).get('t');
 const dOf=a=>new Date(a.date+'T'+a.start+':00');
 const dLabel=ds=>{const d=new Date(ds+'T00:00:00');return `${WDF[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`};
@@ -28,13 +29,17 @@ function render(){
     $('#yes').onclick=()=>{const x=appt();if(!x)return render();save(x,y=>{y.status='cancel'},`${c.name}: horário de ${short(x.date)} ${x.start} cancelado pelo link do WhatsApp`);
       DB.notify('cancel',x);DB.notifyStaff('evCancel',`Cancelado pelo cliente: ${c.name} · ${x.svc} · ${short(x.date)} às ${x.start}. O horário ficou livre.`);mode='view';msg={t:'Horário cancelado.'};render()};return}
   if(mode==='move'&&canChange){
-    const days=Array.from({length:14},(_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+i);return DB.iso(d)}).map(ds=>({ds,free:DB.freeSlots(ds,a.dur,a.id).filter(t=>!(ds===a.date&&t===a.start)),why:a.plan?DB.planCheck(a.cid,ds,a.svc,a.id):null}));
+    const days=Array.from({length:DB.horizon()},(_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+i);return DB.iso(d)}).map(ds=>({ds,free:DB.freeSlots(ds,a.dur,a.id).filter(t=>!(ds===a.date&&t===a.start)),why:a.plan?DB.planCheck(a.cid,ds,a.svc,a.id):null}));
     if(!pick.date||!days.find(d=>d.ds===pick.date&&d.free.length&&!d.why)){const f=days.find(d=>d.free.length&&!d.why);pick={date:f?f.ds:null,time:null}}
     const cur=days.find(d=>d.ds===pick.date);
-    box.innerHTML=`${head}<p>Escolha o novo dia e horário para <b>${esc(a.svc)}</b>.</p><div class="cf-sub">Dia</div><div class="days">${days.map(d=>{const dt=new Date(d.ds+'T00:00:00'),ok=d.free.length&&!d.why;return `<button class="day ${d.ds===pick.date?'on':''}" data-d="${d.ds}" ${ok?'':'disabled'} aria-pressed="${d.ds===pick.date}" title="${d.why?esc(d.why):ok?'':'Sem horários'}"><small>${WD[dt.getDay()]}</small><b>${dt.getDate()}</b><small>${MO[dt.getMonth()]}</small></button>`}).join('')}</div>
+    /* setas de 7 em 7 dias */
+    const pmax=Math.ceil(days.length/7)-1;if(mPg===null)mPg=Math.max(0,Math.floor(days.findIndex(d=>d.ds===pick.date)/7));const view=days.slice(mPg*7,mPg*7+7),fl=x=>x.slice(8)+'/'+x.slice(5,7);
+    const nav=`<div class="pgnav"><button type="button" class="pgb" data-pg="-1" ${mPg<=0?'disabled':''} aria-label="7 dias anteriores">‹</button><span>${fl(view[0].ds)} a ${fl(view[view.length-1].ds)}</span><button type="button" class="pgb" data-pg="1" ${mPg>=pmax?'disabled':''} aria-label="Próximos 7 dias">›</button></div>`;
+    box.innerHTML=`${head}<p>Escolha o novo dia e horário para <b>${esc(a.svc)}</b>.</p><div class="cf-sub">Dia</div>${nav}<div class="days">${view.map(d=>{const dt=new Date(d.ds+'T00:00:00'),ok=d.free.length&&!d.why;return `<button class="day ${d.ds===pick.date?'on':''}" data-d="${d.ds}" ${ok?'':'disabled'} aria-pressed="${d.ds===pick.date}" title="${d.why?esc(d.why):ok?'':'Sem horários'}"><small>${WD[dt.getDay()]}</small><b>${dt.getDate()}</b><small>${MO[dt.getMonth()]}</small></button>`}).join('')}</div>
       <div class="cf-sub">Horário</div><div class="slots">${cur?cur.free.map(t=>`<button class="slot ${t===pick.time?'on':''}" data-t="${t}" aria-pressed="${t===pick.time}">${t}</button>`).join(''):'<span style="color:var(--dim);font-size:14px">Sem horários livres nos próximos 14 dias.</span>'}</div>${note}
       <div class="cf-acts" style="margin-top:20px"><div class="two"><button class="btn btn-ghost" id="no">Voltar</button><button class="btn btn-primary" id="yes" ${pick.time?'':'disabled style="opacity:.5"'}>Remarcar</button></div></div>`;
     box.querySelectorAll('.day').forEach(b=>b.onclick=()=>{pick={date:b.dataset.d,time:null};msg=null;render()});
+    box.querySelectorAll('.pgb').forEach(b=>b.onclick=()=>{mPg=Math.max(0,Math.min(pmax,mPg+ +b.dataset.pg));const f=days.slice(mPg*7,mPg*7+7).find(d=>d.free.length&&!d.why);pick={date:f?f.ds:pick.date,time:null};msg=null;render()});
     box.querySelectorAll('.slot').forEach(b=>b.onclick=()=>{pick.time=b.dataset.t;msg=null;render()});
     $('#no').onclick=()=>{mode='view';msg=null;render()};
     $('#yes').onclick=()=>{const x=appt();if(!x||!pick.time)return render();
@@ -49,7 +54,7 @@ function render(){
   box.innerHTML=`${head}${a.status==='cancel'?'<p>Este horário foi cancelado e não está mais reservado.</p>':active?`<p>${a.status==='pend'?'Confirme sua presença para garantir o horário.':'Tudo certo, te esperamos no horário.'}</p>`:''}${rows}${note}<div class="cf-acts">${acts}</div>${late}`;
   if($('#ok'))$('#ok').onclick=()=>{const x=appt();if(!x)return render();save(x,y=>{y.status='conf'},`${c.name}: presença confirmada pelo link do WhatsApp (${short(x.date)} ${x.start})`);
     DB.notifyStaff('evConfirm',`Presença confirmada: ${c.name} · ${x.svc} · ${short(x.date)} às ${x.start}.`);msg={t:'Presença confirmada. Até lá!'};render()};
-  if($('#mv'))$('#mv').onclick=()=>{const why=DB.clientMoveBlock(appt());if(why){msg={t:why,bad:true};return render()}mode='move';msg=null;pick={date:null,time:null};render()};
+  if($('#mv'))$('#mv').onclick=()=>{mPg=null;const why=DB.clientMoveBlock(appt());if(why){msg={t:why,bad:true};return render()}mode='move';msg=null;pick={date:null,time:null};render()};
   if($('#cn'))$('#cn').onclick=()=>{mode='cancel';msg=null;render()};
   if($('#ics'))$('#ics').onclick=()=>{const s=dOf(a),e=new Date(s.getTime()+a.dur*6e4),f=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Farias Barbearia//PT','BEGIN:VEVENT','UID:'+a.id+'@fariasbarbearia','DTSTAMP:'+f(new Date()),'DTSTART:'+f(s),'DTEND:'+f(e),'SUMMARY:'+a.svc+' — Farias Barbearia','LOCATION:'+String(db.content.address||'').replace(/[,;]/g,'\\$&'),'BEGIN:VALARM','TRIGGER:-PT2H','ACTION:DISPLAY','DESCRIPTION:Horário na Farias Barbearia','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');

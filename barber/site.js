@@ -40,7 +40,11 @@ db.services.filter(s=>s.on).forEach(s=>{if(SVC[s.cat])SVC[s.cat].push({id:s.id,n
 // dias válidos de plano: todos os planos (inclusive os ocultos da venda, que ainda têm assinantes)
 const PLAN_DAYS=[...new Set(db.plans.flatMap(p=>p.days))];
 const today=new Date();today.setHours(0,0,0,0);
-const days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i);return d});
+/* dias abertos para agendamento (Configurações); o site mostra de 7 em 7 com setas */
+const days=Array.from({length:DB.horizon()},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()+i);return d});
+const PG=7,PGMAX=Math.ceil(days.length/PG)-1;
+const pgLabel=pg=>{const a=days[pg*PG],b=days[Math.min(days.length,pg*PG+PG)-1];return `${a.getDate()}/${String(a.getMonth()+1).padStart(2,'0')} a ${b.getDate()}/${String(b.getMonth()+1).padStart(2,'0')}`};
+const pagerHTML=(pg,lab)=>`<button type="button" class="pgb" data-pg="-1" ${pg<=0?'disabled':''} aria-label="7 dias anteriores">‹</button><span>${lab||pgLabel(pg)}</span><button type="button" class="pgb" data-pg="1" ${pg>=PGMAX?'disabled':''} aria-label="Próximos 7 dias">›</button>`;
 const holiday=d=>db.holidays.find(h=>h.date===DB.iso(d));
 const openDay=d=>!!db.hours[d.getDay()]&&!holiday(d);
 const slotsFor=(d,dur=45)=>DB.freeSlots(DB.iso(d),dur);
@@ -174,9 +178,12 @@ $$('.faq-q').forEach(q=>q.onclick=()=>{const it=q.parentNode,open=it.classList.c
   if(!open){it.classList.add('open');q.setAttribute('aria-expanded','true');const a=it.querySelector('.faq-a');a.style.maxHeight=a.scrollHeight+'px'}});
 
 /* ===== horários (semana) ===== */
+let wPg=0;
 function renderWeek(){
   if(!$('#week'))return;
-  $('#week').innerHTML=days.map((d,i)=>{
+  let nav=$('#wnav');if(!nav){nav=document.createElement('div');nav.id='wnav';nav.className='pgnav';$('#week').before(nav);nav.addEventListener('click',e=>{const b=e.target.closest('[data-pg]');if(!b||b.disabled)return;wPg=Math.max(0,Math.min(PGMAX,wPg+ +b.dataset.pg));renderWeek()})}
+  nav.innerHTML=pagerHTML(wPg,wPg===0?'Próximos 7 dias':pgLabel(wPg));const eb=$('.week-h .eyebrow');if(eb)eb.textContent=wPg===0?'Próximos 7 dias':pgLabel(wPg);
+  $('#week').innerHTML=days.map((d,i)=>[d,i]).slice(wPg*PG,wPg*PG+PG).map(([d,i])=>{
     const s=slotsFor(d),wd=d.getDay(),hol=holiday(d),closed=!openDay(d),member=PLAN_DAYS.includes(wd);
     const tag=closed?'':`<span class="wtag ${member?'':'x'}">${member?'Válido para assinantes':'Somente avulso'}</span>`;
     const body=closed?`<span class="closed-tag">Fechado</span>${hol?`<span class="none">${esc(hol.name)}</span>`:''}`:s.length?s.slice(0,6).map(t=>`<a class="slot" href="agendar.html?d=${i}&t=${t}" aria-label="Agendar ${WDF[wd]} às ${t}">${t}</a>`).join('')+(s.length>6?`<a class="more" href="agendar.html?d=${i}">+${s.length-6} horários</a>`:''):'<span class="none">Sem horários livres</span>';
@@ -211,16 +218,22 @@ book:if($('#svclist')){
       st.items=on?st.items.filter(x=>x.n!==s.n):[...st.items,s];agg();if(!st.fixed)st.time=null;renderSvc();update()});
   }
   $$('#svctabs button').forEach(b=>{b.setAttribute('aria-pressed',b.classList.contains('on'));b.onclick=()=>{st.cat=b.dataset.c;$$('#svctabs button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b)});renderSvc()}});
+  let dPg=null;
   function renderDays(){
     const dur=st.svc?st.svc.t:45,has=d=>validDay(d)&&slotsFor(d,dur).length>0;
     if(st.day===null||!has(days[st.day])&&!st.time){const f=days.findIndex(has);st.day=f>-1?f:null}
-    $('#days').innerHTML=days.map((d,i)=>`<button class="day ${st.day===i?'on':''}" data-i="${i}" aria-pressed="${st.day===i}" ${has(d)?'':'disabled'} title="${!openDay(d)?(holiday(d)?esc(holiday(d).name):'Fechado'):has(d)?'':'Lotado'}"><small>${i===0?'Hoje':WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`).join('');
+    if(dPg===null)dPg=st.day===null?0:Math.floor(st.day/PG);
+    /* setas: navega de 7 em 7 dias até o limite configurado */
+    let nav=$('#dnav');if(!nav){nav=document.createElement('div');nav.id='dnav';nav.className='pgnav';$('#days').before(nav);nav.addEventListener('click',e=>{const b=e.target.closest('[data-pg]');if(!b||b.disabled)return;dPg=Math.max(0,Math.min(PGMAX,dPg+ +b.dataset.pg));const f=days.findIndex((d,i)=>i>=dPg*PG&&i<dPg*PG+PG&&has(d));if(f>-1){st.day=f;st.time=null}renderDays();update()})}
+    nav.innerHTML=pagerHTML(dPg);
+    $('#days').innerHTML=days.map((d,i)=>[d,i]).slice(dPg*PG,dPg*PG+PG).map(([d,i])=>`<button class="day ${st.day===i?'on':''}" data-i="${i}" aria-pressed="${st.day===i}" ${has(d)?'':'disabled'} title="${!openDay(d)?(holiday(d)?esc(holiday(d).name):'Fechado'):has(d)?'':'Lotado'}"><small>${i===0?'Hoje':WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`).join('');
     $$('#days .day').forEach(b=>b.onclick=()=>{st.day=+b.dataset.i;st.time=null;renderDays();update()});
     $('#hint').style.display=st.svc&&st.svc.plan?'flex':'none';if(PLAN)$('#hint').innerHTML=`<i></i>Seu plano vale ${PLAN.days.map(x=>WD[x]).join(', ')}. Nos outros dias o serviço sai pelo valor avulso.`;
     renderSlots();
   }
   function renderSlots(){
-    if(st.day===null){$('#slots').innerHTML='<span style="color:var(--dim);font-size:14px">Sem horários livres nos próximos 7 dias.</span>';return}
+    if(st.day===null){$('#slots').innerHTML=`<span style="color:var(--dim);font-size:14px">Sem horários livres nos próximos ${days.length} dias.</span>`;return}
+    if(dPg!==null&&Math.floor(st.day/PG)!==dPg){$('#slots').innerHTML='<span style="color:var(--dim);font-size:14px">Sem horários livres nestes dias. Use a seta › para ver mais.</span>';return}
     const s=slotsFor(days[st.day],st.svc?st.svc.t:45);
     $('#slots').innerHTML=s.length?s.map(t=>`<button class="slot ${st.time===t?'on':''}" data-t="${t}" aria-pressed="${st.time===t}">${t}</button>`).join(''):'<span style="color:var(--dim);font-size:14px">Sem horários livres neste dia.</span>';
     $$('#slots .slot').forEach((b,i)=>{b.style.animationDelay=Math.min(i,20)*0.015+'s';b.onclick=()=>{st.time=b.dataset.t;renderSlots();update()}});

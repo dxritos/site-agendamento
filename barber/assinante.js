@@ -178,13 +178,16 @@ function moveAppt(id){
   {const why=DB.clientMoveBlock(a);if(why)return toast(why)}
   // dias possíveis: com horário livre e, se for do plano, dentro de todas as regras do plano
   const ok=ds=>DB.freeSlots(ds,a.dur,a.id).length&&(!a.plan||!DB.planCheck(ME,ds,a.svc,a.id));
-  const days=Array.from({length:14},(_,i)=>DB.iso(addD(today,i))).filter(ok);
+  const days=Array.from({length:DB.horizon()},(_,i)=>DB.iso(addD(today,i))).filter(ok);let pg=0;const pmax=Math.max(0,Math.ceil(days.length/7)-1);
   let sel=days[0]||null,time=null;
-  const draw=()=>{$('#mv-days').innerHTML=days.map(ds=>{const d=dt(ds);return `<button class="day ${ds===sel?'on':''}" data-ds="${ds}" aria-pressed="${ds===sel}"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`}).join('')||'<p class="empty">Nenhum dia disponível nas próximas 2 semanas.</p>';
+  /* setas de 7 em 7 dias livres */
+  const draw=()=>{const nav=$('#mv-nav');if(nav)nav.innerHTML=days.length>7?`<button type="button" class="pgb" data-pg="-1" ${pg<=0?'disabled':''} aria-label="Dias anteriores">‹</button><span>${fmtD(days[pg*7])} a ${fmtD(days[Math.min(days.length,pg*7+7)-1])}</span><button type="button" class="pgb" data-pg="1" ${pg>=pmax?'disabled':''} aria-label="Próximos dias">›</button>`:'';
+    $('#mv-days').innerHTML=days.slice(pg*7,pg*7+7).map(ds=>{const d=dt(ds);return `<button class="day ${ds===sel?'on':''}" data-ds="${ds}" aria-pressed="${ds===sel}"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b><small>${MO[d.getMonth()]}</small></button>`}).join('')||'<p class="empty">Nenhum dia disponível nas próximas 2 semanas.</p>';
     const sl=sel?DB.freeSlots(sel,a.dur,a.id):[];$('#mv-slots').innerHTML=sl.map(t=>`<button class="slot ${t===time?'on':''}" data-t="${t}" aria-pressed="${t===time}">${t}</button>`).join('')||(sel?'<p class="empty">Sem horários livres.</p>':'');
+    $$('#mv-nav .pgb').forEach(b=>b.onclick=()=>{pg=Math.max(0,Math.min(pmax,pg+ +b.dataset.pg));sel=days[pg*7]||sel;time=null;draw()});
     $$('#mv-days .day').forEach(b=>b.onclick=()=>{sel=b.dataset.ds;time=null;draw()});$$('#mv-slots .slot').forEach(b=>b.onclick=()=>{time=b.dataset.t;draw()});$('#ok').disabled=!time};
   const why=a.plan?DB.planCheck(ME,a.date,a.svc,a.id):null;
-  modal(`<h3 id="mt">Remarcar horário</h3><p>${esc(a.svc)} · hoje marcado para ${fmtD(a.date)} às ${esc(a.start)}.${a.plan?' Só aparecem os dias que respeitam as regras do seu plano.':''}</p>${why&&/pendente|pausada/.test(why)?`<p class="empty" style="color:var(--bad)">${esc(why)}</p>`:''}<div class="days" id="mv-days"></div><div class="slots" id="mv-slots"></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Confirmar</button></div>`);
+  modal(`<h3 id="mt">Remarcar horário</h3><p>${esc(a.svc)} · hoje marcado para ${fmtD(a.date)} às ${esc(a.start)}.${a.plan?' Só aparecem os dias que respeitam as regras do seu plano.':''}</p>${why&&/pendente|pausada/.test(why)?`<p class="empty" style="color:var(--bad)">${esc(why)}</p>`:''}<div class="pgnav" id="mv-nav"></div><div class="days" id="mv-days"></div><div class="slots" id="mv-slots"></div><div class="mact"><button class="btn btn-ghost" data-close>Voltar</button><button class="btn btn-primary" id="ok">Confirmar</button></div>`);
   draw();
   $('#ok').onclick=()=>{if(!time)return;DB.refresh();
     if(!DB.freeSlots(sel,a.dur,a.id).includes(time))return toast('Esse horário acabou de ser ocupado. Escolha outro.'),draw();
