@@ -410,7 +410,14 @@ const VOCAB='agendar agendamento marcar horario horarios cancelar cancela cancel
 const KEEP=new Set('agenda agendas quando quanto quantos quanta quantas queria quero gostaria preciso precisa precisava consigo consegue depois antes agora ainda sempre semana cabelo cabeleireiro barbearia cliente numero minutos mensagem pessoa pessoas primeira primeiro marcado marcou marquei cancelado cancelei cancelou remarcado remarquei confirmado confirmei obrigada amanha horrivel ontem tarde noite manha domingo sabado tambem nenhum nenhuma alguem alguma algum melhor pior passado proximo proxima voces porque comigo contigo mesmo verdade pagando pagou paguei atendeu atende atender atendem chegando chegou cheguei funciona funcionam aberto abrem fechado fecham demorou demora corte cortes cortar cortou barba barbas'.split(' '));
 function fixText(n){return n.split(/\s+/).map(w=>{const b=w.replace(/[^a-z0-9ñ]/g,''),p=w.slice(b.length&&w.indexOf(b)>=0?w.indexOf(b)+b.length:w.length);if(!b)return w;if(ABBR[b]!==undefined)return ABBR[b]+p;
   if(b.length<6||/\d/.test(b)||VOCAB.includes(b)||KEEP.has(b))return w;const lim=1;let best=null,bd=9;VOCAB.forEach(v=>{if(v.length<6||Math.abs(v.length-b.length)>lim)return;const d=lev(b,v);if(d<bd){bd=d;best=v}});return bd<=lim?best+p:w}).join(' ').replace(/\s+/g,' ').trim()}
-function clientBot(raw,n,from){n=fixText(n);const r=clientCore(raw,n,from);return /Responda com o número[^\n]*$|Responda \*sim\* ou \*não\*\.?$|\n\d{1,2}\. [^\n]+$/.test(r)?r:r+'\n\n0. Voltar ao menu'}
+/* "bom dia/boa tarde/boa noite" responde no mesmo tom; sem saudação, segue a hora */
+const saud=n=>/\bbom dia\b/.test(n)?'Bom dia':/\bboa tarde\b/.test(n)?'Boa tarde':/\bboa noite\b/.test(n)?'Boa noite':(h=>h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')(new Date().getHours());
+/* apresentação da barbearia: cliente cadastrado é chamado pelo nome */
+function introOf(n,c){const C=db().content;return c?`${saud(n)}, ${first(c)}! 👋 Que bom te ver por aqui. Sou o assistente da Farias Barbearia.`:`${saud(n)}! 👋 Seja bem-vindo à *Farias Barbearia*${C.address?' ('+C.address.split('–')[0].trim()+')':''}.\nSou o assistente virtual: agendo seu horário, mostro preços, planos e o que mais precisar, na hora.`}
+const firstContact=key=>!(db().convos||[]).some(x=>x.role==='cliente'&&x.num===key&&Date.now()-x.t<12*36e5);
+function clientBot(raw,n,from){n=fixText(n);const key=telKey(from),fc=firstContact(key),cl=db().clients.find(x=>x.phone&&telKey(x.phone)===key)||null;let r=clientCore(raw,n,from);
+  /* primeira mensagem do dia sem cumprimento ("quanto custa o corte?"): apresenta a barbearia antes de responder */
+  if(fc&&!/Farias Barbearia/.test(r.split('\n\n')[0]))r=introOf(n,cl)+'\n\n'+r;return /Responda com o número[^\n]*$|Responda \*sim\* ou \*não\*\.?$|\n\d{1,2}\. [^\n]+$/.test(r)?r:r+'\n\n0. Voltar ao menu'}
 /* dúvida que bate com uma pergunta do FAQ do site (editável no painel) recebe a resposta de lá */
 const STOPW=new Set('como para pelo pela voce voces posso pode podem tenho minha meu qual quais quando onde porque sobre fazer esta isso essa esse esses umas uns dos das com sem mais muito tambem gostaria queria saber'.split(' '));
 const toks=x=>norm(x).replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>=4&&!STOPW.has(w)).map(w=>w.slice(0,5));
@@ -418,6 +425,7 @@ function faqHit(n){const q=[...new Set(toks(n))];if(!q.length)return null;let be
   db().faq.forEach(f=>{const T=new Set(toks(f.q+' '+f.a)),sc=q.filter(w=>T.has(w)).length;if(sc>bs){bs=sc;best=f}});
   return best&&(bs>=2||(bs===1&&q.length<=2))?best.a.replace(/\{prazo_cancelamento\}/g,DB.cancelText()):null}
 function clientCore(raw,n,from){
+  const nn0=()=>n.replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
   const SYN=[[/raspar|zerar|maquina zero|cabelo grande|cabeludo/,'corte'],[/combo/,'combo'],[/degrade|fade|disfarcad|navalhad|social|tesoura|maquina|corte americano|moicano|undercut|cacheado|crespo|black power|taper/,'corte'],[/pezinho|contorno/,'acabamento'],[/bigode/,'barba'],[/pigment/,'pigmentacao'],[/hidrat/,'hidratacao'],[/lavar/,'lavagem']];
   const svcIn=x=>{const q=' '+norm(x).replace(/\s*\+\s*/g,' e ').replace(/\s+/g,' ')+' ',key=s0=>' '+norm(s0).replace(/\s*\+\s*/g,' e ')+' ';
     const L=services().map(s0=>db().services.find(y=>y.n===s0.n)||{...s0,d:''}).sort((a,b)=>b.n.length-a.n.length);
@@ -431,7 +439,7 @@ function clientCore(raw,n,from){
   const tellC=txt=>tell('evContact',txt+`\nPara responder: *responder ${c?first(c).toLowerCase():key}: sua mensagem*`);
   /* última mensagem que o robô mandou para este número (até 3 dias): dá contexto a respostas curtas como "sim", "não" ou uma nota */
   const last=db().outbox.filter(o=>o.to==='client'&&telKey(o.phone)===key&&(o.at||o.t)<=Date.now()).sort((x,y)=>(y.at||y.t)-(x.at||x.t))[0],ctx=last&&Date.now()-(last.at||last.t)<3*864e5?last.kind:null;
-  const hi=c?`Olá, ${first(c)}! 👋 Aqui é o assistente da Farias Barbearia.`:(db().messages.welcome||{}).txt?db().messages.welcome.txt.replace(/\{site\}/g,site):'Olá! 👋 Aqui é o assistente da Farias Barbearia.';
+  const hi=introOf(n,c);
   /* já conversou nas últimas 12 h: "oi" de novo mostra só as opções, sem repetir as boas-vindas */
   const greeted=(db().convos||[]).some(x=>x.role==='cliente'&&x.num===key&&Date.now()-x.t<12*36e5);
   const menu=pre=>{setSt({cmenu:1});INT=INT||'menu';const head=pre||(greeted?'':hi);return `${head?head+'\n\n':''}Como posso ajudar?\n1. Agendar um horário\n2. Meus horários\n3. Remarcar ou cancelar\n4. Preços e planos\n5. Horário e endereço\n6. Falar com o barbeiro\n7. Fotos dos trabalhos\n\nResponda com o número.`};
@@ -464,7 +472,7 @@ function clientCore(raw,n,from){
     remarcarLink(){return up.length?`Para remarcar ${when(up[0])}, escolha o novo dia e horário por aqui:\n${DB.link(up[0])}`:A.meus()},
     atraso(){const a=up.find(x=>x.date===t);tellC(`${who} avisou atraso: "${raw.slice(0,140)}"${a?' (horário das '+a.start+')':''}`);const tol=db().settings.tolerance;
       return `Avisei o barbeiro.`+(tol?` A tolerância é de ${tol} minutos; depois disso o horário pode ser liberado.`:'')},
-    precos(){const sv=svcIn(nn);if(sv)return `${sv.n}: ${brl(sv.p)} · ${sv.t} min.\nPara agendar: ${site}agendar.html\nTabela completa: envie *preços*.`;
+    precos(){const sv=svcIn(nn);if(sv)return `${sv.n}: ${brl(sv.p)} · ${sv.t} min.\nQuer agendar? Envie *agendar* que eu marco por aqui. 😉\nTabela completa: envie *preços*.`;
       const L=db().services.filter(s=>s.on).sort((x,y)=>x.p-y.p);return `Nossos preços:\n`+L.map(s=>`• ${s.n}: ${brl(s.p)}`).join('\n')+`\n\nNo plano mensal o corte sai por R$ 0. Planos a partir de ${brl(Math.min(...db().plans.filter(x=>x.on).map(x=>x.p)))}/mês: ${site}index.html#planos`},
     planos(){const s=c&&DB.activeSub(c.id);if(s)return `Seu plano: ${DB.plan(s.plan).n} · ${({ok:'em dia',late:'pagamento pendente',paused:'pausado'})[s.status]}.`+(s.cancelAt?`\nVale até ${short(s.cancelAt)} (cancelamento agendado).`:s.paidUntil?`\nPago até ${short(s.paidUntil)}.`:'')+`\nPara ver, trocar ou regularizar: ${site}entrar.html`;
       return `Planos mensais:\n`+db().plans.filter(x=>x.on).map(x=>`• ${x.n}: ${brl(x.p)}/mês`).join('\n')+`\n\nPara assinar: ${site}index.html#planos`},
@@ -516,7 +524,7 @@ function clientCore(raw,n,from){
     promo(){const L=db().plans.filter(x=>x.on);return `A forma de economizar é o plano mensal:\n`+L.map(x=>`• ${x.n}: ${brl(x.p)}/mês`).join('\n')+`\nDetalhes: ${site}index.html#planos`},
     outro(tema){tellC(`${who} perguntou sobre ${tema}: "${raw.slice(0,160)}"`);return 'Vou confirmar com o barbeiro e ele te responde por aqui.'},
     robo(){return 'Sou o assistente automático da Farias Barbearia. Respondo na hora sobre horários, preços e planos. Para falar com o barbeiro, envie *barbeiro*.'},
-    papo(){return menu('Tudo certo por aqui! 😁')},
+    papo(){const head=greeted?`${saud(n)}! Tudo certo por aqui, e com você? 😁`:`${hi}\n\nTudo ótimo por aqui, e com você? 😁`;const r0=menu(head);setSt({cmenu:1,csmall:1});return r0},
     movimento(){const f=DB.freeSlots(t,30),best=Array.from({length:7},(_,i)=>iso(day0(i))).filter(ds=>!closed(ds)&&db().hours[new Date(ds+'T00:00').getDay()]).map(ds=>[ds,DB.freeSlots(ds,30).length]).sort((a,b)=>b[1]-a[1])[0];
       return `Aqui é com hora marcada, sem fila: você chega e é atendido no seu horário.\n`+(f.length?`Hoje ainda há ${f.length} horários livres, o próximo às ${hh(f[0])}.`:'Hoje não há mais horários livres.')+(best?`\nO dia com mais vagas nesta semana é ${dayTxt(best[0])}.`:'')+`\nPara agendar: ${site}agendar.html`},
     caminho(){const a=up.find(x=>x.date===t);tell('evContact',`${who} está a caminho${a?' (horário das '+a.start+')':''}.`);return 'Beleza, avisei o barbeiro. Até já! 🤙'},
@@ -608,6 +616,9 @@ function clientCore(raw,n,from){
     if(a&&OPEN.includes(a.status)&&(/^(sim|s|pode|isso|confirmo|confirma|ok|quero)$/.test(n)||THUMB_UP.test(raw))){mut(['appts'],d=>{d.appts.find(x=>x.id===a.id).status='cancel'},`${c.name}: horário de ${short(a.date)} ${a.start} cancelado pelo WhatsApp do cliente`);DB.data.outbox=db().outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));DB.save();
       tell('evCancel',`Cancelado pelo cliente: ${c.name} · ${a.svc} · ${short(a.date)} às ${a.start}. O horário ficou livre.`);return `Cancelado: ${when(a)}. 👍\nQuando quiser marcar outro: ${site}agendar.html`}
     if(/^(nao|n|deixa|esquece)$/.test(n)||THUMB_DOWN.test(raw))return 'Ok, seu horário continua marcado.'}
+  if(st&&st.csmall){const q=nn0();
+    if(/^(tudo|tudo sim|tudo otimo|tudo certo|tudo bem|tudo bom|tudo tranquilo|tudo joia|tudo em paz|bem|muito bem|otimo|to bem|estou bem|de boa|tranquilo|suave|beleza|firmeza|na paz|gracas a deus|sim|tudo e voce|bem e voce|tudo sim e voce|tudo otimo e voce|tudo certo e voce)( e (voce|vc|ai))?( tambem)?$/.test(q)){INT='papo';return menu('Que bom! 😁')}
+    if(/^(mais ou menos|nao muito|nao to bem|nao estou bem|cansado|correria|ruim)/.test(q)){INT='papo';return menu('Poxa, espero que melhore! Um corte sempre ajuda. 😉')}}
   if(st&&st.cchoice){const a=up.find(x=>x.id===st.cchoice);if(a){if(/^1$|cancel/.test(n))return A.cancelar();if(/^2$|remarc/.test(n))return A.remarcar();if(/^3$|mant|deixa|fica/.test(n))return `Ok, seu horário continua marcado: ${when(a)}.`}}
   if(st&&st.cmenu&&/^[1-7]$/.test(n))return [()=>CB.start({}),A.meus,()=>up.length?(setSt({cchoice:up[0].id}),`O que deseja fazer com ${when(up[0])}?\n1. Cancelar\n2. Remarcar\n3. Manter como está`):A.meus(),()=>A.precos(),()=>A.funcionamento(),A.humano,A.fotos][+n-1]();
   if(!n||/^(oi+|ola+|opa+|eae|eai|e ai|iae|salve|fala|fala ai|fala mano|fala parceiro|coe|bom dia|boa tarde|boa noite|menu|inicio|ajuda|me ajuda|socorro|help|comecar|\?)[!.?]*$/.test(n))return menu();
@@ -669,6 +680,7 @@ function clientCore(raw,n,from){
   if(/^(ate mais|ate logo|ate amanha|ate depois|tchau|tchau tchau|falou|falou mano|falou parceiro|flw|fui|abraco|abracos|vlw falou|valeu falou|ate)$/.test(nn.trim()))return A.despedida();
   if(/^(massa|combinado|pode ser|fechado|ta bom|esta bom|ta certo|esta certo|beleza entao|ok entao|perfeito|otimo|show|joia|demorou|certo|entendi|entendido|ah ta|ah esta|okay|ok ok|aham|uhum|hum|humm|sei|ta|esta)$/.test(nn.trim()))return A.ack();
   if(/^(desisti|deixa pra la|deixa|esquece|nao quero mais|deixa quieto|nao precisa|nao precisa mais)$/.test(nn.trim()))return A.desistiu();
+  if(/^(e voce|e vc|e ai|e contigo|e com voce)$/.test(nn.trim())){INT='papo';return menu('Tudo ótimo por aqui, obrigado! 😁')}
   if(/^(sair|parar|chega)$/.test(nn.trim()))return 'Ok! Quando precisar, é só chamar.';
   if(has(/ (trato no visual|dar um trato|cabeludo|cabelo grande|cabelo ta grande|cabelo esta grande|raspar|zerar|fazer agendamento|novo agendamento|quero um horario|preciso de um horario|bora cortar|partiu) /))return A.agendar();
   if(svcIn(n)&&(has(/ (quero|queria|fazer|so|marcar|preciso|tirar|aparar) /)||toks(n).length<=2)&&!has(/ (quanto|valor|preco|custa|tempo|demora|o que e) /))return A.agendar();
