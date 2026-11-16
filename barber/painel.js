@@ -89,11 +89,11 @@ function vHoje(){
   const pend=db.appts.filter(a=>a.status==='pend'&&a.date>=TODAY);
   const hol=db.holidays.find(h=>h.date===TODAY);
   const hr=new Date().getHours();
-  // próximo cliente: quem está na cadeira ou o primeiro ainda não atendido
+  // próximo cliente: quem está em atendimento ou o primeiro ainda não atendido
   const open=svc.filter(a=>['conf','pend','now'].includes(a.status)),nx=open.find(a=>a.status==='now')||open[0];
   const later=list.filter(a=>a!==nx&&!['done','miss'].includes(a.status)),past=list.filter(a=>['done','miss'].includes(a.status));
   const c=nx&&client(nx.cid)||{};
-  const nextCard=nx?`<div class="card nextc"><div class="eyebrow">${nx.status==='now'?'Na cadeira agora':'Próximo cliente'}</div>
+  const nextCard=nx?`<div class="card nextc"><div class="eyebrow">${nx.status==='now'?'Em atendimento':'Próximo cliente'}</div>
      <div class="nx-main"><div class="nx-h">${nx.start}</div><div><strong>${esc(cname(nx.cid))}</strong><span>${esc(nx.svc)} · ${nx.plan?'Assinante':money(nx.price)} · ${nx.dur} min${nx.status==='pend'?' · <span class="up-w">ainda não confirmou</span>':''}</span>${c.notes?`<p class="nx-note">${esc(c.notes)}</p>`:''}</div></div>
      <div class="nx-acts"><button class="btn btn-primary" data-st="done" data-id="${nx.id}">Concluir atendimento</button>${nx.status==='pend'?`<button class="btn btn-ghost" data-st="conf" data-id="${nx.id}">Confirmar presença</button>`:''}<button class="btn btn-danger" data-st="miss" data-id="${nx.id}">Faltou</button><button class="btn btn-ghost" data-edit="${nx.id}">Editar</button></div></div>`
     :`<div class="card nextc"><div class="eyebrow">Próximo cliente</div><p class="empty">${hol?'Feriado: barbearia fechada.':svc.length?'Todos os clientes de hoje já foram atendidos.':'Nenhum horário marcado para hoje.'}</p></div>`;

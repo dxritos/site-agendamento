@@ -128,7 +128,9 @@ function ensure(d){let ch=false;
   const CONFIRM_NEW='Fala, {nome}! Seu horário está marcado: {servico} em {data} às {hora}. Duas horas antes eu te mando o link para confirmar presença.';
   if(M.confirm&&[CONFIRM_OLD,'Fala, {nome}! Horário marcado: {servico} em {data} às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}'].includes(M.confirm.txt)){M.confirm.txt=CONFIRM_NEW;ch=true}
   if(M.r2&&M.r2.txt==='{nome}, seu horário é hoje às {hora}. Te espero!'){M.r2.name='Confirmação de presença (2 h antes, com o link)';M.r2.txt='{nome}, seu horário de {servico} é hoje às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}';ch=true}
-  add('thanks',{on:true,name:'Agradecimento ao concluir',txt:'Valeu, {nome}! Obrigado pela preferência. Quando quiser marcar de novo: {site}'});
+  const THANKS='Valeu, {nome}! Obrigado pela preferência. Como foi o atendimento? Responda com uma nota de 1 a 5. Para marcar de novo: {site}';
+  add('thanks',{on:true,name:'Agradecimento ao concluir (pede uma nota)',txt:THANKS});
+  if(M.thanks.txt==='Valeu, {nome}! Obrigado pela preferência. Quando quiser marcar de novo: {site}'){M.thanks.txt=THANKS;M.thanks.name='Agradecimento ao concluir (pede uma nota)';ch=true}
   add('welcome',{on:true,name:'Boas-vindas (quem escreve para o robô)',txt:'Olá! Aqui é o atendimento automático da Farias Barbearia. Para agendar, remarcar ou conhecer os planos, acesse: {site}'});
   add('move',{on:true,name:'Horário remarcado',txt:'{nome}, seu horário foi remarcado para {data} às {hora}. Para confirmar, remarcar ou cancelar: {link}'});
   add('cancel',{on:true,name:'Cancelamento',txt:'{nome}, seu horário de {data} às {hora} foi cancelado. Quando quiser, marque outro: {link}'});
