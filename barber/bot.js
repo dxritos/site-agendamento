@@ -409,6 +409,8 @@ function clientCore(raw,n,from){
   /* pontuação vira espaço: "tem fotos?" e "quanto custa, amigo" também são entendidos */
   const nn=' '+n.replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim()+' ',has=re=>re.test(nn);
   if(has(/ (plano|assinatura|clube|mensalidade) /)&&has(/ (cancelar|cancela|cancelo|cancelamento|trocar|troca|mudar|sair) /))return A.gerirPlano();
+  /* pergunta que bate forte com o FAQ (2+ palavras em comum) tem prioridade sobre as respostas genéricas: "posso usar o plano no sábado?" */
+  {const q=[...new Set(toks(n))];const f=q.length>=2&&db().faq.find(x=>{const T=new Set(toks(x.q));return q.filter(w=>T.has(w)).length>=2});if(f){INT='faq';return f.a.replace(/\{prazo_cancelamento\}/g,DB.cancelText())}}
   if(has(/ (ja paguei|paguei|ja pago|comprovante|fiz o pix|ja fiz|transferi|ja transferi) /))return A.paguei();
   if(has(/ (codigo|cod) /))return A.codigo();
   if(has(/ (instagram|insta|foto|fotos|galeria|trabalhos) /))return A.fotos();
