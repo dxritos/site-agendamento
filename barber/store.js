@@ -125,7 +125,9 @@ function ensure(d){let ch=false;
   if(!Array.isArray(d.contacts)){d.contacts=[];ch=true}
   if(!Array.isArray(d.convos)){d.convos=[];ch=true}
   if(!d.bot.nextNotify){d.bot.nextNotify='ask';ch=true}
-  if(!Array.isArray(d.settings.bairros)){d.settings.bairros=['Centro'];ch=true}
+  /* bairros de Parauapebas (editáveis em Painel › Configurações) */
+  const BAIRROS=['Alto Bonito','Altamira','Amazonas','Apoena','Bairro da Paz','Beira Rio I','Beira Rio II','Bela Vista','Caetanópolis','Carajás (Núcleo Urbano)','Casas Populares I','Casas Populares II','Centro','Cidade Jardim','Cidade Nova','Esplanada','Guanabara','Ipiranga','Jardim América','Jardim Canadá','Jardim Planalto','Liberdade I','Liberdade II','Linha Verde','Maranhão','Minas Gerais','Morada Nova','Nova Carajás','Nova Vida','Novo Brasil','Novo Horizonte','Novo Viver','Palmares II','Parque dos Carajás','Primavera','Residencial Bethânia','Rio Verde','Talismã','Tropical','União','Vale do Sol','Vila Rica','Vila Sansão','VS-10'];
+  if(!Array.isArray(d.settings.bairros)||(d.settings.bairros.length===1&&d.settings.bairros[0]==='Centro')){d.settings.bairros=BAIRROS;ch=true}
   const M=d.messages,add=(k,v)=>{if(!M[k]){M[k]=v;ch=true}};
   const CONFIRM_NEW='Fala, {nome}! Seu horário está marcado: {servico} em {data} às {hora}. Duas horas antes eu te mando o link para confirmar presença.';
   if(M.confirm&&[CONFIRM_OLD,'Fala, {nome}! Horário marcado: {servico} em {data} às {hora}. Confirme sua presença, remarque ou cancele por aqui: {link}'].includes(M.confirm.txt)){M.confirm.txt=CONFIRM_NEW;ch=true}
