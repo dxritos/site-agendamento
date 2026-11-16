@@ -648,7 +648,7 @@ function clientCore(raw,n,from){
   if(has(/ (parabens|excelente|otimo atendimento|adorei|amei|gostei muito|melhor barbearia|nota 10|recomendo|caprichou|ficou top|ficou show) /))return A.elogio();
   if(has(/ (crianca|criancas|infantil|meu filho|minha filha|menino|bebe) /))return A.infantil();
   if(has(/ (antecedencia|com quanto tempo antes|quanto tempo antes) /)&&!has(/ (remarcar|cancelar|desmarcar) /))return A.antecedencia();
-  if(has(/ (quanto tempo|demora|duracao|leva quanto) /)&&!has(/ (atraso|atrasar|tolerancia|espera|fila|atender) /))return A.duracao();
+  if(has(/ (quanto tempo|demora|duracao|leva quanto) /)&&!has(/ (atraso|atrasar|tolerancia|espera|fila|atender|remarcar|cancelar|desmarcar|antes) /))return A.duracao();
   if(has(/ (parcela|parcelar|parcelado|maquininha|maquina de cartao|aceita cartao|aceitam cartao) /))return A.pagamento();
   if(has(/ (pare de mandar|nao quero receber|nao me mande|nao mande mais|descadastrar|descadastra|parar de receber|cancelar as mensagens|bloquear mensagens) /))return A.optout();
   if(has(/ (voltar a receber|quero receber de novo|reativar mensagens) /))return A.optin();
