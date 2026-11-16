@@ -76,7 +76,8 @@ function withClient(nm,cont,ifNone){nm=trimFill(nm);const hits=db().clients.filt
 const mut=(keys,fn,desc,area)=>DB.mutateMany(keys,fn,desc,area||'Agenda',WHO);
 const current=()=>{const L=dayList(TODAY()).filter(a=>OPEN.includes(a.status));return L.find(a=>a.status==='now')||L[0]||null};
 const valTxt=a=>a.plan?'pelo plano'+(a.price?' + '+brl(a.price):''):brl(a.price);
-const payAsk=a=>a.price>0?'Ao terminar, envie a forma de pagamento: *pix*, *dinheiro*, *débito* ou *crédito*.':'Ao terminar, envie *ok*.';
+const PAYS=['pix','dinheiro','debito','credito'];
+const payAsk=a=>a.price>0?'Ao terminar, escolha a forma de pagamento:\n1. Pix\n2. Dinheiro\n3. Débito\n4. Crédito':'Ao terminar, envie *ok* (atendimento pelo plano).\n1. Concluir';
 /* depois de concluir ou registrar falta: só uma linha sobre o próximo. Os detalhes dele chegam na hora marcada */
 const nextLine=()=>{const a=current();return a?`Próximo: ${a.start} · ${cname(a.cid)} · ${a.svc}${a.status==='pend'?' (ainda não confirmou)':''}.`:'Era o último de hoje. Envie *caixa* para ver o total.'};
 const extra=c=>`${c.notes?'\nObs.: '+c.notes:''}${c.misses?'\nFaltas: '+c.misses:''}`;
@@ -186,13 +187,13 @@ const CMD={
     mut(['tx'],d=>{d.tx.unshift({id:DB.uid(),date:a.date,cid:a.cid,desc:a.svc,method:met,value:a.price,kind:'avulso',status:'ok'})},`${cname(a.cid)}: ${brl(a.price)} recebido (${met}) pelo WhatsApp`,'Financeiro');return `Registrado: ${brl(a.price)} de ${cname(a.cid)} em ${met}.`},
   faltou(p){const r=p.times[0]||p.rest?find(p,OPEN):{a:current()};if(r.err)return r.err;if(!r.a)return 'Não há cliente aberto hoje.';const a=r.a;
     mut(['appts','clients'],d=>{d.appts.find(x=>x.id===a.id).status='miss';const c=d.clients.find(x=>x.id===a.cid);if(c)c.misses=(c.misses||0)+1},`${cname(a.cid)}: falta registrada pelo WhatsApp (${short(a.date)} ${a.start})`);
-    const c=cli(a.cid),lim=db().settings.noShow||99;return `Falta registrada: ${a.start} · ${cname(a.cid)} (${c.misses} ${c.misses===1?'falta':'faltas'}${lim<99&&c.misses>=lim?', agendamento online bloqueado':''}).\n\n${nextLine()}`},
+    const c=cli(a.cid),lim=db().settings.noShow||99;return `Falta registrada: ${a.start} · ${cname(a.cid)} (${c.misses} ${c.misses===1?'falta':'faltas'}${lim<99&&c.misses>=lim?', agendamento online bloqueado':''}).\n\n${nextLine()}${offerNext(a)}`},
   cancelar(p){
     if(/^(dia|todos|tudo)\b/.test(p.rest)){const ds=p.date||TODAY(),L=dayList(ds).filter(a=>OPEN.includes(a.status));if(!L.length)return `Não há horários abertos em ${short(ds)}.`;
       mut(['appts'],d=>{L.forEach(a=>{d.appts.find(x=>x.id===a.id).status='cancel'})},`${L.length} horários de ${short(ds)} cancelados pelo WhatsApp`);const n=L.filter(a=>DB.notify('cancel',a)).length;
       return `Cancelados ${L.length} horários de ${short(ds)}: ${L.map(a=>cname(a.cid)).join(', ')}.\n${n} ${n===1?'cliente foi avisado':'clientes foram avisados'} com o link para remarcar.`}
     const r=find(p,OPEN,'cancelar 15:00');if(r.err)return r.err;const a=r.a;mut(['appts'],d=>{d.appts.find(x=>x.id===a.id).status='cancel'},`${cname(a.cid)}: horário de ${short(a.date)} ${a.start} cancelado pelo WhatsApp`);
-    const sent=DB.notify('cancel',a);return `Cancelado: ${short(a.date)} às ${a.start} · ${cname(a.cid)}. O horário ficou livre.${sent?' O cliente foi avisado.':''}`},
+    const sent=DB.notify('cancel',a);return `Cancelado: ${short(a.date)} às ${a.start} · ${cname(a.cid)}. O horário ficou livre.${sent?' O cliente foi avisado.':''}`+(a.date===TODAY()&&current()?`\n\n${nextLine()}${offerNext(a)}`:'')},
   atraso(p){const m=/\b(\d{1,3})\b/.exec(p.rest),n=m?+m[1]:0;if(!n)return 'Diga quantos minutos. Ex.: *atraso 20*';
     const L=dayList(TODAY()).filter(a=>['conf','pend'].includes(a.status)&&a.start>=nowHM());if(!L.length)return 'Não há clientes à frente hoje para avisar.';
     const sent=L.filter(a=>{const c=cli(a.cid);return c&&DB.sendClient(c,'atraso',`${first(c)}, o Farias está com cerca de ${n} min de atraso hoje. Seu horário das ${a.start} deve começar perto das ${DB.toHM(DB.toMin(a.start)+n)}. Obrigado pela compreensão!`)});
@@ -443,16 +444,16 @@ const isTeam=from=>{if(!from||from==='@barbeiro')return true;const d=String(from
 
 /* ===== na hora marcada: o robô pergunta ao responsável se o cliente veio ===== */
 function promptFor(a){a.asked=true;DB.save();setSt({ask:a.id});const c=cli(a.cid)||{};
-  return `Chegou a hora: *${hh(a.start)} · ${cname(a.cid)}*\n${a.svc} · ${a.plan?'assinante':brl(a.price)}${c.notes?'\nObs.: '+c.notes:''}\n\nO cliente veio?\n👍 sim (ou *ok*)\n👎 não veio (ou *faltou*)\n*cancelou* se ele desmarcou`}
+  return `Chegou a hora: *${hh(a.start)} · ${cname(a.cid)}*\n${a.svc} · ${a.plan?'assinante':brl(a.price)}${c.notes?'\nObs.: '+c.notes:''}\n\nO cliente veio? (também vale 👍 ou 👎)\n1. Veio\n2. Não veio\n3. Cancelou`}
 const THUMB_UP=/👍|✅|👌/,THUMB_DOWN=/👎|❌/;
-function onAsk(st,raw,n){const a=db().appts.find(x=>x.id===st.ask);if(!a||!OPEN.includes(a.status))return null;
+function onAsk(st,raw,n){const a=db().appts.find(x=>x.id===st.ask);if(!a||!OPEN.includes(a.status))return null;n=({1:'veio',2:'faltou',3:'cancelou'})[n]||n;
   if(THUMB_UP.test(raw)||/^(ok|okay|sim|s|veio|chegou|confirma|confirmo|confirmado|presente|ta aqui|esta aqui)$/.test(n)){
     mut(['appts'],d=>{d.appts.forEach(x=>{if(x.date===a.date&&x.status==='now')x.status='conf'});d.appts.find(x=>x.id===a.id).status='now'},`${cname(a.cid)}: atendimento iniciado (${a.start})`);
     return started(a)}
   if(THUMB_DOWN.test(raw)||/^(nao|n|nao veio|faltou|falta|furou)$/.test(n))return exec(`faltou ${a.start} ${short(a.date)}`);
   if(/^(cancelou|cancelado|cancelar|desmarcou|desmarcado)$/.test(n))return exec(`cancelar ${a.start} ${short(a.date)}`);
   return null}
-function onPay(st,raw,n){const a=db().appts.find(x=>x.id===st.pay);if(!a||a.status!=='now')return null;const p={rest:n},met=takeMet(p);
+function onPay(st,raw,n){const a=db().appts.find(x=>x.id===st.pay);if(!a||a.status!=='now')return null;if(/^[1-4]$/.test(n))n=a.price>0?PAYS[+n-1]:(n==='1'?'ok':n);const p={rest:n},met=takeMet(p);
   if(met)return finish(a,met);
   if(THUMB_UP.test(raw)||/^(ok|okay|pronto|feito|terminei|terminou|acabou|concluido|plano)$/.test(n)){if(!a.price)return finish(a,null);return showMenu('Como o cliente pagou?',SUB.pagar[1])}
   return null}
@@ -469,7 +470,7 @@ window.Bot={
   _run(raw,from){DB.refresh();const n=norm(raw);
     if(!isTeam(from)){ME=null;return db().bot.client?'Bot:\n'+clientBot(raw,n,from):DB.welcome()}
     ME=memberOf(from);CUR=from?String(from).replace(/\D/g,'')||'barbeiro':'equipe';
-    const out=r=>'Bot:\n'+r+(/Responda com o número\.$|\n1\. Sim, avisar\n2\. Não$/.test(r)?'':'\n\n0. Voltar ao menu');
+    const out=r=>'Bot:\n'+r+(/Responda com o número\.$|\n\d{1,2}\. [^\n]+$/.test(r)?'':'\n\n0. Voltar ao menu');
     if(!db().bot.staff)return out('O robô da equipe está desligado. Ligue em Painel › WhatsApp.');
     const st=getSt();setSt(null);
     /* a pergunta "o cliente veio?" continua valendo enquanto não for respondida */

@@ -66,8 +66,8 @@ const I={
    no sistema definitivo fica atrás da conta de desenvolvedor, conferida no servidor */
 const DEV=(()=>{try{if(new URLSearchParams(location.search).has('dev'))sessionStorage.setItem('farias_dev','1');return sessionStorage.getItem('farias_dev')==='1'}catch(e){return false}})();
 I.dev='<path d="M8 6l-6 6 6 6M16 6l6 6-6 6M14 4l-4 16"/>';
-const PRIMARY=[['hoje','Hoje'],['agenda','Agenda'],['clientes','Clientes'],['assinantes','Assinantes']];
-const MORE=[['Negócio',[['financeiro','Financeiro'],['servicos','Serviços e planos']]],['Comunicação',[['mensagens','WhatsApp'],['conteudo','Site']]],['Sistema',[['equipe','Equipe'],['historico','Histórico'],['config','Configurações'],...(DEV?[['dev','Desenvolvedor']]:[])]]];
+const PRIMARY=[['hoje','Hoje'],['agenda','Agenda'],['clientes','Clientes'],['assinantes','Assinantes'],...(DEV?[['dev','Desenvolvedor']]:[])];
+const MORE=[['Negócio',[['financeiro','Financeiro'],['servicos','Serviços e planos']]],['Comunicação',[['mensagens','WhatsApp'],['conteudo','Site']]],['Sistema',[['equipe','Equipe'],['historico','Histórico'],['config','Configurações']]]];
 let moreOpen=false;try{moreOpen=localStorage.getItem('farias_more')==='1'}catch(e){}
 let VIEW=(location.hash||'#hoje').slice(1);if(!/^[a-z]+$/.test(VIEW)||!document.getElementById('v-'+VIEW)||(VIEW==='dev'&&!DEV))VIEW='hoje';
 function renderNav(){
@@ -489,7 +489,7 @@ let waTab='robo',botFrom='';const chat=[];
 /* no simulador, as opções numeradas da última resposta viram botões, como a lista do WhatsApp */
 const chatMsg=(m,last)=>m.me?esc(m.t):last?waFmt(m.t).replace(/(?:^|<br>)(\d{1,2})\. ([^<]+)/g,(x,n,t)=>`<button class="copt" data-bot="${n}">${n}. ${t}</button>`):waFmt(m.t);
 const waFmt=t=>esc(t).replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
-const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Chegou a hora do cliente','Na hora marcada o robô pergunta se o cliente veio: 👍, 👎 ou cancelou.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
+const EV=[['evNew','Novo agendamento','Avisa quando alguém marca pelo site.'],['evCancel','Cancelamento ou remarcação','Avisa quando o cliente muda o horário.'],['evConfirm','Presença confirmada','Avisa quando o cliente confirma pelo link.'],['evNext','Chegou a hora do cliente','Na hora marcada o robô pergunta se o cliente veio: veio, não veio ou cancelou.'],['evDaily','Resumo do dia','Agenda completa às 08:00.']];
 function vMensagens(){
   const b=db.bot,newC=db.contacts.filter(x=>!x.done).length,tabs=[['robo','Robô'],['msgs','Mensagens automáticas'],['out',`Enviadas (${db.outbox.length})`],['in',`Contatos do site${newC?' ('+newC+')':''}`]];
   const head=`<div class="top"><div><h1>WhatsApp</h1><p>O robô avisa você e o cliente, e aceita comandos por mensagem.</p></div>${waTab==='msgs'?'<div class="acts"><button class="btn btn-primary btn-sm" data-act="msg-save">Salvar mensagens</button></div>':''}</div>
