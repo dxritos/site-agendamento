@@ -23,14 +23,29 @@ const services=()=>{const L=db().services.filter(s=>s.on).map(s=>({n:s.n,p:s.p,t
 function parse(text){
   let t=' '+norm(text)+' ',date=null;const times=[];
   t=t.replace(/\b(\d{1,2})\/(\d{1,2})\b/,(m,d,mo)=>{const y=new Date().getFullYear();let dt=new Date(y,+mo-1,+d);if(dt<day0(-1))dt=new Date(y+1,+mo-1,+d);date=iso(dt);return ' '});
+  /* "dia 20" (mês atual, ou o próximo se já passou) */
+  if(!date)t=t.replace(/\bdia (\d{1,2})\b/,(m,d)=>{const n0=day0();let dt=new Date(n0.getFullYear(),n0.getMonth(),+d);if(dt<n0)dt=new Date(n0.getFullYear(),n0.getMonth()+1,+d);if(+d>=1&&+d<=31)date=iso(dt);return ' '});
+  /* "3 da tarde", "8 da noite", "10 da manha", "9 e meia", "meio dia" */
+  t=t.replace(/\bmeio[ -]?dia( e meia)?\b/g,(m,mm)=>{times.push(mm?'12:30':'12:00');return ' '});
+  t=t.replace(/\b(\d{1,2})(?:h|:00)?(?:\s*e meia)?\s+(?:da|de)\s+(manha|tarde|noite)\b/g,(m,h,per)=>{h=+h;if(per!=='manha'&&h<12)h+=12;if(h<24)times.push(pad(h)+':'+(/e meia/.test(m)?'30':'00'));return ' '});
+  t=t.replace(/\b(\d{1,2})(?:h)?\s+e meia\b/g,(m,h)=>{if(+h<24)times.push(hm(+h,'30'));return ' '});
   t=t.replace(/\b(\d{1,2})(?::|h)(\d{2})?\b/g,(m,h,mi)=>{if(+h<24)times.push(hm(+h,mi));return ' '});
-  t=t.replace(/\b(?:as|a partir das)\s+(\d{1,2})\b/g,(m,h)=>{if(+h<24)times.push(hm(+h));return ' '});
+  t=t.replace(/\b(?:as|das|a partir das|apos as)\s+(\d{1,2})\b/g,(m,h)=>{if(+h<24)times.push(hm(+h));return ' '});
+  if(!date&&/\b(semana que vem|proxima semana)\b/.test(t)){date=iso(day0((8-day0().getDay())%7||7));t=t.replace(/\b(semana que vem|proxima semana)\b/,' ')}
+  if(!date&&/\b(fim de semana|final de semana)\b/.test(t)){date=iso(day0((6-day0().getDay()+7)%7));t=t.replace(/\b(fim de semana|final de semana)\b/,' ')}
   if(!date){if(/\bdepois de amanha\b/.test(t)){date=iso(day0(2));t=t.replace(/\bdepois de amanha\b/,' ')}
     else if(/\bamanha\b/.test(t)){date=iso(day0(1));t=t.replace(/\bamanha\b/,' ')}
     else if(/\bhoje\b/.test(t)){date=TODAY();t=t.replace(/\bhoje\b/,' ')}
     else{const i=WDF.findIndex(w=>new RegExp('\\b'+norm(w)+'(-feira)?\\b').test(t));if(i>-1){let k=(i-day0().getDay()+7)%7;if(!k)k=7;date=iso(day0(k));t=t.replace(new RegExp('\\b'+norm(WDF[i])+'(-feira)?\\b'),' ')}}}
   return {date,times,rest:t.replace(/\s+/g,' ').trim()};
 }
+/* período do dia citado na mensagem ("de manhã", "à tarde", "à noite", "depois do almoço"); saudações não contam */
+const PER={manha:[0,720,'de manhã'],tarde:[720,1080,'à tarde'],noite:[1080,1440,'à noite']};
+function periodOf(x){const t=' '+norm(x).replace(/[^a-z0-9\s]/g,' ').replace(/\b(bom dia|boa tarde|boa noite|bom fim de semana)\b/g,' ')+' ';
+  if(/ (depois do almoco|pos almoco|apos o almoco) /.test(t))return PER.tarde;if(/ (antes do almoco|cedo|cedinho) /.test(t))return PER.manha;
+  const m=/ (manha|tarde|tardinha|noite) /.exec(t);return m?PER[m[1]==='tardinha'?'tarde':m[1]]:null}
+/* "depois das 17" / "antes das 10": limite dos horários livres */
+const bound=x=>/\b(depois das|a partir das|apos as|depois de)\b/.test(x)?'after':/\b(antes das|ate as|no maximo as)\b/.test(x)?'before':null;
 /* "3" vira 15:00: hora menor que a abertura mais cedo da semana é entendida como da tarde */
 const firstOpen=()=>Math.min(...Object.values(db().hours).filter(Boolean).map(h=>+h[0].slice(0,2)),12);
 const hm=(h,mi)=>pad(h<firstOpen()&&h+12<24?h+12:h)+':'+(mi||'00');
@@ -157,7 +172,7 @@ const CMD={
   proximo,
   semana(){return '*Próximos 7 dias*\n'+Array.from({length:7},(_,i)=>{const d=day0(i),ds=iso(d),h=closed(ds),n=dayList(ds).filter(a=>a.status!=='block').length;
     return `${WD[d.getDay()]} ${short(ds)} · `+(h?'fechado ('+h.name+')':!db().hours[d.getDay()]?'não abre':`${n} ${n===1?'cliente':'clientes'} · ${(v=>v+(v===1?' vaga':' vagas'))(DB.freeSlots(ds,30).length)}`)}).join('\n')},
-  livres(p){const ds=p.date||TODAY(),f=DB.freeSlots(ds,30);return f.length?`*Livres em ${short(ds)}*\n${f.join(' · ')}`:`Sem horários livres em ${short(ds)}.`},
+  livres(p,raw){const ds=p.date||TODAY(),per=periodOf(raw),f=DB.freeSlots(ds,30).filter(x=>!per||(DB.toMin(x)>=per[0]&&DB.toMin(x)<per[1]));return f.length?`*Livres em ${short(ds)}${per?' '+per[2]:''}*\n${f.join(' · ')}`:`Sem horários livres em ${short(ds)}${per?' '+per[2]:''}.`},
   agendar(p){bare(p);const ds=p.date||TODAY(),tm=p.times[0];if(!tm)return 'Faltou o horário. Ex.: *agendar corte João às 15*\nSem horário certo? Use *encaixe João corte*.';
     const {sv,nm}=svcAndName(p.rest);if(!sv)return 'Não achei o serviço.';if(nm.length<2)return 'Faltou o nome do cliente. Ex.: *agendar corte João às 15*';
     if(!DB.freeSlots(ds,sv.t).includes(tm)){const f=DB.freeSlots(ds,sv.t);return `${tm} não está livre em ${short(ds)} para ${sv.n} (${sv.t} min).`+(f.length?` Livres: ${f.slice(0,8).join(' · ')}`:` Não há vaga de ${sv.t} min nesse dia.`)}
@@ -349,10 +364,18 @@ function clientCore(raw,n,from){
   const greeted=(db().convos||[]).some(x=>x.role==='cliente'&&x.num===key&&Date.now()-x.t<12*36e5);
   const menu=pre=>{setSt({cmenu:1});INT=INT||'menu';const head=pre||(greeted?'':hi);return `${head?head+'\n\n':''}Como posso ajudar?\n1. Agendar um horário\n2. Meus horários\n3. Remarcar ou cancelar\n4. Preços e planos\n5. Horário e endereço\n6. Falar com o barbeiro\n7. Fotos dos trabalhos\n\nResponda com o número.`};
   const A={
-    agendar(){const p=parse(n);if(p.date||p.times.length){const ds=p.date||t,f=DB.freeSlots(ds,45),tm=p.times[0];
-        if(closed(ds)||!db().hours[new Date(ds+'T00:00').getDay()])return `Não abrimos ${dayTxt(ds)}${closed(ds)?' ('+closed(ds).name+')':''}.\nPara ver outros dias: ${site}horarios.html`;
-        if(tm)return (f.includes(tm)?`${hh(tm)} ${dayTxt(ds)} está livre.`:`${hh(tm)} ${dayTxt(ds)} não está livre.`+(f.length?` Livres: ${f.slice(0,6).map(hh).join(' · ')}`:''))+`\nPara agendar: ${site}agendar.html`;
-        return f.length?`Vagas ${dayTxt(ds)}: ${f.slice(0,8).map(hh).join(' · ')}\nPara agendar: ${site}agendar.html`:`Sem vagas ${dayTxt(ds)}.\nPara ver outros dias: ${site}horarios.html`}
+    agendar(){const p=parse(n),per=periodOf(n),bd=bound(n),tm=p.times[0],exact=tm&&!bd?tm:null,go=`\nPara agendar: ${site}agendar.html`;
+      /* "e de tarde?" depois de perguntar de um dia: continua no mesmo dia */
+      const pd=p.date||(st&&st.cdate&&(per||tm)?st.cdate:null);
+      if(pd||tm||per){const opn=ds=>!closed(ds)&&db().hours[new Date(ds+'T00:00').getDay()];
+        const ok=x=>{const m=DB.toMin(x);if(per&&(m<per[0]||m>=per[1]))return false;if(tm&&bd==='after'&&x<tm)return false;if(tm&&bd==='before'&&x>=tm)return false;return true};
+        const lbl=(per?' '+per[2]:'')+(tm&&bd?(bd==='after'?' depois das ':' antes das ')+hh(tm):'');
+        if(pd&&!opn(pd))return `Não abrimos ${dayTxt(pd)}${closed(pd)?' ('+closed(pd).name+')':''}.\nPara ver outros dias: ${site}horarios.html`;
+        for(const ds of pd?[pd]:Array.from({length:7},(_,i)=>iso(day0(i)))){if(!opn(ds))continue;const f=DB.freeSlots(ds,45);
+          if(exact){if(f.includes(exact)){setSt({cdate:ds});return `${hh(exact)} ${dayTxt(ds)} está livre.`+go}if(pd){const g=f.filter(ok);setSt({cdate:ds});return `${hh(exact)} ${dayTxt(ds)} não está livre.`+(f.length?` Livres: ${f.slice(0,6).map(hh).join(' · ')}`:'')+go}continue}
+          const g=f.filter(ok);if(g.length){setSt({cdate:ds});return `Vagas ${dayTxt(ds)}${lbl}: ${g.slice(0,8).map(hh).join(' · ')}`+go}
+          if(pd){setSt({cdate:ds});return `Sem vagas ${dayTxt(ds)}${lbl}.`+(f.length?` Livres no dia: ${f.slice(0,6).map(hh).join(' · ')}`:'')+go}}
+        return `Sem vagas${lbl} nos próximos 7 dias.\nPara ver todos os horários: ${site}horarios.html`}
       let free='';for(let i=0;i<7&&!free;i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)free=`\nPróximas vagas (${dayTxt(ds)}): ${f.slice(0,5).map(hh).join(' · ')}`}
       return `Para agendar é rápido pelo site, você escolhe o serviço e o horário:\n${site}agendar.html${free}`},
     meus(){return up.length?`Seus horários:\n`+up.map(a=>`• ${when(a)}${a.status==='pend'?' (falta confirmar)':''}`).join('\n')+`\n\nPara confirmar, remarcar ou cancelar: ${DB.link(up[0])}`:`Você não tem horário marcado${c?'':' neste número'}.\nPara agendar: ${site}agendar.html`},
@@ -455,6 +478,8 @@ function clientCore(raw,n,from){
   if(has(/ (endereco|onde fica|onde e|localizacao|local|como chegar|mapa) /))return A.endereco();
   if(has(/ (funciona|funcionamento|aberto|abre|fecha|atende|atendem|expediente) /))return A.funcionamento();
   if(has(/ (agendar|agenda|marcar|marca|vaga|vagas|horario|horarios|livre|disponivel|cortar|corte|barba|encaixe) /))return A.agendar();
+  /* mensagem curta só com dia, hora ou período ("pode ser de manhã?", "e amanhã?", "sexta 3 da tarde") */
+  {const pp=parse(n);if((pp.date||pp.times.length||periodOf(n))&&toks(n).length<=4&&!has(/ (abre|aberto|fecha|funciona) /))return A.agendar()}
   if(has(/ (atendente|humano|pessoa|barbeiro|falar com|ligar|ligacao|problema) /))return A.humano();
   if(has(/ (obrigad\w*|valeu|vlw|brigad\w*|show|blz|beleza|top|tmj) /)||/^(ok|certo|ta bom|tudo bem)$/.test(n)||THUMB_UP.test(raw))return A.obrigado();
   if(/^(sim|s|nao|n|ok)$/.test(n)||THUMB_DOWN.test(raw))return menu('Não há nada aguardando sua resposta.');
