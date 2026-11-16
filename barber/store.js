@@ -171,6 +171,8 @@ window.DB={
     this.refresh();
     const before={};keys.forEach(k=>before[k]=JSON.stringify(this.data[k]));
     fn(this.data);
+    /* todo horário novo ganha na hora o código do link individual (antes só ganhava ao recarregar a página) */
+    (this.data.appts||[]).forEach(a=>{if(!a.tok&&a.status!=='block')a.tok=tok()});
     this._log({id:uid(),t:Date.now(),who:who||'Farias',area:area||'Geral',desc,keys:before,key:keys.join(',')});
     return this.save();
   },
