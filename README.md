@@ -5,6 +5,7 @@ Protótipo estático (HTML/CSS/JS, sem build).
 - `barber/` — Farias Barbearia: site, login por código, área do assinante e painel do barbeiro.
 - `barber/confirmar.html` — link individual do WhatsApp: o cliente confirma presença, remarca ou cancela sem login.
 - `barber/bot.js` — interpretador dos comandos de texto do robô da equipe (testável em Painel › WhatsApp).
+- `barber/painel-gate.js` — trava provisória do painel (sessão da equipe de 12 h no navegador; `?demo` libera).
 - `barber/guard.js` — desliga seleção, menu de contexto e atalhos de salvar no site público.
 - `_redirects` — a raiz redireciona para `/barber/`.
 
@@ -16,7 +17,7 @@ Protótipo estático (HTML/CSS/JS, sem build).
 
 ## O que ainda é simulado
 
-Não há servidor: os dados ficam no `localStorage` do navegador. Código de login, pagamento e envio de WhatsApp são simulados; as mensagens geradas aparecem em Painel › WhatsApp › Enviadas.
+Não há servidor: os dados ficam no `localStorage` do navegador. Código de login, pagamento e envio de WhatsApp são simulados; as mensagens geradas aparecem em Painel › WhatsApp › Enviadas. As travas de login (cliente e equipe) ficam no navegador e podem ser contornadas: a proteção real só existe com o servidor.
 
 ## Plano de implementação (decisões tomadas)
 
@@ -40,6 +41,3 @@ Registro do que já foi decidido para tirar o site do modo protótipo. Valores c
 
 **Depende do cliente final**
 - Nome e marca reais (Farias Barbearia é nome de demonstração), fotos, preços e planos, telefone e endereço, lista de bairros, dados da empresa para a Política de Privacidade, número de WhatsApp para o robô e conta no gateway.
-
-**Custos mensais de terceiros (estimativa)**
-- uazapi: R$ 30. Cloudflare: R$ 0 no plano gratuito, cerca de US$ 5 se passar do limite. Domínio: cerca de R$ 40 por ano. Tarifa do gateway: descontada do que a barbearia recebe.

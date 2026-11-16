@@ -354,7 +354,7 @@ ACT['exp-tx']=()=>download('financeiro-farias.csv',csv(['Data','Cliente','Descri
 /* ================= SERVIÇOS E PLANOS ================= */
 const CAT={cab:'Cabelo e barba',com:'Combos',ext:'Tratamentos'};
 function vServicos(){
-  return `<div class="top"><div><h1>Serviços e planos</h1><p>Tudo aqui aparece na hora no site e no agendamento.</p></div><div class="acts"><a class="btn btn-ghost btn-sm" href="index.html#planos" target="_blank">Ver no site ↗</a><button class="btn btn-ghost btn-sm" data-act="plan-ed">+ Novo plano</button><button class="btn btn-primary btn-sm" data-act="svc-ed">+ Novo serviço</button></div></div>
+  return `<div class="top"><div><h1>Serviços e planos</h1><p>Tudo aqui aparece na hora no site e no agendamento.</p></div><div class="acts"><a class="btn btn-ghost btn-sm" href="index.html#planos" target="_blank" rel="noopener">Ver no site ↗</a><button class="btn btn-ghost btn-sm" data-act="plan-ed">+ Novo plano</button><button class="btn btn-primary btn-sm" data-act="svc-ed">+ Novo serviço</button></div></div>
   <div class="card box"><h3>Planos de assinatura</h3><div class="tw"><table><thead><tr><th>Plano</th><th>Preço</th><th>Dias válidos</th><th>Cota</th><th>Brindes</th><th>Assinantes</th><th>No site</th><th></th></tr></thead><tbody>
   ${db.plans.map(p=>`<tr><td><b>${esc(p.n)}</b></td><td>${money0(p.p)}/mês</td><td>${p.days.map(d=>WD[d]).join(', ')}</td><td>${esc(p.quota)}${p.gap?`<small>intervalo ${p.gap} dias</small>`:''}</td><td style="white-space:normal">${esc(p.perks)}</td><td>${db.subs.filter(s=>s.plan===p.id&&s.status!=='off').length}</td><td>${sw('pl-'+p.id,p.on)}</td><td class="r"><button class="btn btn-ghost btn-sm" data-act="plan-ed" data-id="${p.id}">Editar</button></td></tr>`).join('')}
   </tbody></table></div></div>
@@ -391,7 +391,7 @@ let siteTab='inicio';
 const STABS=[['inicio','Página inicial'],['aviso','Aviso'],['contato','Contato'],['faq','Perguntas'],['aval','Avaliações'],['galeria','Galeria'],['insta','Instagram']];
 function vConteudo(){
   const c=db.content,sec=(k,html)=>`<section class="ssec ${k==='galeria'?'wide':''}" ${siteTab===k?'':'hidden'}>${html}</section>`,pub='<div class="sfoot"><button class="btn btn-primary" data-act="save-content">Salvar e publicar</button><span class="hint">O site é atualizado na hora.</span></div>';
-  return `<div class="top"><div><h1>Site</h1><p>Edite o que os clientes veem. Uma parte de cada vez.</p></div><div class="acts"><a class="btn btn-ghost btn-sm" href="index.html" target="_blank">Abrir o site ↗</a></div></div>
+  return `<div class="top"><div><h1>Site</h1><p>Edite o que os clientes veem. Uma parte de cada vez.</p></div><div class="acts"><a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">Abrir o site ↗</a></div></div>
   <div class="filters stabs" role="tablist">${STABS.map(([k,n])=>`<button class="fbtn ${siteTab===k?'on':''}" role="tab" aria-selected="${siteTab===k}" data-site="${k}">${n}</button>`).join('')}</div>
   ${sec('inicio',`<div class="card box sbox"><h3>Página inicial</h3><p class="hint">Os textos do topo da primeira página.</p><div class="form">
      <div class="fl"><label>Etiqueta</label><input class="inp" id="k-hero_tag" value="${esc(c.hero_tag)}"></div>
@@ -597,7 +597,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.id)return;
   const m=/^h-on-(\d)$/.exec(t.id);if(m){$('#h-a-'+m[1]).disabled=$('#h-b-'+m[1]).disabled=!t.checked}
   if(t.id==='l-on'){$('#l-a').disabled=$('#l-b').disabled=!t.checked}
   if(t.id==='cl-when'){$('#cl-rest').hidden=t.value!=='rest';$('#cl-other').hidden=t.value!=='other'}
-  if(t.id==='bk-imp'&&t.files[0]){const rd=new FileReader();rd.onload=()=>{try{DB.importAll(rd.result);toast('Backup restaurado');setTimeout(()=>location.reload(),600)}catch(err){toast('Arquivo de backup inválido')}};rd.readAsText(t.files[0])}});
+  if(t.id==='bk-imp'&&t.files[0]){if(t.files[0].size>25e6){t.value='';return toast('Arquivo grande demais para ser um backup (máx. 25 MB).')}const rd=new FileReader();rd.onload=()=>{try{DB.importAll(rd.result);toast('Backup restaurado');setTimeout(()=>location.reload(),600)}catch(err){toast('Arquivo de backup inválido')}};rd.readAsText(t.files[0])}});
 Object.assign(ACT,{
   'cfg-save':()=>{
     const hrs={},ch=[];[0,1,2,3,4,5,6].forEach(d=>{hrs[d]=$('#h-on-'+d).checked?[$('#h-a-'+d).value,$('#h-b-'+d).value]:null;if(JSON.stringify(hrs[d])!==JSON.stringify(db.hours[d]))ch.push(WDF[d])});
@@ -638,3 +638,5 @@ function render(){renderNav();$$('.view').forEach(v=>v.classList.toggle('on',v.i
 /* outra aba (site ou área do cliente) gravou: atualiza a tela se nenhuma janela estiver aberta */
 window.onDBChange=()=>{if(!$('#modal').classList.contains('open'))render()};
 render();
+/* sair do painel apaga a sessão da equipe neste aparelho */
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('a[href^="entrar.html#equipe"]'))try{localStorage.removeItem('farias_staff')}catch(x){}});

@@ -78,9 +78,9 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
             <h2 class="h1">Bem-vindo!</h2>
             <p class="lead">É sua primeira vez por aqui. Complete seu cadastro para continuar.</p>
             <div class="field"><label class="t" for="nm">Nome e sobrenome</label>
-            <input class="inp" id="nm" placeholder="Ex.: João Silva" autocomplete="name" aria-describedby="e4"></div>
+            <input class="inp" id="nm" maxlength="80" placeholder="Ex.: João Silva" autocomplete="name" aria-describedby="e4"></div>
             <div class="field"><label class="t" for="bai">Bairro onde mora</label>
-            <input class="inp" id="bai" list="bairros" placeholder="Digite para pesquisar" autocomplete="address-level3" aria-describedby="e4"><datalist id="bairros"></datalist></div>
+            <input class="inp" id="bai" maxlength="60" list="bairros" placeholder="Digite para pesquisar" autocomplete="address-level3" aria-describedby="e4"><datalist id="bairros"></datalist></div>
             <div class="field"><label class="t" for="nasc">Data de nascimento (opcional)</label>
             <input class="inp" id="nasc" type="date" autocomplete="bday"></div>
             <div class="field"><label class="t" for="src">Como conheceu a barbearia? (opcional)</label>
@@ -101,8 +101,8 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
         <div class="mode" id="mode-adm">
           <h2 class="h1">Painel da barbearia</h2>
           <p class="lead">Acesso restrito ao barbeiro e à equipe.</p>
-          <div class="field"><label class="t" for="em">E-mail</label><input class="inp" id="em" type="email" autocomplete="username" spellcheck="false" autocapitalize="none" aria-describedby="e3" placeholder="voce@fariasbarbearia.com.br"></div>
-          <div class="field"><label class="t" for="pw">Senha</label><div class="pw"><input class="inp" id="pw" type="password" autocomplete="current-password" placeholder="Digite sua senha"><button type="button" id="eye" aria-label="Mostrar senha" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="field"><label class="t" for="em">E-mail</label><input class="inp" id="em" maxlength="120" type="email" autocomplete="username" spellcheck="false" autocapitalize="none" aria-describedby="e3" placeholder="voce@fariasbarbearia.com.br"></div>
+          <div class="field"><label class="t" for="pw">Senha</label><div class="pw"><input class="inp" id="pw" maxlength="128" type="password" autocomplete="current-password" placeholder="Digite sua senha"><button type="button" id="eye" aria-label="Mostrar senha" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <div class="err-msg" id="e3" role="alert"></div>
           <button class="btn btn-primary btn-block" id="admin" style="padding:13px">Acessar painel</button>
           <div class="row"><button class="link" id="forgot">Esqueci minha senha</button></div>

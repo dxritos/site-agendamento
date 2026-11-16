@@ -182,7 +182,10 @@ window.DB={
   undoOrphans(id){const e=this.data.log.find(x=>x.id===id);if(!e||!e.keys||!e.keys.clients)return 0;const ids=new Set(JSON.parse(e.keys.clients).map(c=>c.id));
     return this.data.appts.filter(a=>a.cid&&!ids.has(a.cid)).length+this.data.subs.filter(s=>!ids.has(s.cid)).length+this.data.tx.filter(t=>t.cid&&!ids.has(t.cid)).length},
   reset(){try{localStorage.removeItem(KEY);localStorage.removeItem(IMGKEY);localStorage.removeItem('farias_me')}catch(e){}},
-  exportAll(){return JSON.stringify({db:this.data,images:imgs},null,1)},
+  /* o backup sai sem segredos: o token do Instagram não vai para o arquivo (nem no histórico de alterações) */
+  exportAll(){const d=JSON.parse(JSON.stringify(this.data));d.content.ig_token='';
+    (d.log||[]).forEach(e=>{if(e.keys&&e.keys.content)try{const c=JSON.parse(e.keys.content);c.ig_token='';e.keys.content=JSON.stringify(c)}catch(x){delete e.keys.content}});
+    return JSON.stringify({db:d,images:imgs},null,1)},
   importAll(txt){const o=JSON.parse(txt);if(!o.db||o.db.v!==1)throw new Error('Arquivo inválido');
     const d=o.db,arr=['services','plans','faq','reviews','gallery','team','holidays','clients','subs','appts','tx','log'],HM=/^\d{2}:\d{2}$/,DT=/^\d{4}-\d{2}-\d{2}$/,IMG=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
     const bad=m=>{throw new Error('Backup inválido: '+m)};
@@ -195,7 +198,9 @@ window.DB={
     d.subs.forEach(s=>{if(!['ok','late','paused','off'].includes(s.status)||![1,7].includes(s.day)||!['Pix automático','Cartão'].includes(s.method))bad('assinaturas')});
     d.tx.forEach(t=>{if(!DT.test(t.date)||typeof t.value!=='number'||!['ok','failed','refunded','waived'].includes(t.status))bad('financeiro')});
     if(!Array.isArray(d.roles.perms))bad('permissões');
-    const im=o.images||{};Object.values(im).forEach(u=>{if(!IMG.test(u))bad('imagens')});localStorage.setItem(KEY,JSON.stringify(o.db));localStorage.setItem(IMGKEY,JSON.stringify(o.images||{}))},
+    const im=o.images||{};Object.values(im).forEach(u=>{if(!IMG.test(u))bad('imagens')});
+    if(!d.content.ig_token&&this.data&&this.data.content.ig_token)d.content.ig_token=this.data.content.ig_token;
+    localStorage.setItem(KEY,JSON.stringify(o.db));localStorage.setItem(IMGKEY,JSON.stringify(o.images||{}))},
   img:{get:id=>imgs[id]||null,set(id,url){imgs[id]=url;try{localStorage.setItem(IMGKEY,JSON.stringify(imgs));return true}catch(e){delete imgs[id];return false}},del(id){delete imgs[id];try{localStorage.setItem(IMGKEY,JSON.stringify(imgs))}catch(e){}}},
 
   /* ===== WhatsApp: links individuais e caixa de saída (o envio real é feito pelo servidor) ===== */

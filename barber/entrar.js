@@ -50,4 +50,4 @@ $('#resend').onclick=()=>{startTimer();toast('Novo código enviado')};
 $('#forgot').onclick=()=>{const em=$('#em').value.trim();if(!/\S+@\S+\.\S+/.test(em)){$("#e3").textContent="Digite seu e-mail acima para receber o link.";bad($("#em"));return}$('#e3').textContent='';toast('Enviamos um link de redefinição para '+em)};
 $('#eye').onclick=()=>{const p=$("#pw"),show=p.type==="password";p.type=show?"text":"password";$("#eye").setAttribute("aria-pressed",show);$("#eye").setAttribute("aria-label",show?"Ocultar senha":"Mostrar senha")};
 $('#admin').onclick=()=>{if(!/\S+@\S+\.\S+/.test($('#em').value)||$('#pw').value.length<4){$("#e3").textContent="Informe e-mail e senha.";bad(/\S+@\S+\.\S+/.test($("#em").value)?$("#pw"):$("#em"));return}
-  $('#admin').textContent='Entrando…';setTimeout(()=>location.href='painel.html',500)};
+  $('#admin').textContent='Entrando…';try{localStorage.setItem('farias_staff',JSON.stringify({exp:Date.now()+12*3600e3}))}catch(e){}setTimeout(()=>location.href='painel.html',500)};

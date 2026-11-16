@@ -58,11 +58,11 @@
       <form class="cform" id="cform">
         <h3 class="bebas">Mande uma mensagem</h3>
         <p>Sua mensagem chega direto na barbearia. Respondemos pelo seu WhatsApp em até 1 dia útil.</p>
-        <label class="t" for="cname">Nome</label><input class="inp" id="cname" autocomplete="name" placeholder="Seu nome">
+        <label class="t" for="cname">Nome</label><input class="inp" id="cname" maxlength="80" autocomplete="name" placeholder="Seu nome">
         <label class="t" for="ctel">WhatsApp (para a resposta)</label><input class="inp" id="ctel" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(94) 9 0000-0000" maxlength="16">
         <label class="t" for="csub">Assunto</label>
         <select class="inp" id="csub"><option>Dúvida sobre planos</option><option>Agendamento</option><option>Produtos</option><option>Outro assunto</option></select>
-        <label class="t" for="cmsg">Mensagem</label><textarea class="inp" id="cmsg" rows="4" placeholder="Escreva aqui…"></textarea>
+        <label class="t" for="cmsg">Mensagem</label><textarea class="inp" id="cmsg" maxlength="1000" rows="4" placeholder="Escreva aqui…"></textarea>
         <div class="cerr" id="cerr"></div>
         <button class="btn btn-primary" type="submit">Enviar mensagem</button>
       </form>
