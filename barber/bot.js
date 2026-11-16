@@ -421,7 +421,9 @@ function fixText(n){n=stripVoc(n);return n.split(/\s+/).map(w=>{const b=w.replac
 const saud=n=>/\bbom dia\b/.test(n)?'Bom dia':/\bboa tarde\b/.test(n)?'Boa tarde':/\bboa noite\b/.test(n)?'Boa noite':(h=>h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')(new Date().getHours());
 /* apresentação da barbearia: cliente cadastrado é chamado pelo nome */
 function introOf(n,c){const C=db().content;return c?`${saud(n)}, ${first(c)}! 👋 Que bom te ver por aqui. Sou o assistente da Farias Barbearia.`:`${saud(n)}! 👋 Seja bem-vindo à *Farias Barbearia*${C.address?' ('+C.address.split('–')[0].trim()+')':''}.\nSou o assistente virtual: agendo seu horário, mostro preços, planos e o que mais precisar, na hora.`}
-const firstContact=key=>!(db().convos||[]).some(x=>x.role==='cliente'&&x.num===key&&Date.now()-x.t<12*36e5);
+/* a apresentação vale por 6 h: número que não recebeu a apresentação nesse período (novo ou voltando depois) recebe de novo */
+const introWithin=(key,ms)=>(db().convos||[]).some(x=>x.role==='cliente'&&x.num===key&&Date.now()-x.t<ms&&/Farias Barbearia/.test(String(x.reply).split('\n\n')[0]));
+const firstContact=key=>!introWithin(key,6*36e5);
 function clientBot(raw,n,from){n=fixText(n);const key=telKey(from),fc=firstContact(key),cl=db().clients.find(x=>x.phone&&telKey(x.phone)===key)||null;let r=clientCore(raw,n,from);
   /* primeira mensagem do dia sem cumprimento ("quanto custa o corte?"): apresenta a barbearia antes de responder */
   if(fc&&!/Farias Barbearia/.test(r.split('\n\n')[0]))r=introOf(n,cl)+'\n\n'+r;return /Responda com o número[^\n]*$|Responda \*sim\* ou \*não\*\.?$|\n\d{1,2}\. [^\n]+$/.test(r)?r:r+'\n\n0. Voltar ao menu'}
@@ -448,7 +450,7 @@ function clientCore(raw,n,from){
   const last=db().outbox.filter(o=>o.to==='client'&&telKey(o.phone)===key&&(o.at||o.t)<=Date.now()).sort((x,y)=>(y.at||y.t)-(x.at||x.t))[0],ctx=last&&Date.now()-(last.at||last.t)<3*864e5?last.kind:null;
   const hi=introOf(n,c);
   /* já conversou nas últimas 12 h: "oi" de novo mostra só as opções, sem repetir as boas-vindas */
-  const greeted=(db().convos||[]).some(x=>x.role==='cliente'&&x.num===key&&Date.now()-x.t<12*36e5);
+  const greeted=!firstContact(key);
   const menu=pre=>{setSt({cmenu:1});INT=INT||'menu';const head=pre||(greeted?'':hi);return `${head?head+'\n\n':''}Como posso ajudar?\n1. Agendar um horário\n2. Meus horários\n3. Remarcar ou cancelar\n4. Preços e planos\n5. Horário e endereço\n6. Falar com o barbeiro\n7. Fotos dos trabalhos\n\nResponda com o número.`};
   const A={
     agendar(){const p=parse(n),per=periodOf(n),bd=bound(n),tm=p.times[0],exact=tm&&!bd?tm:null,go=`\nPara agendar: ${site}agendar.html`;
@@ -642,7 +644,7 @@ function clientCore(raw,n,from){
   if(st&&st.cq&&/^[1-9]$/.test(n)){const k=st.cq[+n-1];if(k&&A[k])return A[k]()}
   if(st&&st.cchoice){const a=up.find(x=>x.id===st.cchoice);if(a){if(/^1$|cancel/.test(n))return A.cancelar();if(/^2$|remarc/.test(n))return A.remarcar();if(/^3$|mant|deixa|fica/.test(n))return `Ok, seu horário continua marcado: ${when(a)}.`}}
   if(st&&st.cmenu&&/^[1-7]$/.test(n))return [()=>CB.start({}),A.meus,()=>up.length?(setSt({cchoice:up[0].id}),`O que deseja fazer com ${when(up[0])}?\n1. Cancelar\n2. Remarcar\n3. Manter como está`):A.meus(),()=>A.precos(),()=>A.funcionamento(),A.humano,A.fotos][+n-1]();
-  if(!n||/^(oi+|ola+|opa+|eae|eai|e ai|iae|salve|fala|fala ai|fala mano|fala parceiro|coe|bom dia|boa tarde|boa noite|menu|inicio|ajuda|me ajuda|socorro|help|comecar|\?)[!.?]*$/.test(n))return menu();
+  if(!n||/^(oi+|ola+|opa+|eae|eai|e ai|iae|salve|fala|fala ai|fala mano|fala parceiro|coe|bom dia|boa tarde|boa noite|menu|inicio|ajuda|me ajuda|socorro|help|comecar|\?)[!.?]*$/.test(n))return menu(greeted&&/^(oi|ola|opa|eae|eai|e ai|iae|salve|fala|coe|bom dia|boa tarde|boa noite)/.test(n)?saud(n)+'! 👋':undefined);
   if(/^(nao entendi|como assim|o que|oque|que|hein|ha|han|hã|nao sei|nao entendo)[?!.]*$/.test(n)){INT='confuso';return menu('Sem problema, vou facilitar. 😉')}
   /* resposta curta a uma mensagem que o robô mandou */
   const ACK=/^(ok|okay|certo|ta bom|ta|tudo bem|blz|beleza|sem problema|de boa|tranquilo|combinado|entendi|show)$/;
@@ -895,6 +897,8 @@ window.Bot={
     if(st&&(st.ask||st.pay||st.wiz)){const a=db().appts.find(x=>x.id===(st.ask||st.pay));if(st.wiz||(a&&OPEN.includes(a.status)))return null}
     const L=dayList(TODAY()).filter(a=>['conf','pend'].includes(a.status)&&(force||(!a.asked&&a.start<=nowHM()))),a=L[0];if(!a)return null;
     const txt=promptFor(a);DB.notifyStaff('evNext',txt);return 'Bot:\n'+txt},
+  /* simulador: esquece a conversa com um número (como se fosse o primeiro contato) */
+  reset(from){const k=telKey(from);if(!k)return;DB.data.convos=(DB.data.convos||[]).filter(x=>x.num!==k);DB.save();delete STATE['c'+k]},
   next:proximo,daily:()=>agenda(TODAY())
 };
 })();

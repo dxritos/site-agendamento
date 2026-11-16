@@ -519,12 +519,15 @@ function vMensagens(){
      <div class="chatw" id="chatw" aria-live="polite">${chat.length?chat.map((m,i)=>`<div class="cb ${m.me?'me':''}">${chatMsg(m,i===chat.length-1)}</div>`).join(''):'<div class="cb">'+waFmt('Bot:\nEnvie *menu* para escolher uma opção, *agendar* para eu te perguntar passo a passo, ou escreva um comando.')+'</div>'}</div>
      <div class="chips-var" style="margin:10px 0">${['menu','agendar','próximo','👍','👎','pix','ajuda'].map(c=>`<button data-bot="${c}">${c}</button>`).join('')}</div>
      <button class="btn btn-ghost btn-sm" data-act="bot-due" style="margin-bottom:12px">Simular: chegou a hora do próximo cliente</button>
-     <div class="fl" style="margin-bottom:10px"><label>Enviar como</label><select class="inp" id="bot-from"><option value="">Farias (número da equipe)</option><option value="@barbeiro" ${botFrom==='@barbeiro'?'selected':''}>Barbeiro da equipe (sem acesso ao financeiro)</option><option value="${esc((db.clients.find(c=>c.phone)||{}).phone||'')}" ${botFrom&&botFrom!=='94900001234'&&botFrom!=='@barbeiro'?'selected':''}>Cliente cadastrado (${esc((db.clients.find(c=>c.phone)||{name:'—'}).name)})</option><option value="94900001234" ${botFrom==='94900001234'?'selected':''}>Número desconhecido</option></select></div>
+     <div class="fl" style="margin-bottom:10px"><label>Enviar como</label><select class="inp" id="bot-from"><option value="">Farias (número da equipe)</option><option value="@barbeiro" ${botFrom==='@barbeiro'?'selected':''}>Barbeiro da equipe (sem acesso ao financeiro)</option><option value="${esc((db.clients.find(c=>c.phone)||{}).phone||'')}" ${botFrom&&botFrom!=='novo'&&botFrom!=='@barbeiro'?'selected':''}>Cliente cadastrado (${esc((db.clients.find(c=>c.phone)||{name:'—'}).name)})</option><option value="novo" ${botFrom==='novo'?'selected':''}>Número novo (primeiro contato)</option></select></div>
+     <button class="btn btn-ghost btn-sm" data-act="bot-reset" style="margin-bottom:12px">Reiniciar conversa</button>
      <div class="fix"><input class="inp" id="bot-in" placeholder="Ex.: agendar corte João às 15" aria-label="Mensagem para o robô" autocomplete="off" ${b.staff?'':'disabled'}><button class="btn btn-primary btn-sm" data-act="bot-send" ${b.staff?'':'disabled'}>Enviar</button></div>
      <p class="hint" style="margin-top:10px">Os comandos mexem na agenda de verdade deste protótipo. O envio pelo WhatsApp real depende de ligar a conta do WhatsApp Business no servidor.</p></div>
   </div>`;
 }
-function botSend(t){t=(t||'').trim();if(!t)return;chat.push({me:1,t},{t:Bot.run(t,botFrom)});if(chat.length>40)chat.splice(0,chat.length-40);render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight;const i=$('#bot-in');if(i)i.focus()}
+/* "Número novo" usa um número que nunca falou com o robô; "Reiniciar conversa" troca por outro */
+let novoNum='949'+String(Math.floor(Math.random()*1e8)).padStart(8,'0');const simFrom=()=>botFrom==='novo'?novoNum:botFrom;
+function botSend(t){t=(t||'').trim();if(!t)return;chat.push({me:1,t},{t:Bot.run(t,simFrom())});if(chat.length>40)chat.splice(0,chat.length-40);render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight;const i=$('#bot-in');if(i)i.focus()}
 document.addEventListener('click',e=>{const w=e.target.closest('[data-wa]');if(w){waTab=w.dataset.wa;render();return}const q=e.target.closest('[data-bot]');if(q)botSend(q.dataset.bot)});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='bot-in'){e.preventDefault();botSend(e.target.value)}});
 document.addEventListener('change',e=>{if(e.target.id==='bot-from'){botFrom=e.target.value;return}
@@ -540,6 +543,7 @@ ACT['bot-send']=()=>botSend($('#bot-in').value);
 function botTick(force){const m=Bot.tick(force);if(!m){if(force)toast('Não há cliente aguardando hoje para simular');return}chat.push({t:m});
   if(VIEW==='mensagens'&&waTab==='robo'){if(!$('#modal').classList.contains('open')){render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight}}else toast('Robô: chegou a hora do próximo cliente. Veja em WhatsApp.')}
 ACT['bot-due']=()=>{waTab='robo';botTick(true)};
+ACT['bot-reset']=()=>{Bot.reset(simFrom());if(botFrom==='novo')novoNum='949'+String(Math.floor(Math.random()*1e8)).padStart(8,'0');chat.length=0;render();toast('Conversa reiniciada: a próxima mensagem é tratada como primeiro contato')};
 setInterval(()=>botTick(false),30000);
 ACT['out-clear']=()=>confirmBox('Limpar mensagens?','Apaga a lista de mensagens geradas. Os agendamentos não mudam.','Limpar',()=>change('outbox',L=>L.splice(0,L.length),'Lista de mensagens do WhatsApp limpa','WhatsApp'));
 ACT['tip-off']=()=>{tipOff=true;try{localStorage.setItem('farias_tip','0')}catch(e){}render()};
