@@ -221,7 +221,7 @@ window.DB={
   _schedule(a,c){const d=this.data,m=d.messages.r2;d.outbox=d.outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));if(!m||!m.on)return;
     const at=new Date(a.date+'T'+a.start+':00').getTime()-2*36e5;this._out({to:'client',name:c.name,phone:c.phone,kind:'r2',aid:a.id,at:Math.max(at,Date.now()),txt:this._fill('r2',a,c)})},
   /* mensagem ao cliente a partir do modelo editável no painel: confirm, move, cancel, r24, r2 */
-  notify(kind,a){const d=this.data,m=d.messages[kind],c=d.clients.find(x=>x.id===a.cid);if(!d.bot.client||!m||!m.on||!c)return null;
+  notify(kind,a){const d=this.data,m=d.messages[kind],c=d.clients.find(x=>x.id===a.cid);if(!d.bot.client||!m||!m.on||!c||(c.optout&&kind!=='code'))return null;
     const txt=this._fill(kind,a,c);this._out({to:'client',name:c.name,phone:c.phone,kind,txt,aid:a.id});
     if(kind==='confirm'||kind==='move')this._schedule(a,c);
     if(kind==='cancel'){d.outbox=d.outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));this.save()}
@@ -229,7 +229,7 @@ window.DB={
   welcome(){const m=this.data.messages.welcome;return 'Bot:\n'+(m?m.txt:'Olá! Acesse: {site}').replace(/\{site\}/g,this.site())},
   /* aviso para o WhatsApp do barbeiro/equipe (desligável quando há recepção) */
   /* mensagem avulsa ao cliente (atraso, lembrete, cobrança) */
-  sendClient(c,kind,txt){if(!this.data.bot.client||!c||!c.phone)return false;this._out({to:'client',name:c.name,phone:c.phone,kind,txt});return true},
+  sendClient(c,kind,txt){if(!this.data.bot.client||!c||!c.phone||(c.optout&&kind!=='resposta'))return false;this._out({to:'client',name:c.name,phone:c.phone,kind,txt});return true},
   notifyStaff(ev,txt){const b=this.data.bot;if(!b.staff||b[ev]===false)return null;this._out({to:'staff',name:'Equipe',kind:ev,txt});return txt},
 
   /* ===== regras de negócio compartilhadas (site, área do cliente e painel usam as mesmas) ===== */
