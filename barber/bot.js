@@ -478,13 +478,13 @@ const telKey=x=>String(x||'').replace(/\D/g,'').slice(-11);
 const ABBR={vc:'voce',vcs:'voces',pq:'porque',pqp:'',qnt:'quanto',qnto:'quanto',qto:'quanto',qt:'quanto',qndo:'quando',qd:'quando',obg:'obrigado',obgd:'obrigado',obgda:'obrigada',vlw:'valeu',hj:'hoje',amnh:'amanha',tbm:'tambem',tb:'tambem',td:'tudo',msg:'mensagem',oq:'o que',q:'que',ñ:'nao',nn:'nao',naum:'nao',eh:'e',ta:'esta',to:'estou',pfv:'por favor',pf:'por favor',pls:'por favor',agd:'agendar',cmg:'comigo',ctg:'contigo',blz:'beleza',flw:'falou',sab:'sabado',dom:'domingo',seg:'segunda',qua:'quarta',qui:'quinta',sex:'sexta',end:'endereco',hr:'horario',hrs:'horarios',min:'minutos'};
 const VOCAB='agendar agendamento marcar horario horarios cancelar cancela cancelamento desmarcar desmarca apagar excluir remarcar endereco localizacao preco precos valor valores plano planos assinatura assinar pagamento pagar obrigado obrigada elogio elogiar reclamacao reclamar sugestao sugerir barbeiro funcionamento funciona aberto fechado fotos instagram galeria infantil crianca codigo dados cadastro atrasado atrasar atraso confirmar confirmo mensalidade cartao dinheiro parcelar emprego curriculo parceria demora quanto tempo sabado domingo segunda terca quarta quinta sexta amanha hoje corte cortar barba sobrancelha pigmentacao hidratacao selagem acabamento lavagem cavanhaque disponivel vaga vagas atendimento atendente'.split(' ');
 /* palavras comuns que parecem com o vocabulário mas não devem ser trocadas ("quando" não vira "quanto") */
-const KEEP=new Set('aparar aparo agenda agendas quando quanto quantos quanta quantas queria quero gostaria preciso precisa precisava consigo consegue depois antes agora ainda sempre semana cabelo cabeleireiro barbearia cliente numero minutos mensagem pessoa pessoas primeira primeiro marcado marcou marquei cancelado cancelei cancelou remarcado remarquei confirmado confirmei obrigada amanha horrivel ontem tarde noite manha domingo sabado tambem nenhum nenhuma alguem alguma algum melhor pior passado proximo proxima voces porque comigo contigo mesmo verdade pagando pagou paguei atendeu atende atender atendem chegando chegou cheguei funciona funcionam aberto abrem fechado fecham demorou demora corte cortes cortar cortou barba barbas'.split(' '));
+const KEEP=new Set('primeiro primeira segundo terceiro terceira quarto quinto quinta sexto sexta setimo setima oitavo oitava nono nona decimo decima ultimo ultima aparar aparo agenda agendas quando quanto quantos quanta quantas queria quero gostaria preciso precisa precisava consigo consegue depois antes agora ainda sempre semana cabelo cabeleireiro barbearia cliente numero minutos mensagem pessoa pessoas primeira primeiro marcado marcou marquei cancelado cancelei cancelou remarcado remarquei confirmado confirmei obrigada amanha horrivel ontem tarde noite manha domingo sabado tambem nenhum nenhuma alguem alguma algum melhor pior passado proximo proxima voces porque comigo contigo mesmo verdade pagando pagou paguei atendeu atende atender atendem chegando chegou cheguei funciona funcionam aberto abrem fechado fecham demorou demora corte cortes cortar cortou barba barbas'.split(' '));
 /* "mano", "chefe", "égua"... no começo, no fim ou depois do cumprimento não mudam o sentido */
-const VOC='mano|maninho|mana|chefe|chefia|patrao|meu patrao|parceiro|parca|amigo|amiga|moco|moca|irmao|querido|querida|meu querido|minha querida|brother|bro|mestre|man|campeao|guerreiro|rapaz|meu rei|rei|camarada|tio|tia|doutor|egua|vei|velho|cara|meu caro|meu nobre|nobre|fera|truta|mermao|meu fi|meu filho';
+const VOC='mano|maninho|mana|chefe|chefia|patrao|meu patrao|parceiro|parca|amigo|amiga|moco|moca|irmao|querido|querida|meu querido|minha querida|brother|bro|mestre|man|campeao|guerreiro|rapaz|meu rei|rei|camarada|tio|tia|doutor|egua|vei|velho|cara|meu caro|meu nobre|nobre|fera|truta|mermao';
 const VRX=new RegExp('^ (?:(?:'+VOC+') )+'),VRE=new RegExp(' (?:(?:'+VOC+') )+$'),VRG=new RegExp('^ (oi|ola|opa|fala|salve|eae|eai|e ai|coe|bom dia|boa tarde|boa noite)(?: (?:meu|minha))? (?:(?:'+VOC+') )+');
 const stripVoc=n=>{let x=' '+n.replace(/[,!]/g,' ').replace(/'/g,' ').replace(/\s+/g,' ').trim()+' ';x=x.replace(VRG,' $1 ');
   for(let i=0;i<2;i++)x=x.replace(VRX,' ').replace(VRE,' ');x=x.replace(/\b(\w+)( \1\b)+/g,'$1');return x.trim()||n};
-function fixText(n){n=stripVoc(n);return n.split(/\s+/).map(w=>{const b=w.replace(/[^a-z0-9ñ]/g,''),p=w.slice(b.length&&w.indexOf(b)>=0?w.indexOf(b)+b.length:w.length);if(!b)return w;if(ABBR[b]!==undefined)return ABBR[b]+p;
+function fixText(n){n=n.replace(/([a-jl-z])\1{2,}/g,'$1').replace(/\b(\w*?)([aeiou])\2+\b/g,'$1$2').replace(/\boi+e+\b|\boii+\b/g,'oi').replace(/\bae\b/g,'ai');n=stripVoc(n);return n.split(/\s+/).map(w=>{const b=w.replace(/[^a-z0-9ñ]/g,''),p=w.slice(b.length&&w.indexOf(b)>=0?w.indexOf(b)+b.length:w.length);if(!b)return w;if(ABBR[b]!==undefined)return ABBR[b]+p;
   if(b.length<6||/\d/.test(b)||VOCAB.includes(b)||KEEP.has(b))return w;const lim=1;let best=null,bd=9;VOCAB.forEach(v=>{if(v.length<6||Math.abs(v.length-b.length)>lim)return;const d=lev(b,v);if(d<bd){bd=d;best=v}});return bd<=lim?best+p:w}).join(' ').replace(/\s+/g,' ').trim()}
 /* "bom dia/boa tarde/boa noite" responde no mesmo tom; sem saudação, segue a hora */
 const saud=n=>/\bbom dia\b/.test(n)?'Bom dia':/\bboa tarde\b/.test(n)?'Boa tarde':/\bboa noite\b/.test(n)?'Boa noite':(h=>h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')(new Date().getHours());
@@ -498,10 +498,13 @@ function clientBot(raw,n,from){n=fixText(n);const key=telKey(from),fc=firstConta
   if(fc&&!/Farias Barbearia/.test(r.split('\n\n')[0]))r=introOf(n,cl)+'\n\n'+r;
   LAST[key]=Date.now();delete CLOSED[key];
   if(r.endsWith(ENDMSG)){CLOSED[key]=true;return r}
+  if(r.endsWith(RETRY))return r;
   if(/Responda com o número[^\n]*$|Responda \*sim\* ou \*não\*\.?$|\n\d{1,2}\. [^\n]+$/.test(r))return r;
   /* resposta final: pergunta se ajuda em algo mais; "não"/"só isso" encerra, outra mensagem continua */
   if(!STATE['c'+key])STATE['c'+key]={cmore:1};return r+'\n\nAjudo em algo mais?'}
 /* atendimento: hora da última mensagem por número, encerrados e texto de encerramento */
+const RETRY='Não entendi bem. 🤔 Pode escrever de outro jeito?\nEx.: *agendar*, *preços*, *meus horários*, *endereço* ou *falar com o barbeiro*.';
+let WIZKEEP=null;
 const LAST={},CLOSED={},ENDMSG='Atendimento finalizado. Quando precisar, é só chamar. 🤙';
 /* dúvida que bate com uma pergunta do FAQ do site (editável no painel) recebe a resposta de lá */
 const STOPW=new Set('como para pelo pela voce voces posso pode podem tenho minha meu qual quais quando onde porque sobre fazer esta isso essa esse esses umas uns dos das com sem mais muito tambem gostaria queria saber'.split(' '));
@@ -509,7 +512,12 @@ const toks=x=>norm(x).replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.lengt
 function faqHit(n){const q=[...new Set(toks(n))];if(!q.length)return null;let best=null,bs=0;
   db().faq.forEach(f=>{const T=new Set(toks(f.q+' '+f.a)),sc=q.filter(w=>T.has(w)).length;if(sc>bs){bs=sc;best=f}});
   return best&&(bs>=2||(bs===1&&q.length<=2))?best.a.replace(/\{prazo_cancelamento\}/g,DB.cancelText()):null}
+/* "o primeiro", "a segunda opção", "o último" viram o número da lista */
+const ORD={primeiro:1,primeira:1,segundo:2,segunda:2,terceiro:3,terceira:3,quarto:4,quarta:4,quinto:5,quinta:5,sexto:6,sexta:6,setimo:7,setima:7,oitavo:8,oitava:8,nono:9,nona:9,decimo:10,decima:10};
+function ordinal(n,len){const t=n.replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();let m=/^(?:pode ser |quero |vou de |fico com |prefiro )?(?:o |a )?(primeir[oa]|segund[oa]|terceir[oa]|quart[oa]|quint[oa]|sext[oa]|setim[oa]|oitav[oa]|non[oa]|decim[oa]|ultim[oa])(?: opcao| horario| dia| da lista| mesmo)?$/.exec(t);
+  if(m){if(/^ultim/.test(m[1]))return len||null;return ORD[m[1]]||null}m=/^(?:pode ser |quero |vou de |fico com |prefiro |escolho )?(?:o |a |opcao |numero )?(\d{1,2})(?: mesmo| por favor| pfv)?$/.exec(t);return m?+m[1]:null}
 function clientCore(raw,n,from){
+  WIZKEEP=null;
   const nn0=()=>n.replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
   const SYN=[[/raspar|zerar|maquina zero|cabelo grande|cabeludo|aparar|pontas|baixinho|moderno|mullet|jaca|militar|social|do jogador|da moda|cabelo liso|liso|cabelo afro|afro/,'corte'],[/combo/,'combo'],[/degrade|fade|disfarcad|navalhad|social|tesoura|maquina|corte americano|moicano|undercut|cacheado|crespo|black power|taper/,'corte'],[/pezinho|contorno/,'acabamento'],[/bigode/,'barba'],[/pigment/,'pigmentacao'],[/hidrat/,'hidratacao'],[/lavar/,'lavagem']];
   /* plano citado pelo nome ("plano de 2 cortes", "o ilimitado") */
@@ -637,6 +645,7 @@ function clientCore(raw,n,from){
     refazer(){tellC(`${who} quer ajuste/refazer o corte: "${raw.slice(0,160)}"`);return 'Poxa, sinto muito. Avisei o barbeiro para combinar o ajuste com você.'},
     comprovante(){return A.outro('comprovante/recibo')},
     avail(){return CB.dia({avail:1})},
+    imprevisto(){const a=up[0];if(!a)return 'Tudo bem, sem problema. Quando quiser marcar, é só chamar. 😉';setSt({cchoice:a.id});return `Sem problema, acontece. O que prefere fazer com ${when(a)}?\n1. Cancelar\n2. Remarcar\n3. Manter como está\n0. Menu`},
     /* "queria a sobrancelha também": soma ao horário já marcado se couber; se não, oferece horários em que cabe */
     addServico(){const a=up[0],pk=svcPick(n);if(!a||!pk)return A.trocaServico();const nm=CB.juntar(a.svc,pk);if(!nm)return A.trocaServico();if(nm===a.svc)return `${pk} já está no seu horário: ${when(a)}.`;const troca=nm===pk&&!String(a.svc).split(' + ').includes(pk);
       const sv=svObj(nm),extra=sv.p-(svObj(a.svc)||{p:0}).p,np=a.plan?(a.price||0)+Math.max(0,extra):sv.p;
@@ -728,12 +737,14 @@ function clientCore(raw,n,from){
       /* cada dia já mostra os primeiros horários livres */
       const prev=x=>{const f=DB.freeSlots(x,sv.t,d.move);return f.slice(0,3).map(hh).join(', ')+(f.length>3?` (+${f.length-3})`:'')};
       return CB.ask('diaR',{...d,days,next:more?i:null},(d.avail?'Horários disponíveis:':'Qual dia?')+'\n'+days.map((x,k)=>`${k+1}. ${cap(dayTxt(x))} · ${prev(x)}`).join('\n')+(more?'\n7. Ver mais dias ›':'')+`\n\n${d.avail?'Quer agendar? Responda com o número do dia.':'Responda com o número (ou escreva, como "sexta à tarde").'}`)},
-    diaR(d){if(/^(7|mais|mais dias|ver mais|ver mais dias|proximos|proxima semana)$/.test(n)&&d.next!=null)return CB.dia({...d,off:d.next,days:null});const p0=parse(n),sv0=svcPick(n);if(sv0)d={...d,sv:sv0};let ds=/^\d$/.test(n)?d.days[+n-1]:p0.date;if(!ds)return /^\d+$/.test(n)?CB.ask('diaR',d,'Responda com um dos números da lista.'):null;
+    diaR(d){if(/(nenhum|nao serve|nao da|esses nao|outros dias|mais dias|depois)/.test(n)&&!parse(n).date){if(d.next!=null)return CB.dia({...d,off:d.next,days:null});return 'Esses são os próximos dias com vaga. Se preferir, fale com o barbeiro: envie *barbeiro*.'}
+      if(/^\d{1,2}(\s*(,|e|\+)\s*\d{1,2})+$/.test(n)){const pk=svcPick(n);if(pk&&svObj(pk))return `Fica ${pk}. 👍\n\n`+CB.dia({...d,sv:pk,days:null,off:0})}
+      if(/^(7|mais|mais dias|ver mais|ver mais dias|proximos|proxima semana)$/.test(n)&&d.next!=null)return CB.dia({...d,off:d.next,days:null});const p0=parse(n),sv0=svcPick(n);if(sv0)d={...d,sv:sv0};let ds=/^\d$/.test(n)?d.days[+n-1]:p0.date;if(!ds)return /^\d+$/.test(n)?CB.ask('diaR',d,'Responda com um dos números da lista.'):null;
       if(!opn(ds))return CB.ask('diaR',d,`Não abrimos ${dayTxt(ds)}. Escolha outro dia da lista.`);const per=periodOf(n),tm=p0.times[0];return tm?CB.hR({...d,ds},tm):CB.hora({...d,ds,per})},
     hora(d){const sv=svObj(d.sv)||{t:30};let f=DB.freeSlots(d.ds,sv.t,d.move);if(d.per)f=f.filter(x=>DB.toMin(x)>=d.per[0]&&DB.toMin(x)<d.per[1]);if(d.slots)f=d.slots.filter(x=>f.includes(x));
       if(!f.length)return d.days?CB.ask('diaR',d,`Sem vagas ${dayTxt(d.ds)}${d.per?' '+d.per[2]:''}. Escolha outro dia:\n`+d.days.map((x,i)=>`${i+1}. ${cap(dayTxt(x))}`).join('\n')+'\n\nResponda com o número.'):CB.dia(d);
       const show=f.slice(0,9);return CB.ask('horaR',{...d,slots:show},`Horários ${dayTxt(d.ds)}${d.lbl||(d.per?' '+d.per[2]:'')}:\n`+show.map((x,i)=>`${i+1}. ${hh(x)}`).join('\n')+'\n\nResponda com o número.')},
-    horaR(d){const p0=parse(n),sv0=svcPick(n);if(p0.date)return CB.diaR({...d,sv:sv0||d.sv,days:d.days||[]});if(sv0&&sv0!==d.sv)d={...d,sv:sv0};const tm=/^\d$/.test(n)?d.slots[+n-1]:p0.times[0];if(!tm){const pd=parse(n).date,per=periodOf(n);if(pd||per)return CB.diaR({...d,days:d.days||[]});return /^\d+$/.test(n)?CB.ask('horaR',d,'Responda com um dos números da lista.'):null}return CB.hR(d,tm)},
+    horaR(d){if(/(nenhum|nao serve|nao da|esse nao|outro horario|outros horarios|outro dia|nao posso|nao consigo)/.test(n))return 'Sem problema. Escolha outro dia: 😉\n\n'+CB.dia({...d,slots:null,days:null,per:null,off:0});if(/^(pode ser|tanto faz|qualquer|qualquer um|o que tiver|o mais cedo|o primeiro que tiver)$/.test(n))n='1';if(/^\d{1,2}(\s*(,|e|\+)\s*\d{1,2})+$/.test(n)){const pk=svcPick(n);if(pk&&svObj(pk))return `Fica ${pk}. 👍\n\n`+CB.hora({...d,sv:pk,slots:null})}const p0=parse(n),sv0=svcPick(n);if(p0.date)return CB.diaR({...d,sv:sv0||d.sv,days:d.days||[]});if(sv0&&sv0!==d.sv)d={...d,sv:sv0};const tm=/^\d$/.test(n)?d.slots[+n-1]:p0.times[0];if(!tm){const pd=parse(n).date,per=periodOf(n);if(pd||per)return CB.diaR({...d,days:d.days||[]});return /^\d+$/.test(n)?CB.ask('horaR',d,'Responda com um dos números da lista.'):null}return CB.hR(d,tm)},
     hR(d,tm){const sv=svObj(d.sv);if(!sv){if(!DB.freeSlots(d.ds,30,d.move).includes(tm))return `${hh(tm)} não está livre ${dayTxt(d.ds)}.\n\n`+CB.hora({...d,slots:null});return `${hh(tm)} ${dayTxt(d.ds)}. 👍\n\n`+CB.svc({...d,tm})}const f=DB.freeSlots(d.ds,sv.t,d.move);if(!f.includes(tm))return `${hh(tm)} não está livre ${dayTxt(d.ds)}.\n\n`+CB.hora({...d,slots:null});return CB.conf({...d,tm})},
     conf(d){const sv=svObj(d.sv);if(!DB.freeSlots(d.ds,sv.t,d.move).includes(d.tm))return `${sv.n} leva ${sv.t} min e não cabe às ${hh(d.tm)} ${dayTxt(d.ds)}.\n\n`+CB.hora({...d,slots:null});if(!c&&!d.name&&!d.move)return CB.ask('nome',d,'Para finalizar, me diga seu nome e sobrenome.');const old=d.move&&db().appts.find(x=>x.id===d.move),plan=old?old.plan:!!(c&&DB.activeSub(c.id)&&/^corte( \+ barba)?$/i.test(sv.n)&&!DB.planCheck(c.id,d.ds,sv.n));
       return CB.ask('confR',{...d,plan},`${d.move?'Remarcar para':'Confirma?'}\n${sv.n} · ${dayTxt(d.ds)} às ${hh(d.tm)} · ${plan?'pelo plano':brl(sv.p)}\n1. Sim, ${d.move?'remarcar':'agendar'}\n2. Não${d.move?'':'\n3. Adicionar outro serviço'}`)},
@@ -756,7 +767,8 @@ function clientCore(raw,n,from){
   if(/^(0|menu|inicio|menu principal)$/.test(n)||(/^(voltar|00)$/.test(n)&&!(st&&st.cbook)))return menu();
   if(st&&st.cbook){if(/^(sair|parar|cancela|cancelar|desisto|deixa)$/.test(n))return 'Ok, parei o agendamento. Quando quiser, é só chamar. 😉';
     if(/^(00|voltar|volta|anterior|etapa anterior)$/.test(n)){const b=st.cbook.back;if(!b)return menu();setSt({cbook:b});return b.q+CB.nav(b.back)}
-    CBPREV=st.cbook;const r=CB[st.cbook.step](st.cbook.d);if(r)return r;CBPREV=null}
+    {const L0=st.cbook.step==='diaR'?(st.cbook.d.days||[]).length:st.cbook.step==='horaR'?(st.cbook.d.slots||[]).length:st.cbook.step==='servico'||st.cbook.step==='addR'?svcList().length:0,o0=L0&&!/^\d{1,2}$/.test(n)&&!(st.cbook.step==='diaR'&&/(segunda|terca|quarta|quinta|sexta)( feira)?$/.test(n)&&!/opcao/.test(n))?ordinal(n,L0):null;if(o0&&!(st.cbook.step==='horaR'&&parse(n).times.length))n=String(o0)}
+    CBPREV=st.cbook;const r=CB[st.cbook.step](st.cbook.d);if(r)return r;CBPREV=null;WIZKEEP=st.cbook}
   if(!raw){INT='midia';return menu('Ainda não consigo ouvir áudio nem ver imagem. Escreva sua dúvida ou escolha uma opção.')}
   if(st&&st.ccancel){const a=db().appts.find(x=>x.id===st.ccancel);
     if(a&&OPEN.includes(a.status)&&(/^(sim|s|pode|isso|confirmo|confirma|ok|quero)$/.test(n)||THUMB_UP.test(raw))){mut(['appts'],d=>{d.appts.find(x=>x.id===a.id).status='cancel'},`${c.name}: horário de ${short(a.date)} ${a.start} cancelado pelo WhatsApp do cliente`);DB.data.outbox=db().outbox.filter(o=>!(o.aid===a.id&&o.kind==='r2'&&o.at>Date.now()));DB.save();
@@ -767,7 +779,7 @@ function clientCore(raw,n,from){
     if(/^(mais ou menos|nao muito|nao to bem|nao estou bem|cansado|correria|ruim|indo|vivendo)/.test(q)){INT='papo';return menu()}}
   if(st&&st.cq&&/^[1-9]$/.test(n)){const k=st.cq[+n-1];if(k&&A[k])return A[k]()}
   if(st&&st.cmore){INT='encerrar';
-    if(/^(nao|n|nao obrigado|nao obg|so isso|era so isso|e so isso|so|nada|nada mais|tudo certo|tudo ok|ta tudo certo|esta tudo certo|nao precisa|ta bom|esta bom|beleza|blz|ok|okay|certo|valeu|vlw|obrigado|obrigada|obg|brigado|tmj|show|top|perfeito|fechou|tchau|falou|ate mais|ate logo)( obrigado| valeu| tchau)?$/.test(nn0())||THUMB_UP.test(raw)&&!up.some(a=>a.status==='pend'))
+    if(/^(nao|n|nao obrigado|nao obg|so isso|era so isso|e so isso|so|somente|somente isso|so isso mesmo|apenas isso|apenas|isso|isso mesmo|so mesmo|por enquanto nao|por enquanto e so|e isso|era isso|ja era|resolvido|ta resolvido|nada|nada mais|tudo certo|tudo ok|ta tudo certo|esta tudo certo|nao precisa|ta bom|esta bom|beleza|blz|ok|okay|certo|valeu|vlw|obrigado|obrigada|obg|brigado|tmj|show|top|perfeito|fechou|tchau|falou|ate mais|ate logo)( obrigado| valeu| tchau)?$/.test(nn0())||THUMB_UP.test(raw)&&!up.some(a=>a.status==='pend'))
       return (/obrigad|valeu|vlw|obg|brigad/.test(n)?'Por nada! 😉 ':'')+ENDMSG;
     if(/^(sim|s|quero|tem|tenho|preciso|mais uma coisa|outra coisa|uma duvida)$/.test(nn0()))return menu('Claro! 😉');
     INT=''}
@@ -779,6 +791,7 @@ function clientCore(raw,n,from){
   if(st&&st.cchoice){const a=up.find(x=>x.id===st.cchoice);if(a){if(/^1$|cancel/.test(n))return A.cancelar();if(/^2$|remarc/.test(n))return A.remarcar();if(/^3$|mant|deixa|fica/.test(n))return `Ok, seu horário continua marcado: ${when(a)}.`}}
   if(st&&st.cmenu&&/^[1-7]$/.test(n))return [()=>CB.start({}),A.meus,()=>up.length?(setSt({cchoice:up[0].id}),`O que deseja fazer com ${when(up[0])}?\n1. Cancelar\n2. Remarcar\n3. Manter como está\n0. Menu`):A.meus(),()=>A.precos(),()=>A.funcionamento(),A.humano,A.fotos][+n-1]();
   if(!n||/^(oi+|ola+|opa+|eae|eai|e ai|iae|salve|fala|fala ai|fala mano|fala parceiro|coe|bom dia|boa tarde|boa noite|menu|inicio|ajuda|me ajuda|socorro|help|comecar|\?)[!.?]*$/.test(n))return menu(greeted&&/^(oi|ola|opa|eae|eai|e ai|iae|salve|fala|coe|bom dia|boa tarde|boa noite)/.test(n)?saud(n)+'! 👋':undefined);
+  {const gg=nn0().replace(/\b(oi|ola|opa|eae|eai|e ai|iae|salve|fala|coe|bom dia|boa tarde|boa noite|boa)\b/g,' ').trim();if(!gg&&nn0())return menu(greeted?saud(n)+'! 👋':undefined)}
   if(/^(nao entendi|como assim|o que|oque|que|hein|ha|han|hã|nao sei|nao entendo)[?!.]*$/.test(n)){INT='confuso';return menu('Sem problema, vou facilitar. 😉')}
   /* resposta curta a uma mensagem que o robô mandou */
   const ACK=/^(ok|okay|certo|ta bom|ta|tudo bem|blz|beleza|sem problema|de boa|tranquilo|combinado|entendi|show)$/;
@@ -840,6 +853,13 @@ function clientCore(raw,n,from){
   if(/^(sair|parar|chega)$/.test(nn.trim()))return 'Ok! Quando precisar, é só chamar.';
   if(has(/ (nao tenho preferencia|qualquer horario|tanto faz|o mais cedo|primeiro horario|proximo horario livre|horario mais proximo|qualquer um) /))return A.agendar();
   /* ---- mais assuntos ---- */
+  if(has(/ (imprevisto|surgiu um|fiquei doente|to doente|estou doente|vou ter que trabalhar|tive um problema|aconteceu um problema|nao vai dar|nao vai rolar|furou aqui) /))return A.imprevisto();
+  if(has(/ (to a \d+ ?min\w*|estou a \d+ ?min\w*|estacionando|subindo|chegando ai|quase ai|to perto|estou perto|na esquina|virando a esquina|to na rua) /))return A.caminho();
+  if(has(/ (troco|dinheiro ta bom|dinheiro esta bom|aceita dinheiro|pode ser em dinheiro) /))return A.pagamento();
+  if(has(/ (ficou curto|ficou curta|curto demais|arrumar|ajustar|acertar|retocar|consertar) /)&&!has(/ (horario|agenda|dia) /))return A.refazer();
+  if(has(/ (ate a proxima|ate mes que vem|ate semana que vem|ate breve|ate o proximo|ate a volta) /))return A.despedida();
+  if(has(/ (nenhum desses|nao serve|nao da pra mim|esse nao|nao gostei desse horario|outros horarios) /))return A.avail();
+  if(/^(bora|sim pode|claro|claro que sim|quero esse|quero essa|pode marcar|pode confirmar|pode ser esse|com certeza|isso|isso mesmo|exato|positivo|perfeito)$/.test(nn0())&&!up.some(a=>a.status==='pend'))return A.ack();
   if(up.length&&svcPick(n)&&(has(/ (tambem|junto|juntos|adicionar|adiciona|acrescentar|acrescenta|incluir|inclui|colocar|coloca|mais um|mais uma|aproveitar|aproveita) /)||/^(e |mais )/.test(n))&&!has(/ (quanto|valor|preco|custa) /))return A.addServico();
   if(/\bentre \d{1,2}(h|:\d\d)? e \d{1,2}/.test(nn0()))return A.agendar();
   if(/^(o de sempre|o mesmo de sempre|igual da ultima vez|igual a ultima vez|mesmo corte da ultima vez|mesmo corte de sempre|o mesmo corte|mesmo horario de sempre|o mesmo horario de sempre|quero o mesmo horario de sempre|quero o de sempre|o mesmo da ultima vez)$/.test(nn0())||has(/ (de sempre|da ultima vez|igual da ultima) /))return A.deSempre();
@@ -997,7 +1017,7 @@ function clientCore(raw,n,from){
   if(has(/ (estacionamento|estacionar|wifi|wi fi|acessibilidade|cadeirante) /))return A.outro('a estrutura da barbearia');
   if(has(/ (pra outra pessoa|para outra pessoa|meu irmao|meu pai|meu amigo|dois cortes|duas pessoas|2 pessoas) /))return 'Cada pessoa agenda com o próprio WhatsApp pelo site, para receber a confirmação e o link de presença.\nSe for criança ou alguém sem WhatsApp, envie *barbeiro* que ele marca para você.';
   if(has(/ (robo|bot|atendimento automatico|resposta automatica|e uma pessoa|e gente|quem e voce|quem ta falando|quem esta falando|voce e humano|e humano|e de verdade|como voce funciona|o que voce faz|o que voce sabe) /))return A.robo();
-  if(/^(oi+|ola+|opa+|e ai|eae|bom dia|boa tarde|boa noite)?\s*(tudo bem|tudo bom|tudo certo|tudo joia|tudo tranquilo|tudo em paz|como vai|como voce esta|beleza|suave|de boa|firmeza|tranquilo|na paz)\s*\?*$/.test(n.replace(/[,!.]/g,''))&&/\?|oi|ola|opa|dia|tarde|noite|joia|tranquilo|suave|boa|firmeza/.test(raw.toLowerCase()))return A.papo();
+  if(/^(oi+|ola+|opa+|e ai|eae|bom dia|boa tarde|boa noite)?\s*(tudo bem|tudo bom|tudo certo|tudo certinho|tudo beleza|tudo tranquilo e voce|tudo joia|tudo tranquilo|tudo em paz|como vai|como voce esta|beleza|suave|de boa|firmeza|tranquilo|na paz)\s*\?*$/.test(n.replace(/[,!.]/g,''))&&/\?|oi|ola|opa|dia|tarde|noite|joia|tranquilo|suave|boa|firmeza/.test(raw.toLowerCase()))return A.papo();
   if(/^(k{3,}|(ha){2,}h?|(rs)+|kkk+\w*|hahah\w*|hehe\w*)$/.test(nn.trim()))return A.risada();
   /* só emoji (❤️🔥👏): agradece; 👍 e 👎 seguem para confirmação e respostas */
   if(!nn.trim()&&!THUMB_UP.test(raw)&&!THUMB_DOWN.test(raw))return A.obrigado();
@@ -1022,9 +1042,15 @@ function clientCore(raw,n,from){
   if(has(/ (obrigad\w*|valeu|vlw|brigad\w*|show|blz|beleza|top|tmj) /)||/^(ok|certo|ta bom|tudo bem)$/.test(n)||THUMB_UP.test(raw))return A.obrigado();
   if(/^(sim|s|nao|n|ok)$/.test(n)||THUMB_DOWN.test(raw))return menu('Não há nada aguardando sua resposta.');
   if(ctx!=='resposta'){const f=A.faq();if(f)return f}
+  /* no meio do agendamento: repete a pergunta da etapa em vez de abandonar o agendamento */
+  if(WIZKEEP){const w={...WIZKEEP,miss:(WIZKEEP.miss||0)+1};WIZKEEP=null;INT='repetir_etapa';
+    if(w.miss>=3){tellC(`${who} não conseguiu concluir o agendamento pelo robô (última mensagem: "${raw.slice(0,120)}").`);return 'Parece que não estou conseguindo te ajudar por aqui. Já avisei o barbeiro, ele fala com você. 👍'}
+    setSt({cbook:w});return 'Não entendi. 🤔 '+w.q+CB.nav(w.back)}
+  /* primeira vez que não entende: pede para escrever de outro jeito; na segunda, repassa ao barbeiro */
+  if(!(st&&st.cretry)&&ctx!=='resposta'){INT='pedir_repetir';setSt({cretry:1});return RETRY}
   INT='nao_entendido';tellC(`Mensagem de ${who}: "${raw.slice(0,200)}"`);
   if(ctx==='resposta')return 'Recebido! Repassei para o barbeiro.';
-  return menu('Não entendi sua mensagem, mas já repassei para o barbeiro.')}
+  return menu('Ainda não consegui entender, então já repassei sua mensagem para o barbeiro.')}
 
 const isTeam=from=>{if(!from||from==='@barbeiro')return true;const d=String(from).replace(/\D/g,'').slice(-11);return db().team.some(u=>u.active&&String(u.phone||'').replace(/\D/g,'').slice(-11)===d)};
 
