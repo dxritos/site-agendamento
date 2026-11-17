@@ -28,6 +28,10 @@ function parse(text){
   /* "3 da tarde", "8 da noite", "10 da manha", "9 e meia", "meio dia" */
   /* "daqui a 30 minutos", "daqui 1 hora" */
   t=t.replace(/\bdaqui (?:a )?(\d{1,3}|uma|meia) (min|minutos|h|hora|horas)\b/,(m,q,u)=>{const v=q==='uma'?1:q==='meia'?.5:+q,mm=/^h/.test(u)||q==='meia'?v*60:v,x=Math.ceil((DB.toMin(nowHM())+mm)/15)*15;if(x<1440){times.push(DB.toHM(x));if(!date)date=TODAY()}return ' '});
+  /* "daqui 15 dias", "em 2 semanas", "daqui a uma semana" */
+  t=t.replace(/\b(?:daqui(?: a)?|em|dentro de)\s+(\d{1,2}|uma|um|duas|dois)\s+(dias?|semanas?)\b/,(m,q,u)=>{const v={uma:1,um:1,duas:2,dois:2}[q]||+q,k=/^semana/.test(u)?v*7:v;if(!date&&k>0&&k<120)date=iso(day0(k));return ' '});
+  /* "consegue em 20 minutos?" */
+  t=t.replace(/\bem (\d{1,3}) ?(?:min|minutos)\b/,(m,q)=>{const x=Math.ceil((DB.toMin(nowHM())+ +q)/15)*15;if(x<1440){times.push(DB.toHM(x));if(!date)date=TODAY()}return ' '});
   t=t.replace(/\bmeio[ -]?dia( e meia)?\b/g,(m,mm)=>{times.push(mm?'12:30':'12:00');return ' '});
   t=t.replace(/\b(\d{1,2})(?:h|:00)?(?:\s*e meia)?\s+(?:da|de)\s+(manha|tarde|noite)\b/g,(m,h,per)=>{h=+h;if(per!=='manha'&&h<12)h+=12;if(h<24)times.push(pad(h)+':'+(/e meia/.test(m)?'30':'00'));return ' '});
   t=t.replace(/\b(\d{1,2})(?:h)?\s+e meia\b/g,(m,h)=>{if(+h<24)times.push(hm(+h,'30'));return ' '});
@@ -41,12 +45,14 @@ function parse(text){
       if(w==='depois de amanha')date=iso(day0(2));else if(w==='amanha')date=iso(day0(1));else if(w==='hoje')date=TODAY();
       else{const i=WDF.findIndex(x=>norm(x)===w);let k=(i-day0().getDay()+7)%7;if(!k)k=7;date=iso(day0(k))}
       t=t.replace(re,' ')}}
+  /* períodos não fazem parte do nome do cliente ("encaixa o diego amanhã de manhã") */
+  t=t.replace(/\b(?:de |pela |na |a |à |no )?(?:manhazinha|manha|tardezinha|tardinha|tarde|noitinha|noite|fim da tarde|final da tarde|comeco da manha|inicio da manha)\b/g,' ').replace(/\b(?:depois|antes) do almoco\b/g,' ');
   return {date,times,rest:t.replace(/\s+/g,' ').trim()};
 }
 /* período do dia citado na mensagem ("de manhã", "à tarde", "à noite", "depois do almoço"); saudações não contam */
 const PER={manha:[0,720,'de manhã'],tarde:[720,1080,'à tarde'],noite:[1080,1440,'à noite']};
 function periodOf(x){const t=' '+norm(x).replace(/[^a-z0-9\s]/g,' ').replace(/\b(bom dia|boa tarde|boa noite|bom fim de semana)\b/g,' ')+' ';
-  if(/ (depois do almoco|pos almoco|apos o almoco) /.test(t))return PER.tarde;if(/ (antes do almoco|cedo|cedinho) /.test(t))return PER.manha;
+  if(/ (depois do almoco|pos almoco|apos o almoco|fim da tarde|final da tarde|tardezinha) /.test(t))return PER.tarde;if(/ (antes do almoco|cedo|cedinho|manhazinha|comeco da manha|inicio da manha) /.test(t))return PER.manha;if(/ noitinha /.test(t))return PER.noite;
   const m=/ (manha|tarde|tardinha|noite) /.exec(t);return m?PER[m[1]==='tardinha'?'tarde':m[1]]:null}
 /* "depois das 17" / "antes das 10": limite dos horários livres */
 const bound=x=>/\b(depois das|a partir das|apos as|depois de)\b/.test(x)?'after':/\b(antes das|ate as|no maximo as)\b/.test(x)?'before':null;
@@ -126,7 +132,7 @@ function book(nm,sv,ds,tm){
     const sent=c.phone&&DB.notify('confirm',db().appts.find(x=>x.id===aid));
     return `Marcado 👍 ${c.name} · ${sv.n} · ${short(ds)} às ${tm} · ${usePlan?'pelo plano':brl(sv.p)}.${isNew?'\nCliente novo, sem telefone. Envie *tel '+first(c).toLowerCase()+' 94999990000* para cadastrar.':sent?'\nO cliente recebeu a confirmação. O link de presença sai 2 h antes.':''}`};
   return withClient(nm,go,()=>go(null))}
-const range=(k)=>{const t=day0();if(k==='semana'){const m=new Date(t);m.setDate(m.getDate()-((t.getDay()+6)%7));return [iso(m),iso(t),'desta semana']}if(k==='mes')return [iso(t).slice(0,8)+'01',iso(t),'deste mês'];return [iso(t),iso(t),'de hoje']};
+const range=(k)=>{const t=day0();if(k==='ontem'){const y=iso(day0(-1));return [y,y,'de ontem']}if(k==='semana'){const m=new Date(t);m.setDate(m.getDate()-((t.getDay()+6)%7));return [iso(m),iso(t),'desta semana']}if(k==='mes')return [iso(t).slice(0,8)+'01',iso(t),'deste mês'];return [iso(t),iso(t),'de hoje']};
 
 const HELP=`*Todos os comandos*
 Prefere escolher numa lista? Envie *menu*.
@@ -189,7 +195,7 @@ const CMD={
     if(!DB.freeSlots(ds,sv.t).includes(tm)){const f=DB.freeSlots(ds,sv.t);return `${tm} não está livre em ${short(ds)} para ${sv.n} (${sv.t} min).`+(f.length?` Livres: ${f.slice(0,8).join(' · ')}`:` Não há vaga de ${sv.t} min nesse dia.`)}
     return book(nm,sv,ds,tm)},
   encaixe(p){const {sv,nm}=svcAndName(p.rest);if(!sv)return 'Não achei o serviço.';if(nm.length<2)return 'Diga o nome. Ex.: *encaixe João barba*';
-    const ds=p.date||TODAY(),f=DB.freeSlots(ds,sv.t);
+    const ds=p.date||TODAY(),per0=periodOf(p.raw0||''),f=DB.freeSlots(ds,sv.t).filter(x=>!per0||(DB.toMin(x)>=per0[0]&&DB.toMin(x)<per0[1]));
     if(!f.length){for(let i=1;i<8;i++){const d2=iso(day0(i)),f2=DB.freeSlots(d2,sv.t);if(f2.length)return `Não há vaga de ${sv.t} min em ${short(ds)}. A próxima é ${WDF[day0(i).getDay()]}, ${short(d2)} às ${f2[0]}.\nPara marcar: *agendar ${nm} ${norm(sv.n)} ${short(d2)} ${f2[0]}*`}return 'Não há vaga nos próximos 7 dias.'}
     return book(nm,sv,ds,f[0])},
   remarcar(p,raw){const parts=norm(raw).split(/\s+(?:para|pra|pro)\s+/);if(parts.length!==2)return 'Use: *remarcar 15:00 para 16:30* ou *remarcar João para amanhã 10:00*';
@@ -248,14 +254,14 @@ const CMD={
     mut(['holidays','appts'],d=>{if(h)d.holidays.splice(d.holidays.findIndex(x=>x.id===h.id),1);B.forEach(b=>d.appts.splice(d.appts.findIndex(x=>x.id===b.id),1))},`Agenda de ${short(ds)} reaberta pelo WhatsApp`,'Configurações');return `Agenda de ${short(ds)} reaberta. Os horários voltaram para o site.`},
   cliente(p){if(!p.rest)return 'Diga o nome. Ex.: *cliente João*';return withClient(p.rest,c=>{const s=DB.activeSub(c.id),A=db().appts.filter(a=>a.cid===c.id),t=TODAY();
     const last=A.filter(a=>a.status==='done').sort((a,b)=>b.date.localeCompare(a.date))[0],nx=A.filter(a=>OPEN.includes(a.status)&&a.date>=t).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start))[0];
-    return `*${c.name}*\nTelefone: ${fone(c.phone)}\n${s?`Plano: ${DB.plan(s.plan).n}${canFin()?' · '+({ok:'em dia',late:'pagamento pendente',paused:'pausado'})[s.status]:s.status==='paused'?' · pausado':''}`:'Sem assinatura (avulso)'}\nAtendimentos: ${A.filter(a=>a.status==='done').length} · Faltas: ${c.misses||0}${DB.isBlocked(c)?' · BLOQUEADO':''}\nÚltima vez: ${last?short(last.date)+' · '+last.svc:'—'}\nPróximo: ${nx?short(nx.date)+' às '+nx.start+' · '+nx.svc:'nada marcado'}${c.notes?'\nObs.: '+c.notes:''}`})},
+    return `*${c.name}*\nTelefone: ${fone(c.phone)}\n${s?`Plano: ${DB.plan(s.plan).n}${canFin()?' · '+({ok:'em dia',late:'pagamento pendente',paused:'pausado'})[s.status]:s.status==='paused'?' · pausado':''}`:'Sem assinatura (avulso)'}\nAtendimentos: ${A.filter(a=>a.status==='done').length} · Faltas: ${c.misses||0}${DB.isBlocked(c)?' · BLOQUEADO':''}\nÚltima vez: ${last?short(last.date)+' · '+last.svc:'—'}\nPróximo: ${nx?short(nx.date)+' às '+nx.start+' · '+nx.svc+' ('+ST[nx.status]+')':'nada marcado'}${c.notes?'\nObs.: '+c.notes:''}`})},
   obs(p,raw){const m=/^(.+?)\s*:\s*(.+)$/.exec(raw);if(!m)return 'Use dois-pontos. Ex.: *obs João: prefere máquina 2*';return withClient(norm(m[1]),c=>{mut(['clients'],d=>{d.clients.find(x=>x.id===c.id).notes=m[2].trim()},`${c.name}: observação atualizada pelo WhatsApp`,'Clientes');return `Anotado na ficha de ${c.name}: ${m[2].trim()}`})},
   tel(p,raw){const d=raw.replace(/\D/g,''),nm=norm(raw.replace(/[\d()\-+.]/g,' '));if(d.length!==11)return 'Telefone com DDD e 9 dígitos. Ex.: *tel João 94999990000*';return withClient(nm,c=>{mut(['clients'],x=>{const y=x.clients.find(z=>z.id===c.id);y.phone=d;if(/Falta o telefone/.test(y.notes))y.notes=''},`${c.name}: telefone cadastrado pelo WhatsApp`,'Clientes');return `Telefone de ${c.name} salvo. Ele passa a receber confirmação e o link de presença.`})},
   pendentes(p){const t=TODAY(),L=db().appts.filter(a=>a.status==='pend'&&a.date>=t&&(!p||!p.date||a.date===p.date)).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
     return L.length?`*Ainda não confirmaram (${L.length})*\n`+L.map(a=>`${short(a.date)} ${a.start} · ${cname(a.cid)} · ${a.svc}`).join('\n')+'\n\nEnvie *lembrar* para mandar o link de novo.':'Todos os clientes marcados já confirmaram.'},
   lembrar(){const t=TODAY(),L=db().appts.filter(a=>a.status==='pend'&&a.date>=t),S=L.filter(a=>{const c=cli(a.cid);return c&&DB.sendClient(c,'lembrete',`${first(c)}, você confirma seu horário de ${a.svc} em ${short(a.date)} às ${a.start}? Confirme, remarque ou cancele por aqui: ${DB.link(a)}`)});
     return L.length?`Lembrete enviado para ${S.length} de ${L.length}: ${L.map(a=>first(cli(a.cid)||{name:'—'})).join(', ')}.`:'Não há ninguém aguardando confirmação.'},
-  caixa(p){if(!canFin())return FIN_DENY;const [a,b,lb]=range(/\bmes\b/.test(p.rest)?'mes':/\bsemana\b/.test(p.rest)?'semana':'hoje'),T=db().tx.filter(t=>t.status==='ok'&&t.date>=a&&t.date<=b),sum=L=>L.reduce((s,t)=>s+t.value,0),av=T.filter(t=>t.kind!=='plano'),pl=T.filter(t=>t.kind==='plano');
+  caixa(p,raw){if(!canFin())return FIN_DENY;const rr0=norm(raw||p.rest||'');const [a,b,lb]=range(/\bmes\b/.test(rr0)?'mes':/\bsemana\b/.test(rr0)?'semana':/\bontem\b/.test(rr0)?'ontem':'hoje'),T=db().tx.filter(t=>t.status==='ok'&&t.date>=a&&t.date<=b),sum=L=>L.reduce((s,t)=>s+t.value,0),av=T.filter(t=>t.kind!=='plano'),pl=T.filter(t=>t.kind==='plano');
     const by={};av.forEach(t=>by[t.method]=(by[t.method]||0)+t.value);const open=db().appts.filter(x=>x.date>=a&&x.date<=b&&x.status==='done'&&!x.plan&&x.price>0&&!db().tx.some(t=>t.date===x.date&&t.cid===x.cid&&t.desc===x.svc&&t.status==='ok'));
     return `*Caixa ${lb}*\nAvulso: ${brl(sum(av))} (${av.length})\nPlanos: ${brl(sum(pl))} (${pl.length})\n*Total: ${brl(sum(T))}*`+(Object.keys(by).length?'\n\n'+Object.entries(by).map(([m,v])=>`${m}: ${brl(v)}`).join('\n'):'')+(open.length?`\n\nSem pagamento registrado: ${open.map(x=>x.start+' '+cname(x.cid)).join(', ')}`:'')},
   assinantes(){if(!canFin())return FIN_DENY;const S=db().subs,ok=S.filter(s=>s.status==='ok'),late=S.filter(s=>s.status==='late'),pa=S.filter(s=>s.status==='paused');
@@ -271,6 +277,15 @@ const CMD={
   nada(){return 'Ok, a agenda continua aberta.'},
   confirmados(p){const ds=p.date||iso(day0(1)),L=dayList(ds).filter(a=>a.status==='conf');return L.length?`*Confirmados em ${short(ds)} (${L.length})*\n`+L.map(line).join('\n'):`Ninguém confirmou ainda para ${short(ds)}.`},
   horario(p){bare(p);const r=find(p,null,'quem vem às 15',true);if(r.err)return r.err;const a=r.a,c=cli(a.cid)||{};return `${line(a)}${c.phone?'\nTelefone: '+fone(c.phone):''}${c.notes?'\nObs.: '+c.notes:''}`},
+  faltas(p,raw){const k=/\bsemana\b/.test(norm(raw||''))?'semana':/\bmes\b/.test(norm(raw||''))?'mes':/\bontem\b/.test(norm(raw||''))?'ontem':'hoje',[a,b,lb]=range(k),L=db().appts.filter(x=>x.status==='miss'&&x.date>=a&&x.date<=b);return L.length?`*Faltas ${lb} (${L.length})*\n`+L.map(x=>`${short(x.date)} ${x.start} · ${cname(x.cid)}`).join('\n'):`Nenhuma falta ${lb}.`},
+  cancelados(p,raw){const k=/\bsemana\b/.test(norm(raw||''))?'semana':/\bmes\b/.test(norm(raw||''))?'mes':/\bontem\b/.test(norm(raw||''))?'ontem':'hoje',[a,b,lb]=range(k),L=db().appts.filter(x=>x.status==='cancel'&&x.cid&&x.date>=a&&x.date<=b);return L.length?`*Cancelados ${lb} (${L.length})*\n`+L.map(x=>`${short(x.date)} ${x.start} · ${cname(x.cid)} · ${x.svc}`).join('\n'):`Nenhum cancelamento ${lb}.`},
+  bloqueados(){const L=db().clients.filter(c=>DB.isBlocked(c)&&c.name!=='Cliente removido');return L.length?'*Bloqueados para agendar*\n'+L.map(c=>`${c.name} · ${c.misses||0} faltas`).join('\n')+'\n\nPara liberar: *liberar João*':'Nenhum cliente bloqueado.'},
+  ranking(){const ini=iso(day0(-90)),by={};db().appts.filter(a=>a.status==='done'&&a.cid&&a.date>=ini).forEach(a=>{const r=by[a.cid]||(by[a.cid]={n:0,v:0});r.n++;r.v+=a.price||0});const L=Object.entries(by).sort((a,b)=>b[1].n-a[1].n||b[1].v-a[1].v).slice(0,10);
+    return L.length?'*Clientes que mais vieram (90 dias)*\n'+L.map(([id,r],i)=>`${i+1}. ${cname(id)} · ${r.n} ${r.n===1?'vez':'vezes'}${canFin()?' · '+brl(r.v):''}`).join('\n'):'Ainda não há atendimentos suficientes.'},
+  topservicos(){const ini=iso(day0(-90)),by={};db().appts.filter(a=>a.status==='done'&&a.svc&&a.date>=ini).forEach(a=>by[a.svc]=(by[a.svc]||0)+1);const L=Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,8);return L.length?'*Serviços mais feitos (90 dias)*\n'+L.map(([n,q],i)=>`${i+1}. ${n} · ${q}`).join('\n'):'Ainda não há atendimentos suficientes.'},
+  movimento(){const ini=iso(day0(-60)),wd=[0,0,0,0,0,0,0],hr={},A=db().appts.filter(a=>a.cid&&['done','conf','pend','now','miss'].includes(a.status)&&a.date>=ini);A.forEach(a=>{wd[new Date(a.date+'T00:00').getDay()]++;const h=a.start.slice(0,2);hr[h]=(hr[h]||0)+1});
+    const dias=wd.map((q,i)=>[WDF[i],q]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]),hs=Object.entries(hr).sort((a,b)=>b[1]-a[1]).slice(0,3);return A.length?`*Movimento (60 dias)*\nDias mais cheios: ${dias.slice(0,3).map(x=>`${x[0]} (${x[1]})`).join(', ')}\nHorários mais procurados: ${hs.map(x=>x[0]+'h ('+x[1]+')').join(', ')}\nMédia: ${(A.length/Math.max(1,new Set(A.map(a=>a.date)).size)).toFixed(1).replace('.',',')} atendimentos por dia aberto`:'Ainda não há dados suficientes.'},
+  ticket(){if(!canFin())return FIN_DENY;const ini=iso(day0(-30)),T=db().tx.filter(t=>t.status==='ok'&&t.kind!=='plano'&&t.date>=ini);if(!T.length)return 'Sem pagamentos avulsos nos últimos 30 dias.';const v=T.reduce((a,t)=>a+t.value,0);return `*Ticket médio (30 dias)*\n${brl(v/T.length)} por atendimento avulso · ${T.length} pagamentos · ${brl(v)} no total`},
   fila(){const L=dayList(TODAY()).filter(a=>OPEN.includes(a.status));if(!L.length)return 'Não há mais clientes hoje.';
     return `*Ainda hoje (${L.length})*\n`+L.map(a=>`${a.start} · ${cname(a.cid)} · ${a.svc}${a.status==='now'?' · em atendimento':a.status==='pend'?' · não confirmou':''}`).join('\n')},
   historico(p){if(!p.rest)return 'Diga o nome. Ex.: *histórico João*';return withClient(p.rest,c=>{const L=db().appts.filter(a=>a.cid===c.id&&['done','miss','cancel'].includes(a.status)).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start)).slice(0,6);
@@ -287,14 +302,14 @@ const CMD={
   servicos(){return '*Serviços*\n'+db().services.filter(x=>x.on).map(x=>`${x.n} · ${brl(x.p)} · ${x.t} min`).join('\n')},
   avaliacoes(){const L=db().clients.filter(c=>c.rating);if(!L.length)return 'Nenhuma avaliação ainda. Elas chegam quando o cliente responde à mensagem de agradecimento.';const m=L.reduce((t,c)=>t+c.rating,0)/L.length,low=L.filter(c=>c.rating<=3);
     return `*Avaliações*\nMédia: ${m.toFixed(1).replace('.',',')} de 5 (${L.length})`+(low.length?'\nNotas baixas: '+low.map(c=>`${c.name} (${c.rating})`).join(', '):'')},
-  pausa(p){const alm=/almoc/.test(norm(p.rest)),L0=db().lunch,n=+(/(\d{1,3})/.exec(p.rest)||[0,alm?(L0?DB.toMin(L0[1])-DB.toMin(L0[0]):60):15])[1],ds=TODAY(),a=DB.toHM(Math.ceil(DB.toMin(nowHM())/5)*5),b=DB.toHM(DB.toMin(a)+n);
+  pausa(p){if(/^pausa/.test(p.rest||''))p.rest=p.rest.replace(/^pausa\s*/,'');const alm=/almoc/.test(norm(p.rest)),L0=db().lunch,n=+(/(\d{1,3})/.exec(p.rest)||[0,alm?(L0?DB.toMin(L0[1])-DB.toMin(L0[0]):60):15])[1],ds=TODAY(),a=DB.toHM(Math.ceil(DB.toMin(nowHM())/5)*5),b=DB.toHM(DB.toMin(a)+n);
     const clash=dayList(ds).find(x=>x.status!=='block'&&OPEN.includes(x.status)&&DB.toMin(x.start)<DB.toMin(b)&&DB.toMin(x.start)+x.dur>DB.toMin(a));if(clash)return `Há cliente nesse intervalo: ${line(clash)}. Para avisar atraso: *atraso ${n}*`;
     mut(['appts'],d=>{d.appts.push({id:DB.uid(),date:ds,start:a,dur:n,cid:null,svc:'',price:0,plan:false,status:'block',note:alm?'Almoço':'Pausa'})},`${alm?'Almoço':'Pausa'} de ${n} min pelo WhatsApp (${a}–${b})`);return `${alm?'Almoço':'Pausa'} das ${a} às ${b}. Esse horário saiu do site.\nPara desfazer: *desbloquear ${a}*`},
   servico(p,raw){const m=/^(.*?)\s+(?:para|pra|por)\s+(.+)$/.exec(norm(raw))||[null,p.rest,''];const r=find(parse(m[1]),OPEN,'serviço 15:00 para barba');if(r.err)return r.err;const a=r.a;
     const sv=services().find(x=>norm(x.n)===trimFill(norm(m[2]||''))||(' '+norm(m[2]||'')+' ').includes(' '+norm(x.n)+' '));if(!sv)return 'Qual serviço? Ex.: *serviço 15:00 para barba*\n'+services().map(x=>x.n).join(' · ');
     if(sv.t>a.dur&&!DB.freeSlots(a.date,sv.t,a.id).includes(a.start))return `${sv.n} leva ${sv.t} min e não cabe às ${a.start} (o horário seguinte está ocupado).`;
     mut(['appts'],d=>{const x=d.appts.find(y=>y.id===a.id);x.svc=sv.n;x.dur=sv.t;if(!x.plan)x.price=sv.p},`${cname(a.cid)}: serviço trocado para ${sv.n} pelo WhatsApp (${short(a.date)} ${a.start})`);return `Trocado: ${a.start} · ${cname(a.cid)} agora é ${sv.n}${a.plan?'':' · '+brl(sv.p)}.`},
-  resumo(p){const k=/\bmes\b/.test((p&&p.rest)||'')?'mes':/\bsemana\b/.test((p&&p.rest)||'')?'semana':'hoje';
+  resumo(p){const k=/\bmes\b/.test((p&&p.rest)||'')?'mes':/\bsemana\b/.test((p&&p.rest)||'')?'semana':/\bontem\b/.test((p&&p.raw0)||'')?'ontem':'hoje';
     if(k!=='hoje'){const [a,b,lb]=range(k),L=db().appts.filter(x=>x.date>=a&&x.date<=b&&x.cid&&x.status!=='block');return `*Resumo ${lb}*\n${L.filter(x=>x.status==='done').length} atendimentos concluídos · ${L.filter(x=>x.status==='miss').length} faltas · ${L.filter(x=>x.status==='cancel').length} cancelamentos\nClientes diferentes: ${new Set(L.filter(x=>x.status==='done').map(x=>x.cid)).size}`}
     const ds=TODAY(),L=dayList(ds).filter(a=>a.status!=='block'),got=db().tx.filter(t=>t.date===ds&&t.kind!=='plano'&&t.status==='ok').reduce((s,t)=>s+t.value,0);
     return `*Resumo de hoje*\n${L.length} atendimentos · ${L.filter(a=>a.status==='done').length} concluídos · ${L.filter(a=>a.status==='miss').length} faltas${canFin()?'\nRecebido (avulso): '+brl(got):''}\nAguardando confirmação: ${L.filter(a=>a.status==='pend').length}`},
@@ -376,9 +391,30 @@ const act=code=>{const [k,v]=[code[0],code.slice(2)];return k==='w'?WIZ[v].start
 function cleanAviso(t){let x=String(t).trim().replace(/^["'“”]+|["'“”]+$/g,'');for(let i=0;i<3;i++)x=x.replace(/^(?:no site|no topo|pros clientes|para os clientes|aos clientes)\s*/i,'').replace(/^(?:de que|que|dizendo(?: que)?|falando(?: que)?|avisando(?: que)?|informando(?: que)?|sobre|com o texto|com|:|-)\s*/i,'').trim();
   x=x.replace(/^["'“”]+|["'“”]+$/g,'').trim();if(!x)return '';x=x[0].toUpperCase()+x.slice(1);return /[.!?]$/.test(x)?x:x+'.'}
 function staffNL(raw){const n=norm(raw).replace(/[?!.,]/g,' ').replace(/\s+/g,' ').trim(),r0=String(raw).trim();let m;
+  if(/^agenda (da|desta|dessa) semana$|^(vagas|livres|horarios livres) (da|desta|dessa) semana$|^semana toda$|^como (ta|esta) a semana$/.test(n))return 'semana';
+  if((m=/^(?:o que (?:eu )?tenho|quem vem|quem tem|o que tem|como (?:ta|esta)|quantos clientes|quantos atendimentos) (?:pra |para |na |no )?(hoje|amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|dia \d{1,2}|\d{1,2}\/\d{1,2})( feira)?$/.exec(n)))return 'agenda '+m[1];
+  if((m=/^(.+?) (?:abro|abre|vou abrir) so (?:depois do almoco|a tarde|de tarde)$/.exec(n)))return 'bloquear '+m[1]+' manha Abre só à tarde';
+  if((m=/^(?:vou |vamos )?(?:fechar|fecho|fecha) (.+?) mais cedo ?(.*)$/.exec(n)))return 'fechar '+m[1]+' '+(m[2]||'resto');
+  if(/^(caixa|quanto (?:eu )?(?:fiz|faturei|entrou|ganhei)|quanto deu) (de |d )?ontem$/.test(n))return 'caixa ontem';
+  if((m=/^quanto (?:entrou|fiz|faturei|ganhei|deu) (essa|esta|na|no|nesse|neste) (semana|mes)/.exec(n)))return 'caixa '+m[2];
+  if((m=/^quant[oa]s (?:clientes|atendimentos|cortes) (ontem)$/.exec(n)))return 'resumo ontem';
+  if((m=/^quem faltou ?(.*)$/.exec(n)))return 'faltas '+m[1];
+  if((m=/^quem cancelou ?(.*)$/.exec(n)))return 'cancelados '+m[1];
+  if((m=/^(?:quando foi a )?ultima vez d[oa] (.+)$/.exec(n)))return 'historico '+m[1];
+  if((m=/^(?:o |a )?(\S+) tem (?:horario|algo) marcado$/.exec(n))||(m=/^(?:proximo )?(?:horario|agendamento) d[oa] (.+)$/.exec(n))||(m=/^(?:o |a )?(\S+) confirmou$/.exec(n)))return 'cliente '+m[1];
+  if((m=/^(?:muda|mudar|troca|trocar|atualiza|atualizar) (?:o )?(?:telefone|numero|whats|zap) d[oa] (.+?) (?:pra|para|por) ([\d ()+-]{10,})$/.exec(n)))return 'tel '+m[1]+' '+m[2];
+  if((m=/^(?:manda|envia|mande|envie|fala|diz|diga)\s+(?:pro|pra|para\s+o|para\s+a|ao|à)\s+(.+)$/i.exec(r0))&&/:/.test(m[1]))return 'responder '+m[1];
+  if((m=/^(?:avisa|avise|fala|diz)\s+(?:pro|pra|para\s+o|ao|o|a)\s+(\S+)\s+que\s+(.+)$/i.exec(r0)))return 'responder '+m[1]+': '+m[2][0].toUpperCase()+m[2].slice(1);
+  if(/^(quantos assinantes( tenho| temos)?|quanto entra de plano( por mes)?|quem (e|sao) assinantes?|quem (ta|esta) com plano atrasado|planos atrasados)$/.test(n))return 'assinantes';
+  if(/^(lista de )?(clientes )?bloqueados$/.test(n))return 'bloqueados';
+  if((m=/^desbloque\w* (?:o |a )?([a-z][a-z ]+)$/.exec(n))&&!/\d/.test(m[1])&&!/^(amanha|hoje|segunda|terca|quarta|quinta|sexta|sabado|domingo)/.test(m[1]))return 'liberar '+m[1];
+  if(/^(clientes que mais (vem|vieram|cortam)|melhores clientes|quem (mais )?gastou( mais)?|ranking( de clientes)?|top clientes|clientes fieis)$/.test(n))return 'ranking';
+  if(/^(qual )?(o )?servico(s)? mais (vendido|pedido|feito|procurado)s?$/.test(n))return 'topservicos';
+  if(/^(qual )?(o )?(dia|horario|hora)s? mais (movimentado|cheio|procurado)s?$|^media de atendimentos( por dia)?$|^movimento$/.test(n))return 'movimento';
+  if(/^ticket medio$|^(qual )?(o )?valor medio( por cliente| por atendimento)?$/.test(n))return 'ticket';
   /* comandos com texto livre: usa a mensagem original para manter acentos e maiúsculas */
   if((m=/^(?:manda|envia|mande|envie)\s+(?:uma\s+)?(?:mensagem|msg|recado)\s+(?:pro|pra|para|ao|à|a)\s+(?:o\s+|a\s+)?(.+)$/i.exec(r0)))return 'responder '+(m[1].includes(':')?m[1]:m[1].replace(/^(\S+)\s+(?:que\s+|dizendo\s+)?/,'$1: '));
-  if((m=/^(?:anota|anote|registra|salva)\s+(?:que\s+)?(?:o\s+|a\s+)?(\S+)\s+(.+)$/i.exec(r0))&&!/^(numero|número|telefone|whats|zap)$/i.test(m[1]))return 'obs '+m[1]+': '+m[2];
+  if((m=/^(?:anota|anote|registra|salva)\s+(?:que\s+)?(?:no\s+|na\s+|pro\s+|pra\s+|o\s+|a\s+)?(\S+?):?\s+(.+)$/i.exec(r0))&&!/^(numero|número|telefone|whats|zap)$/i.test(m[1]))return 'obs '+m[1]+': '+m[2];
   if((m=/^(?:salva|cadastra|anota|guarda|registra)\s+(?:o\s+)?(?:numero|número|telefone|whats|zap)\s+(?:d[oae]\s+)?(.+)$/i.exec(r0)))return 'tel '+m[1];
   if((m=/^(?:o |a )?(?:cliente |ele |ela )?(?:pagou|recebi|recebido|pago|foi)(?: \d+(?: reais)?)?\s+(?:no|na|em|com|de|via|pelo)?\s*(pix|dinheiro|debito|credito|cartao)/.exec(n)))return 'ok '+(m[1]==='cartao'?'credito':m[1]);
   if(/^(nao pagou( ainda)?|vai pagar depois|paga depois|fiado|pendurou|ficou devendo|sem pagamento)$/.test(n))return 'ok';
@@ -430,7 +466,7 @@ function exec(raw){{const nl=staffNL(raw);if(nl)raw=nl}const n=norm(raw),w=n.spl
   const g=k||guess(w);
   if(!g)return /^(obrigad\w*|valeu|vlw|show|blz|beleza|top)$/.test(n)?'Por nada!':/^(sim|s|nao|n|ok)$/.test(n)?'Não há nada aguardando resposta. Envie *menu* para escolher uma opção.':`Não entendi "${raw}".
 Envie *menu* para escolher uma opção ou *ajuda* para ver os comandos.`;
-  try{return CMD[g](parse(rest),rest)}catch(e){return 'Não consegui fazer isso agora. Tente de novo.'}}
+  try{const pp=parse(rest);pp.raw0=rest;return CMD[g](pp,rest)}catch(e){return 'Não consegui fazer isso agora. Tente de novo.'}}
 /* distância de edição, para entender comando com erro de digitação ("agendr", "proxmo") */
 const lev=(a,b)=>{const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]};
 const guess=w=>{if(w.length<4)return null;const all=[...Object.keys(CMD),...Object.keys(ALIAS)],lim=w.length>=7?2:1,hit=all.map(k=>[k,lev(w,k)]).filter(x=>x[1]<=lim).sort((x,y)=>x[1]-y[1]||y[0].length-x[0].length)[0];return hit?(CMD[hit[0]]?hit[0]:ALIAS[hit[0]]):null};
@@ -488,7 +524,7 @@ function clientCore(raw,n,from){
   const greeted=!firstContact(key);
   const menu=pre=>{setSt({cmenu:1});INT=INT||'menu';const head=pre||(greeted?'':hi);return `${head?head+'\n\n':''}Como posso ajudar?\n1. Agendar um horário\n2. Meus horários\n3. Remarcar ou cancelar\n4. Preços e planos\n5. Horário e endereço\n6. Falar com o barbeiro\n7. Fotos dos trabalhos\n\nResponda com o número.`};
   const A={
-    agendar(){const p=parse(n),per=periodOf(n),bd=bound(n),tm=p.times[0],exact=tm&&!bd?tm:null,go=`\nPara agendar: ${site}agendar.html`;
+    agendar(){const p=parse(n),btw=/\bentre\b/.test(n)&&p.times.length>=2?[p.times[0],p.times[1]].sort():null,per=btw?[DB.toMin(btw[0]),DB.toMin(btw[1])+1,`entre ${hh(btw[0])} e ${hh(btw[1])}`]:periodOf(n),bd=btw?null:bound(n),tm=btw?null:p.times[0],exact=tm&&!bd?tm:null,go=`\nPara agendar: ${site}agendar.html`;
       if(/\b(agora|daqui a pouco|ainda hoje|hoje ainda|ja ja)\b/.test(n)&&!p.date)p.date=t;
       /* "qualquer horário", "o primeiro livre": responde direto com a próxima vaga */
       if(/\b(proximo|primeiro|mais cedo|qualquer|preferencia|tanto faz)\b/.test(n)&&!p.date&&!tm&&!per){for(let i=0;i<DB.horizon();i++){const ds=iso(day0(i)),f=DB.freeSlots(ds,45);if(f.length)return `O próximo horário livre é ${dayTxt(ds)} às ${hh(f[0])}. 😉\n\n`+CB.svc({ds,tm:f[0],sv:svcPick(n)})}return `Sem vagas nos próximos 7 dias.\nPara ver todos os horários: ${site}horarios.html`}
@@ -522,7 +558,7 @@ function clientCore(raw,n,from){
       return `Planos mensais:\n`+db().plans.filter(x=>x.on).map(x=>`• ${x.n}: ${brl(x.p)}/mês`).join('\n')+`\n\nPara assinar: ${site}index.html#planos`},
     funcionamento(){const H=db().hours,d=day0().getDay(),cl=closed(t),ord=[1,2,3,4,5,6,0],pd=parse(n).date;
       if(/\bferiado/.test(n)){const L=db().holidays.filter(h=>h.date>=t).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);return L.length?'Nos feriados ficamos fechados. Próximos dias fechados:\n'+L.map(h=>`• ${short(h.date)} · ${h.name}`).join('\n'):'Nenhum feriado fechado marcado por enquanto. Nos outros dias, o horário é o normal.'}
-      if((/\b(agora|ainda)\b/.test(n)||/(ta|esta|tao|estao) (aberto|abertos|funcionando)|funcionando/.test(n))&&!pd){const h=!cl&&H[d],nw=nowHM();return h&&nw>=h[0]&&nw<h[1]?`Estamos abertos agora, até as ${h[1]}. 👍`:`Agora estamos fechados.`+(h&&nw<h[0]?` Hoje abrimos às ${h[0]}.`:'')+`\nPara ver os horários: ${site}horarios.html`}
+      if((/\b(agora|ainda|abriu|fechou|chegou)\b/.test(n)||/(ta|esta|tao|estao) (aberto|abertos|funcionando)|funcionando/.test(n))&&!pd){const h=!cl&&H[d],nw=nowHM();return h&&nw>=h[0]&&nw<h[1]?`Estamos abertos agora, até as ${h[1]}. 👍`:`Agora estamos fechados.`+(h&&nw<h[0]?` Hoje abrimos às ${h[0]}.`:'')+`\nPara ver os horários: ${site}horarios.html`}
       /* perguntou de um dia ("abre sábado?", "amanhã abre?"): responde só aquele dia */
       if(pd){const w=new Date(pd+'T00:00').getDay(),h=closed(pd);return h?`${cap(dayTxt(pd))} estamos fechados (${h.name}).`:H[w]?`${cap(dayTxt(pd))} abrimos das ${H[w][0]} às ${H[w][1]}.`:`${cap(dayTxt(pd))} não abrimos.`}
       return `Horário de funcionamento:\n`+ord.map(k=>`• ${cap(WDF[k])}: ${H[k]?H[k][0]+' às '+H[k][1]:'fechado'}`).join('\n')+`\n\nHoje: ${cl?'fechado ('+cl.name+')':H[d]?'aberto das '+H[d][0]+' às '+H[d][1]:'fechado'}.\nEndereço: ${db().content.address}`},
@@ -594,6 +630,13 @@ function clientCore(raw,n,from){
     refazer(){tellC(`${who} quer ajuste/refazer o corte: "${raw.slice(0,160)}"`);return 'Poxa, sinto muito. Avisei o barbeiro para combinar o ajuste com você.'},
     comprovante(){return A.outro('comprovante/recibo')},
     avail(){return CB.dia({avail:1})},
+    servicosLista(){const L=db().services.filter(x=>x.on).sort((a,b)=>a.p-b.p);return 'Nossos serviços:\n'+L.map(x=>`• ${x.n}: ${brl(x.p)} · ${x.t} min`).join('\n')+'\n\nQuer agendar? Envie *agendar*. Dá para juntar serviços (ex.: corte e sobrancelha).'},
+    sinal(){return 'Não cobramos sinal nem taxa para agendar. O avulso é pago na barbearia, depois do atendimento.\nSó pedimos que avise se não puder ir: '+DB.cancelText()+' antes, sem custo.'},
+    deSempre(){if(!c)return 'Vamos agendar! 😉\n\n'+CB.start({});const L=db().appts.filter(a=>a.cid===c.id&&a.status==='done').sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start)),u=L[0];
+      if(!u)return 'Ainda não achei atendimentos seus por aqui. Vamos agendar? 😉\n\n'+CB.start({});
+      const w=new Date(u.date+'T00:00').getDay();let k=(w-day0().getDay()+7)%7;if(!k)k=7;const ds=iso(day0(k));
+      const pre=`O de sempre: ${u.svc}, ${WDF[w]} às ${hh(u.start)}. 👍\n\n`;return opn(ds)&&svObj(u.svc)?pre+CB.hR({sv:u.svc,ds},u.start):pre+CB.dia({sv:svObj(u.svc)?u.svc:null})},
+    pressa(){const f=DB.freeSlots(t,30);return f.length?`O próximo horário livre hoje é às ${hh(f[0])}.\n\n`+CB.hora({ds:t,slots:f.slice(0,9)}):A.agendar()},
     linkProb(){const a=up[0];tellC(`${who} relatou problema com o link ou as mensagens: "${raw.slice(0,160)}"`);return a?`Sem problema, dá para fazer por aqui. Seu horário: ${when(a)}.\nPara confirmar, responda *confirmo*. Para remarcar, *remarcar*. Para cancelar, *cancelar*.`:'Avisei o barbeiro para verificar. Se quiser agendar, envie *agendar*.'},
     msgErrada(){tellC(`${who} recebeu mensagem duplicada ou errada: "${raw.slice(0,160)}"`);return 'Desculpe pelo transtorno. Avisei o barbeiro para verificar. 👍'},
     origemNumero(){return `Seu número entra no cadastro quando você agenda, assina ou fala com a barbearia.\nSe não reconhece, envie *parar* e não mandamos mais mensagens automáticas. Detalhes: ${site}privacidade.html`},
@@ -769,6 +812,18 @@ function clientCore(raw,n,from){
   if(/^(sair|parar|chega)$/.test(nn.trim()))return 'Ok! Quando precisar, é só chamar.';
   if(has(/ (nao tenho preferencia|qualquer horario|tanto faz|o mais cedo|primeiro horario|proximo horario livre|horario mais proximo|qualquer um) /))return A.agendar();
   /* ---- mais assuntos ---- */
+  if(/\bentre \d{1,2}(h|:\d\d)? e \d{1,2}/.test(nn0()))return A.agendar();
+  if(/^(o de sempre|o mesmo de sempre|igual da ultima vez|igual a ultima vez|mesmo corte da ultima vez|mesmo corte de sempre|o mesmo corte|mesmo horario de sempre|o mesmo horario de sempre|quero o mesmo horario de sempre|quero o de sempre|o mesmo da ultima vez)$/.test(nn0())||has(/ (de sempre|da ultima vez|igual da ultima) /))return A.deSempre();
+  if(has(/ (to com pressa|estou com pressa|com pressa|urgencia) /))return A.pressa();
+  if(has(/ (e rapidinho|e rapido|rapidinho) /))return A.duracao();
+  if(has(/ (daqui a pouco|daqui pouco|ja ja) /)&&!has(/ (chego|chegando|atras) /))return A.agendar();
+  if(has(/ (cep|qual rua|que rua|nome da rua|uber|99|taxi|onibus|longe do centro|longe|manda o pin|manda no mapa|waze|google maps|como chego) /))return A.endereco();
+  if(has(/ (o que voces fazem|quais servicos|que servicos|lista de servicos|cardapio|servicos voces|quais sao os servicos|o que tem ai) /))return A.servicosLista();
+  if(has(/ (apple pay|google pay|samsung pay|aproximacao|nfc|celular para pagar) /))return A.pagamento();
+  if(has(/ (sinal|taxa de agendamento|taxa pra agendar|cobra pra agendar|pagar antes|pagar adiantado|precisa pagar antes|adiantado|cobra taxa) /)&&!has(/ (faltar|falta) /))return A.sinal();
+  if(has(/ (sentado esperando|to esperando|estou esperando|esperando aqui|aguardando aqui) /))return A.aguardando();
+  if(has(/ (quantos estao esperando|quantas pessoas|tem gente esperando|ta cheio agora) /))return A.movimento();
+  if(/\?/.test(raw)&&/^(ja )?(abriu|abriram|fechou|fecharam|ja abriu|ja fechou|ta aberto|tao abertos|a barbearia ja abriu|a barbearia abriu|ele chegou|o barbeiro chegou|o barbeiro ja chegou|ja chegou)$/.test(nn0()))return A.funcionamento();
   if(has(/ (anuncio|propaganda|vi o post|vi a postagem) /))return A.novo();
   if(has(/ (sao novos|e novo aqui|desde quando|quanto tempo de mercado|ha quanto tempo existe|quem sao voces|quem e voces|historia da barbearia) /))return A.sobre();
   if(has(/ (curso|cursos|aula|aulas|ensinam|mentoria) /))return A.outro('cursos');
