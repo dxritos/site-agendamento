@@ -764,6 +764,12 @@ main>.glow:first-child::before{top:-66px}
 .pgb:hover:not(:disabled){border-color:var(--teal);color:var(--teal-2)}
 .pgb:disabled{opacity:.3;cursor:default}
 #wnav{padding:14px 22px 0;margin:0}
+/* brilho das seções: esmaece nas bordas de cima e de baixo para não formar faixa entre uma seção e outra */
+.glow::before{background:radial-gradient(820px 360px at 50% 45%,rgba(139,13,26,.17),transparent 70%),repeating-linear-gradient(90deg,transparent 0 63px,rgba(245,242,237,.012) 63px 64px);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 160px,#000 calc(100% - 160px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 160px,#000 calc(100% - 160px),transparent 100%)}
+/* primeira seção da página: o brilho continua atrás do cabeçalho e só esmaece embaixo */
+main>.glow:first-child::before{background:radial-gradient(820px 380px at 50% 0,rgba(139,13,26,.22),transparent 70%),repeating-linear-gradient(90deg,transparent 0 63px,rgba(245,242,237,.012) 63px 64px);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 180px),transparent 100%);mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 180px),transparent 100%)}
 /* TEMPORÁRIO: marca d'água de protótipo (remover quando o site for para produção) */
 body::after{content:"Apenas um protótipo. Em desenvolvimento.";position:fixed;right:4px;top:50%;transform:translateY(-50%) rotate(180deg);writing-mode:vertical-rl;font:600 10px/1 Inter,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,242,237,.22);pointer-events:none;user-select:none;z-index:9999;white-space:nowrap}
 @media print{body::after{display:none}}
