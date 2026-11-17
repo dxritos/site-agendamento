@@ -548,6 +548,8 @@ function botTick(force){const m=Bot.tick(force);if(!m){if(force)toast('Não há 
 ACT['bot-due']=()=>{waTab='robo';botTick(true)};
 ACT['bot-reset']=()=>{Bot.reset(simFrom());if(botFrom==='novo')novoNum='949'+String(Math.floor(Math.random()*1e8)).padStart(8,'0');chat.length=0;render();toast('Conversa reiniciada: a próxima mensagem é tratada como primeiro contato')};
 setInterval(()=>botTick(false),30000);
+/* conversa parada há 6 min: o robô encerra o atendimento (no servidor, o agendador faz isso) */
+setInterval(()=>{if(typeof Bot==='undefined'||!Bot.closeIdle)return;const L=Bot.closeIdle(),me=String(simFrom()).replace(/\D/g,'').slice(-11);L.forEach(x=>{if(x.num===me){chat.push({t:x.txt});if(VIEW==='mensagens'&&waTab==='robo'&&!$('#modal').classList.contains('open')){render();const w=$('#chatw');if(w)w.scrollTop=w.scrollHeight}}})},20000);
 ACT['out-clear']=()=>confirmBox('Limpar mensagens?','Apaga a lista de mensagens geradas. Os agendamentos não mudam.','Limpar',()=>change('outbox',L=>L.splice(0,L.length),'Lista de mensagens do WhatsApp limpa','WhatsApp'));
 ACT['tip-off']=()=>{tipOff=true;try{localStorage.setItem('farias_tip','0')}catch(e){}render()};
 ACT['msg-save']=()=>change('messages',M=>Object.keys(M).forEach(k=>{M[k].txt=$('#m-'+k).value;M[k].on=$('#m-on-'+k).checked}),'Mensagens do WhatsApp atualizadas','Mensagens');
